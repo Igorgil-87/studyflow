@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Eventos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+<body>
+  <div class="grain"></div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'eventos' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage ev-main">
+    <header class="ev-head">
+      <div class="head-tag">Agenda</div>
+      <h1 class="cat-title">Seus <em>eventos</em></h1>
+      <p class="ev-sub">Organize aulas, lives e prazos. Crie eventos e acompanhe no calendário.</p>
+    </header>
+
+    <div class="ev-layout">
+      <!-- CALENDÁRIO -->
+      <section class="ev-cal-wrap">
+        <div class="ev-cal-header">
+          <button class="ev-nav" id="evPrev">‹</button>
+          <span class="ev-cal-month" id="evMonth">—</span>
+          <button class="ev-nav" id="evNext">›</button>
+        </div>
+        <div class="ev-cal-weekdays">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+        <div class="ev-cal-grid" id="evCalGrid"></div>
+      </section>
+
+      <!-- LADO: CRIAR + LISTA -->
+      <aside class="ev-side">
+        <div class="ev-form">
+          <h3 class="ev-form-title">Novo evento</h3>
+          <input type="text" id="evTitulo" class="ev-input" placeholder="Título (ex: Live de Machine Learning)" maxlength="80">
+          <div class="ev-form-row">
+            <input type="date" id="evData" class="ev-input">
+            <input type="time" id="evHora" class="ev-input">
+          </div>
+          <select id="evTipo" class="ev-input">
+            <option value="aula">📘 Aula</option>
+            <option value="live">🔴 Live</option>
+            <option value="prazo">⏰ Prazo</option>
+            <option value="lembrete">🔔 Lembrete</option>
+          </select>
+          <input type="text" id="evNota" class="ev-input" placeholder="Nota (opcional)" maxlength="120">
+          <button class="ev-create" id="evCreate"><span id="evBtnLabel">Adicionar ao calendário</span></button>
+          <div class="ev-error" id="evError" hidden></div>
+        </div>
+
+        <div class="ev-list-wrap">
+          <h3 class="ev-list-title">Próximos eventos</h3>
+          <div class="ev-list" id="evList"><div class="ev-loading">carregando…</div></div>
+          <div class="ev-empty" id="evEmpty" hidden>Nenhum evento ainda. Crie o primeiro acima.</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const TIPOS = {aula:{e:'📘',c:'var(--accent)'}, live:{e:'🔴',c:'#ff5a5a'}, prazo:{e:'⏰',c:'#ffb020'}, lembrete:{e:'🔔',c:'#8b5cf6'}};
+      let eventos = [];
+      let viewDate = new Date();
+      const $=id=>document.getElementById(id);
+      const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+      function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
+      function renderCal(){
+        const y=viewDate.getFullYear(), m=viewDate.getMonth();
+        $('evMonth').textContent = monthNames[m]+' '+y;
+        const first=new Date(y,m,1).getDay();
+        const days=new Date(y,m+1,0).getDate();
+        const todayStr=ymd(new Date());
+        const grid=$('evCalGrid'); grid.innerHTML='';
+        for(let i=0;i<first;i++){ const b=document.createElement('div'); b.className='ev-day ev-day-blank'; grid.appendChild(b); }
+        for(let d=1;d<=days;d++){
+          const cell=document.createElement('div'); cell.className='ev-day';
+          const dateStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+          if(dateStr===todayStr) cell.classList.add('ev-day-today');
+          cell.innerHTML='<span class="ev-day-num">'+d+'</span>';
+          const dayEvs = eventos.filter(e=>e.data===dateStr);
+          if(dayEvs.length){
+            const dots=document.createElement('div'); dots.className='ev-day-dots';
+            dayEvs.slice(0,3).forEach(e=>{ const dot=document.createElement('span'); dot.className='ev-day-dot'; dot.style.background=(TIPOS[e.tipo]||TIPOS.aula).c; dots.appendChild(dot); });
+            cell.appendChild(dots);
+            cell.title = dayEvs.map(e=>e.titulo).join(', ');
+          }
+          cell.addEventListener('click',()=>{ $('evData').value = dateStr; $('evTitulo').focus(); });
+          grid.appendChild(cell);
+        }
+      }
+      function renderList(){
+        const list=$('evList'); const empty=$('evEmpty');
+        list.querySelectorAll('.ev-item').forEach(e=>e.remove());
+        const q=list.querySelector('.ev-loading'); if(q) q.remove();
+        const hoje=ymd(new Date());
+        const futuros=eventos.filter(e=>e.data>=hoje);
+        empty.hidden = futuros.length>0;
+        futuros.forEach(e=>{
+          const t=TIPOS[e.tipo]||TIPOS.aula;
+          const el=document.createElement('div'); el.className='ev-item';
+          el.innerHTML='<span class="ev-item-emoji">'+t.e+'</span>'+
+            '<div class="ev-item-body"><span class="ev-item-title">'+esc(e.titulo)+'</span>'+
+            '<span class="ev-item-meta">'+esc(fmtData(e.data))+(e.hora?' · '+esc(e.hora):'')+(e.nota?' · '+esc(e.nota):'')+'</span></div>'+
+            '<button class="ev-del" data-id="'+e.id+'">✕</button>';
+          list.appendChild(el);
+        });
+        list.querySelectorAll('.ev-del').forEach(b=>b.addEventListener('click',()=>delEvento(b.dataset.id)));
+      }
+      function fmtData(s){ const [y,m,d]=s.split('-'); return d+'/'+m; }
+      function showErr(msg){ const e=$('evError'); e.textContent=msg; e.hidden=false; setTimeout(()=>e.hidden=true,3000); }
+
+      async function load(){
+        try{ const r=await fetch('/api/eventos'); const d=await r.json(); eventos=d.eventos||[]; renderCal(); renderList(); }
+        catch(e){ $('evList').innerHTML='<div class="ev-loading">erro ao carregar</div>'; }
+      }
+      async function create(){
+        const titulo=$('evTitulo').value.trim(), data=$('evData').value, hora=$('evHora').value, tipo=$('evTipo').value, nota=$('evNota').value.trim();
+        if(!titulo) return showErr('Dê um título.');
+        if(!data) return showErr('Escolha uma data.');
+        $('evBtnLabel').textContent='Salvando…'; $('evCreate').disabled=true;
+        try{
+          const r=await fetch('/api/eventos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo,data,hora,tipo,nota})});
+          const d=await r.json();
+          if(!r.ok) showErr(d.error||'erro');
+          else{ eventos=d.eventos||[]; $('evTitulo').value=''; $('evNota').value=''; renderCal(); renderList(); }
+        }catch(e){ showErr('erro de conexão'); }
+        $('evBtnLabel').textContent='Adicionar ao calendário'; $('evCreate').disabled=false;
+      }
+      async function delEvento(id){
+        try{ const r=await fetch('/api/eventos/'+id,{method:'DELETE'}); const d=await r.json(); eventos=d.eventos||[]; renderCal(); renderList(); }catch(e){}
+      }
+      $('evPrev').addEventListener('click',()=>{ viewDate.setMonth(viewDate.getMonth()-1); renderCal(); });
+      $('evNext').addEventListener('click',()=>{ viewDate.setMonth(viewDate.getMonth()+1); renderCal(); });
+      $('evCreate').addEventListener('click',create);
+      load();
+    })();
+  </script>
+</body>
+</html>

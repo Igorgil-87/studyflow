@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Criador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'estudio' %}
+    {% set modulo_group = 'criador' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN — Módulo Criador (namespace próprio est-*, não mexe no ps-* do Youtuber) ░░ -->
+  <main class="stage est-main">
+
+    <!-- ── HERO ── -->
+    <header class="est-hero">
+      <div class="est-eyebrow"><span class="est-eyebrow-dot"></span> MÓDULO CRIADOR · IA GERATIVA</div>
+      <h1 class="est-title">Um tema. Um <em>vídeo</em> pronto.</h1>
+      <p class="est-sub">Roteiro, footage, narração, legendas e trilha — a IA produz o vídeo completo a partir de uma frase.</p>
+      <div class="est-flow-hint">
+        <span class="est-hint-step">1 · Tema</span>
+        <span class="est-hint-arrow">→</span>
+        <span class="est-hint-step">2 · Roteiro</span>
+        <span class="est-hint-arrow">→</span>
+        <span class="est-hint-step">3 · Produção</span>
+        <span class="est-hint-arrow">→</span>
+        <span class="est-hint-step">4 · Render final</span>
+      </div>
+    </header>
+
+    <!-- ── ABAS: Vídeo / Imagens ── -->
+    <nav class="ps-tab-nav est-tabs">
+      <button class="ps-tab active" data-panel="paneEstudio">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Vídeo
+      </button>
+      <button class="ps-tab" data-panel="paneImagens">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Imagens
+      </button>
+    </nav>
+
+    <div id="paneEstudio" class="ps-panel">
+      <div class="est-layout">
+
+        <!-- ── COLUNA PRINCIPAL: campo de tema em destaque ── -->
+        <div class="est-main-col">
+          <div class="est-theme-card">
+            <div class="est-theme-glow"></div>
+            <label class="est-theme-label">Sobre o que é o vídeo?</label>
+            <div class="est-theme-field">
+              <svg class="est-theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.8L20 8l-4 3.9.9 5.6L12 15l-4.9 2.5.9-5.6L4 8l5.6-1.2z"/></svg>
+              <input id="estSubject" type="text" class="est-theme-input"
+                placeholder="ex: Como a IA está mudando o dia a dia">
+            </div>
+            <p class="est-theme-hint">A IA escreve o roteiro, busca footage HD e monta o vídeo completo — sem precisar digitar mais nada.</p>
+          </div>
+
+          <!-- CONFIGURAÇÕES AVANÇADAS -->
+          <div class="est-accordion">
+            <button class="est-accordion-toggle" id="estAdvToggleBtn">
+              <span class="est-accordion-left">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                Já tem um roteiro pronto?
+              </span>
+              <svg class="est-accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="est-accordion-body" id="estAdvBody" hidden>
+              <textarea id="estScript" class="est-script-input"
+                placeholder="Cole aqui um roteiro pronto. Se deixar em branco, a IA escreve a partir do tema."></textarea>
+              <p class="est-theme-hint">Útil para reaproveitar roteiros do seu pipeline de narração.</p>
+            </div>
+          </div>
+
+          <div class="error-box" id="estErrorBox" hidden></div>
+
+          <button class="est-generate-btn" id="estGerarBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.8L20 8l-4 3.9.9 5.6L12 15l-4.9 2.5.9-5.6L4 8l5.6-1.2z"/></svg>
+            <span>Gerar Vídeo</span>
+          </button>
+          <p class="est-cost-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Geração média: 2 a 5 min por vídeo
+          </p>
+        </div>
+
+        <!-- ── COLUNA LATERAL: parâmetros compactos ── -->
+        <aside class="est-side-col">
+          <div class="est-param-block">
+            <div class="est-param-label">Formato</div>
+            <div class="est-toggle-group" id="estAspectGroup">
+              <button class="est-toggle-btn active" data-aspect="9:16">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
+                Vertical
+              </button>
+              <button class="est-toggle-btn" data-aspect="16:9">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+                Horizontal
+              </button>
+            </div>
+            <div class="est-param-desc" id="estAspectDesc">Shorts, Reels e TikTok — 1080×1920</div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Voz da narração</div>
+            <div class="est-toggle-group est-toggle-vertical" id="estVoiceGroup">
+              <button class="est-toggle-btn active" data-voice="pt-BR-AntonioNeural-Male">Antônio · masc.</button>
+              <button class="est-toggle-btn" data-voice="pt-BR-FranciscaNeural-Female">Francisca · fem.</button>
+              <button class="est-toggle-btn" data-voice="pt-BR-ThalitaNeural-Female">Thalita · fem.</button>
+            </div>
+            <div class="est-param-desc">Edge TTS — vozes neurais pt-BR, sem custo de API.</div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Quantidade</div>
+            <div class="est-toggle-group est-toggle-sm" id="estCountGroup">
+              <button class="est-toggle-btn active" data-count="1">1</button>
+              <button class="est-toggle-btn" data-count="2">2</button>
+              <button class="est-toggle-btn" data-count="3">3</button>
+            </div>
+            <div class="est-param-desc">Gere variações e escolha a melhor.</div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ══════════ PIPELINE (aparece durante o processamento) ══════════ -->
+      <section id="estPipeline" hidden class="est-pipeline-section">
+        <div class="est-pipeline-card">
+          <div class="est-pipeline-head">
+            <span class="est-pipeline-tag">Produzindo</span>
+            <div class="est-pipeline-video" id="estPipelineTitle">—</div>
+          </div>
+          <div class="est-steps-track">
+            <div class="est-step" data-step="mpt">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+              <div class="est-step-name">Serviço</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="create">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+              <div class="est-step-name">Roteiro</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="generate">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
+              <div class="est-step-name">Produção</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="download">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+              <div class="est-step-name">Download</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+          </div>
+          <div class="error-box" id="estPipelineError" hidden></div>
+        </div>
+      </section>
+
+      <!-- ══════════ RESULTADOS ══════════ -->
+      <section id="estResult" hidden class="est-result-section">
+        <div class="est-result-head">
+          <div>
+            <div class="est-result-tag">✓ Vídeos prontos</div>
+            <h2 class="est-result-title" id="estResultTitle"></h2>
+          </div>
+          <button class="ghost-btn" id="estNewBtn">＋ Novo vídeo</button>
+        </div>
+        <div id="estVideosGrid" class="est-videos-grid"></div>
+      </section>
+
+    </div><!-- /paneEstudio -->
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- PAINEL — Imagens (thumbnail / carrossel / capa via Fooocus) -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div id="paneImagens" class="ps-panel" hidden>
+      <div class="est-layout">
+
+        <div class="est-main-col">
+          <div class="est-theme-card est-theme-card-big">
+            <div class="est-theme-glow"></div>
+            <label class="est-theme-label">Descreva a imagem (ou cole um texto/lista grande — tipo essa aqui)</label>
+            <div class="est-theme-field est-theme-field-big">
+              <svg class="est-theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <textarea id="imgPrompt" class="est-theme-input est-theme-textarea" rows="4"
+                placeholder="ex: capa minimalista sobre inteligência artificial, tons escuros e verde-limão&#10;&#10;Ou cole uma lista/tabela grande e ligue &quot;Gerar texto de impacto automaticamente&quot; abaixo — o Claude organiza em slides legíveis em vez da IA tentar desenhar tudo (o que sempre sai ilegível com texto denso)."></textarea>
+            </div>
+            <p class="est-theme-hint">A IA gera a imagem a partir da descrição — sem precisar mexer em parâmetros técnicos.</p>
+
+            <div class="est-prompt-suggestions" id="imgPromptSuggestions">
+              <button type="button" class="est-suggestion-chip" data-suggestion="capa estilo thumbnail, robô/IA centralizado com margem generosa nas bordas, fundo escuro dramático com brilho, deixe pelo menos 30% da parte de baixo livre para texto">Capa estilo thumbnail</button>
+              <button type="button" class="est-suggestion-chip" data-suggestion="ilustração line art minimalista, brilho neon verde-limão, fundo azul-marinho sólido, estilo editorial tech, sem texto">Ícone minimalista tech</button>
+              <button type="button" class="est-suggestion-chip" data-suggestion="Cloud + IA: rodar LLMs em produção, GPUs e inferência, RAG, agentes, MCP, AI Gateways">Pilar: Cloud + IA</button>
+              <button type="button" class="est-suggestion-chip" data-suggestion="FinOps: rightsizing, autoscaling, spot instances, savings plans, chargeback e showback">Pilar: FinOps</button>
+              <button type="button" class="est-suggestion-chip" data-suggestion="Platform Engineering: Kubernetes além do básico, Backstage, Internal Developer Platforms, Golden Paths">Pilar: Platform Eng.</button>
+            </div>
+
+            <div class="est-ref-row">
+              <label class="est-ref-upload" for="imgReferenceInput">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="imgRefLabel">Usar imagem(ns) de referência (opcional, motor Nuvem — até 16)</span>
+              </label>
+              <input id="imgReferenceInput" type="file" accept="image/png,image/jpeg" multiple hidden>
+              <button type="button" id="imgRefClear" class="est-ref-clear" hidden>Remover todas</button>
+            </div>
+            <div id="imgRefGallery" class="est-ref-gallery"></div>
+          </div>
+
+          <div class="est-theme-card" id="imgCopyCard">
+            <label class="est-theme-label">
+              <input type="checkbox" id="imgAiCopyToggle">
+              Gerar texto de impacto automaticamente (Claude)
+            </label>
+            <p class="est-theme-hint">A IA de imagem gera só o fundo (sem texto); o Claude escreve o gancho de cada slide e aplicamos com tipografia real por cima — sem letra deformada. Só funciona no preset Carrossel.</p>
+            <div id="imgCopyFields" hidden>
+              <div class="est-theme-field">
+                <select id="imgPilarSelect" class="est-theme-input">
+                  <option value="Cloud + IA">Cloud + IA</option>
+                  <option value="Platform Engineering">Platform Engineering</option>
+                  <option value="FinOps">FinOps</option>
+                  <option value="Multi-cloud e Hybrid Cloud">Multi-cloud e Hybrid Cloud</option>
+                  <option value="Data Platforms">Data Platforms</option>
+                  <option value="Cloud Security">Cloud Security</option>
+                  <option value="Observabilidade">Observabilidade</option>
+                  <option value="Cloud Networking">Cloud Networking</option>
+                  <option value="Infraestrutura como Código">Infraestrutura como Código</option>
+                  <option value="Cloud Native">Cloud Native</option>
+                  <option value="Cloud para Engenharia de Dados">Cloud para Engenharia de Dados</option>
+                  <option value="Cloud Economics">Cloud Economics</option>
+                </select>
+              </div>
+              <div class="est-theme-field">
+                <input id="imgTopicInput" type="text" class="est-theme-input"
+                  placeholder="ângulo específico (ex: rightsizing, autoscaling, spot instances e savings plans) — opcional, usa a descrição acima se vazio">
+              </div>
+            </div>
+          </div>
+
+          <div class="error-box" id="imgErrorBox" hidden></div>
+
+          <button class="est-generate-btn" id="imgGerarBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span id="imgBtnLabel">Gerar Imagem</span>
+          </button>
+          <p class="est-cost-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Geração local via GPU — de segundos a poucos minutos por imagem, conforme a memória do seu Mac
+          </p>
+        </div>
+
+        <aside class="est-side-col">
+          <div class="est-param-block">
+            <div class="est-param-label">Motor de geração</div>
+            <div class="est-toggle-group est-toggle-vertical" id="imgEngineGroup">
+              <button class="est-toggle-btn" data-engine="fooocus">💻 Local (Fooocus, grátis)</button>
+              <button class="est-toggle-btn active" data-engine="openai">☁️ Nuvem (OpenAI, rápido)</button>
+            </div>
+            <div class="est-param-desc" id="imgEngineDesc">Roda na nuvem — rápido, com custo baixo por imagem (~$0,005–0,02).</div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Formato</div>
+            <div class="est-toggle-group est-toggle-vertical" id="imgPresetGroup">
+              <button class="est-toggle-btn active" data-preset="thumbnail">📺 Thumbnail (16:9)</button>
+              <button class="est-toggle-btn" data-preset="carrossel">📱 Carrossel Instagram (1:1)</button>
+              <button class="est-toggle-btn" data-preset="capa">🎓 Capa de curso</button>
+            </div>
+            <div class="est-param-desc" id="imgPresetDesc">Ideal para thumbnail de vídeo — proporção 16:9.</div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Pipeline -->
+      <section id="imgPipeline" hidden class="est-pipeline-section">
+        <div class="est-pipeline-card">
+          <div class="est-pipeline-head">
+            <span class="est-pipeline-tag">Gerando</span>
+            <div class="est-pipeline-video" id="imgPipelineTitle">—</div>
+          </div>
+          <div class="est-steps-track">
+            <div class="est-step" data-step="service">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+              <div class="est-step-name">Serviço</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="generate">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div class="est-step-name">Geração</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="save">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+              <div class="est-step-name">Salvando</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="copy">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+              <div class="est-step-name">Texto (Claude)</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+            <div class="est-step-line"></div>
+            <div class="est-step" data-step="compose">
+              <div class="est-step-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div>
+              <div class="est-step-name">Composição</div>
+              <div class="est-step-detail step-detail"></div>
+            </div>
+          </div>
+          </div>
+          <div class="error-box" id="imgPipelineError" hidden></div>
+        </div>
+      </section>
+
+      <!-- Resultados -->
+      <section id="imgResult" hidden class="est-result-section">
+        <div class="est-result-head">
+          <div>
+            <div class="est-result-tag">✓ Imagens prontas</div>
+            <h2 class="est-result-title" id="imgResultTitle"></h2>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="ghost-btn" id="imgNewBtn">＋ Nova imagem</button>
+            <button class="ghost-btn" id="imgResetBtn" title="Limpa todas as imagens acumuladas nesta sessão">↺ Resetar tudo</button>
+          </div>
+        </div>
+        <div id="imgGrid" class="est-videos-grid"></div>
+
+        <!-- Publicar no Instagram -->
+        <div class="est-ig-publish">
+          <div class="est-ig-publish-head">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            <span>Publicar no Instagram</span>
+          </div>
+          <textarea id="igCaption" class="est-ig-caption" placeholder="Legenda (gerada automaticamente quando o texto de impacto está ligado — edite se quiser)..." rows="2"></textarea>
+          <div id="igSelectionCount" class="est-ig-selection-count"></div>
+          <button class="est-ig-publish-btn" id="igPublishBtn">
+            <span id="igPublishBtnLabel">Publicar carrossel</span>
+          </button>
+          <div id="igPublishStatus" class="est-ig-status" hidden></div>
+          <div class="error-box" id="igErrorBox" hidden></div>
+        </div>
+      </section>
+
+    </div><!-- /paneImagens -->
+
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/estudio.js') }}"></script>
+</body>
+</html>

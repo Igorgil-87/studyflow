@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Catálogo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'catalogo' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+
+  <main class="stage cat-main">
+    <header class="cat-head">
+      <div class="head-tag">Aprendizado</div>
+      <h1 class="cat-title">Explore o <em>Catálogo</em></h1>
+      <p class="cat-sub">Cursos pensados para impulsionar sua evolução e transformar conhecimento em prática. Use os filtros para encontrar o que combina com sua jornada.</p>
+    </header>
+
+    <div class="cat-layout">
+      <!-- FILTROS -->
+      <aside class="cat-filters">
+        <div class="cat-filter-group">
+          <h3 class="cat-filter-title">Conteúdos</h3>
+          <label class="cat-check"><input type="checkbox" checked disabled> Cursos</label>
+          <label class="cat-check cat-check-off"><input type="checkbox" disabled> Carreiras</label>
+          <label class="cat-check cat-check-off"><input type="checkbox" disabled> Trilhas</label>
+          <label class="cat-check cat-check-off"><input type="checkbox" disabled> Livros</label>
+        </div>
+
+        <div class="cat-filter-group">
+          <h3 class="cat-filter-title">Categorias</h3>
+          {% for c in categorias %}
+          <label class="cat-check"><input type="checkbox" class="f-cat" value="{{ c }}"> {{ c }}</label>
+          {% endfor %}
+        </div>
+
+        <div class="cat-filter-group">
+          <h3 class="cat-filter-title">Níveis</h3>
+          {% for n in niveis %}
+          <label class="cat-check"><input type="checkbox" class="f-nivel" value="{{ n }}"> {{ n }}</label>
+          {% endfor %}
+        </div>
+      </aside>
+
+      <!-- GRID -->
+      <div class="cat-content">
+        <div class="cat-showing">
+          <span class="cat-showing-count" id="catCount">{{ cursos|length }}</span> cursos encontrados
+        </div>
+        <div class="cat-grid" id="catGrid">
+          {% for curso in cursos %}
+          <article class="cat-card" data-cat="{{ curso.categoria }}" data-nivel="{{ curso.nivel }}">
+            <div class="cat-card-tags">
+              <span class="cat-tag">CURSO</span>
+              <span class="cat-tag cat-tag-h">🕐 {{ curso.horas }}h</span>
+            </div>
+            <div class="cat-card-cat">{{ curso.categoria|upper }}</div>
+            <h3 class="cat-card-title">{{ curso.titulo }}</h3>
+            <p class="cat-card-desc">{{ curso.desc }}</p>
+            <div class="cat-card-foot">
+              <span class="cat-card-nivel">{{ curso.nivel }}</span>
+              <span class="cat-card-line"></span>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        <div class="cat-empty" id="catEmpty" hidden>Nenhum curso com esses filtros. Ajuste a seleção à esquerda.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // filtro client-side por categoria e nível (sem recarregar)
+    (function(){
+      const cards = Array.from(document.querySelectorAll('.cat-card'));
+      const catBoxes = Array.from(document.querySelectorAll('.f-cat'));
+      const nivelBoxes = Array.from(document.querySelectorAll('.f-nivel'));
+      const count = document.getElementById('catCount');
+      const empty = document.getElementById('catEmpty');
+      function apply(){
+        const cats = catBoxes.filter(b=>b.checked).map(b=>b.value);
+        const nivs = nivelBoxes.filter(b=>b.checked).map(b=>b.value);
+        let visible = 0;
+        cards.forEach(card=>{
+          const okCat = !cats.length || cats.includes(card.dataset.cat);
+          const okNiv = !nivs.length || nivs.includes(card.dataset.nivel);
+          const show = okCat && okNiv;
+          card.style.display = show ? '' : 'none';
+          if(show) visible++;
+        });
+        count.textContent = visible;
+        empty.hidden = visible > 0;
+      }
+      [...catBoxes, ...nivelBoxes].forEach(b=>b.addEventListener('change', apply));
+    })();
+  </script>
+</body>
+</html>

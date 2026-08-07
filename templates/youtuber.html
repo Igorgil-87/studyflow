@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Youtuber</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'youtuber' %}
+    {% set modulo_group = 'youtuber' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN — reestruturado, namespace ytm-* pro que eu controlo,
+       ps-tab/ps-panel/ps-toggle-* preservados (comportamento do JS) ░░ -->
+  <main class="stage yt-main">
+
+    <!-- ── HERO ── -->
+    <header class="ytm-hero">
+      <div class="ytm-eyebrow"><span class="ytm-eyebrow-dot"></span> MÓDULO YOUTUBER · IA VIRAL</div>
+      <h1 class="ytm-title">Cortes que <em>viralizam</em>.</h1>
+      <p class="ytm-sub">Produção de conteúdo, inteligência de tendências e análise de concorrência — tudo com IA.</p>
+    </header>
+
+    <!-- ── ABAS ── -->
+    <nav class="ps-tab-nav ytm-tabs">
+      <button class="ps-tab active" data-panel="paneProducao">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        Produção de Conteúdo
+      </button>
+      <button class="ps-tab" data-panel="panePesquisa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Inteligência e Pesquisa
+      </button>
+      <button class="ps-tab" data-panel="paneConcorrencia">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Análise de Concorrência
+      </button>
+    </nav>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- PAINEL 1 — Produção de Conteúdo (Clips AI)               -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="ps-panel" id="paneProducao">
+      <div class="ytm-layout">
+
+        <!-- COLUNA PRINCIPAL: URL em destaque -->
+        <div class="ytm-main-col">
+          <div class="ytm-hero-card">
+            <div class="ytm-hero-glow"></div>
+            <label class="ytm-hero-label">Fonte do vídeo</label>
+            <div class="ps-toggle-group" style="margin-bottom:14px">
+              <button class="ps-toggle-btn active" data-source="url">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                URL
+              </button>
+              <button class="ps-toggle-btn" data-source="upload" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload
+              </button>
+            </div>
+            <div class="ytm-hero-field">
+              <svg class="ytm-hero-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 0-3.77-2.7C13.62 4 12 4 12 4s-1.62 0-3.82.04a4.83 4.83 0 0 0-3.77 2.7A26.18 26.18 0 0 0 4 12a26.18 26.18 0 0 0 .41 5.31 4.83 4.83 0 0 0 3.77 2.7C10.38 20 12 20 12 20s1.62 0 3.82-.04a4.83 4.83 0 0 0 3.77-2.7A26.18 26.18 0 0 0 20 12a26.18 26.18 0 0 0-.41-5.31zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
+              <input id="videoUrl" type="url" class="ytm-hero-input" placeholder="https://youtube.com/watch?v=...">
+            </div>
+            <p class="ytm-hero-hint">Cole o link — a IA identifica os melhores momentos para cortar.</p>
+          </div>
+
+          <!-- CONFIGURAÇÕES AVANÇADAS -->
+          <div class="ps-accordion ytm-accordion">
+            <button class="ps-accordion-toggle" id="advToggleBtn">
+              <span class="ps-accordion-toggle-left">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                Contexto do nicho (opcional)
+              </span>
+              <svg class="ps-accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="ps-accordion-body" id="advBody" hidden>
+              <div class="ps-field">
+                <span class="ps-field-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </span>
+                <input id="nicheProducao" type="text" class="ps-field-input" placeholder="ex: finanças pessoais, programação, fitness...">
+              </div>
+              <p class="ytm-hero-hint">Melhora a identificação de highlights virais pela IA.</p>
+            </div>
+          </div>
+
+          <div class="error-box" id="prodErrorBox" hidden></div>
+
+          <button class="est-generate-btn" id="gerarClipsBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+            <span>Gerar Clips</span>
+          </button>
+          <p class="est-cost-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Duração máxima: 20 min de vídeo
+          </p>
+        </div>
+
+        <!-- COLUNA LATERAL: parâmetros -->
+        <aside class="est-side-col">
+          <div class="est-param-block">
+            <div class="est-param-label">Tipo de conteúdo</div>
+            <div class="ps-toggle-group" id="contentTypeGroup">
+              <button class="ps-toggle-btn active" data-ctype="shorts">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                Shorts
+              </button>
+              <button class="ps-toggle-btn" data-ctype="cortes">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                Cortes
+              </button>
+            </div>
+
+            <div id="shortsInfo" class="ytm-ctype-info">
+              <div class="est-param-label" style="margin-top:12px">Duração</div>
+              <div class="ps-toggle-group est-toggle-sm" id="shortsDurGroup">
+                <button class="ps-toggle-btn active" data-dur="shorts_30">30s</button>
+                <button class="ps-toggle-btn" data-dur="shorts_45">45s</button>
+                <button class="ps-toggle-btn" data-dur="shorts_90">1:30</button>
+              </div>
+              <div class="est-param-desc">Vertical, autocontido — Reels, Shorts, TikTok.</div>
+            </div>
+            <div id="cortesInfo" class="ytm-ctype-info" hidden>
+              <div class="est-param-label" style="margin-top:12px">Duração</div>
+              <div class="ps-toggle-group est-toggle-sm" id="cortesDurGroup">
+                <button class="ps-toggle-btn active" data-dur="corte_120">2 min</button>
+                <button class="ps-toggle-btn" data-dur="corte_300">5 min</button>
+                <button class="ps-toggle-btn" data-dur="corte_600">10 min</button>
+                <button class="ps-toggle-btn" data-dur="corte_900">15 min</button>
+              </div>
+              <div class="est-param-desc">Entrevistas, podcasts e explicações completas.</div>
+            </div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Quantidade de cortes</div>
+            <input id="numClips" type="number" min="1" max="15" value="3" class="ytm-num-input">
+            <div class="est-param-desc">1 a 15. Deixe em branco para a IA decidir.</div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Idioma</div>
+            <div class="ps-toggle-group est-toggle-vertical">
+              <button class="ps-toggle-btn active" data-lang="pt">Português</button>
+              <button class="ps-toggle-btn" data-lang="en">English</button>
+              <button class="ps-toggle-btn" data-lang="es">Español</button>
+            </div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Legenda queimada</div>
+            <label class="ytm-legenda-toggle">
+              <input type="checkbox" id="gerarLegenda" checked>
+              <span>Gerar legenda no vídeo (Shorts)</span>
+            </label>
+            <div id="legendaIdiomaWrap" class="ytm-legenda-idioma">
+              <div class="est-param-desc" style="margin-bottom:6px">Traduzir legenda para (opcional — útil se o vídeo fonte está em outro idioma):</div>
+              <select id="legendaIdioma" class="est-theme-input">
+                <option value="">Não traduzir (idioma original do vídeo)</option>
+                <option value="pt">Português</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="est-param-block">
+            <div class="est-param-label">Identidade / fechamento</div>
+            <label class="ytm-legenda-toggle">
+              <input type="checkbox" id="adicionarFechamento" checked>
+              <span>Colar vídeo de fechamento no final (Shorts + Cortes)</span>
+            </label>
+            <div class="est-param-desc">Usa <code>static/video/fechamento.mp4</code> — ajusta a resolução sozinho pra não distorcer.</div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Pipeline -->
+      <section id="prodPipeline" hidden class="est-pipeline-section">
+        <div class="est-pipeline-card">
+          <div class="est-pipeline-head" style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span class="est-pipeline-tag">Processando</span>
+              <div class="est-pipeline-video" id="prodVideoTitle">—</div>
+            </div>
+            <button class="ghost-btn" id="prodCancelBtn">Cancelar</button>
+          </div>
+          <div class="ps-steps-grid">
+            <div class="ps-step-card" data-step="download">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+              <div class="ps-step-name">Download</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+            <div class="ps-step-card" data-step="video_dl">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
+              <div class="ps-step-name">Vídeo</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+            <div class="ps-step-card" data-step="transcribe">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+              <div class="ps-step-name">Transcrição</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+            <div class="ps-step-card" data-step="highlights">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+              <div class="ps-step-name">IA Viral</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+            <div class="ps-step-card" data-step="cut">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></div>
+              <div class="ps-step-name">Corte</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+          </div>
+          <div class="error-box" id="prodPipelineError" hidden></div>
+        </div>
+      </section>
+
+      <!-- Resultados -->
+      <section id="prodResult" hidden class="est-result-section">
+        <div class="est-result-head">
+          <div>
+            <div class="est-result-tag">✓ Clips prontos</div>
+            <h2 class="est-result-title" id="prodResultTitle"></h2>
+          </div>
+          <button class="ghost-btn" id="prodNewBtn">＋ Novo vídeo</button>
+        </div>
+        <div class="ps-highlights-grid" id="prodHighlightsView"></div>
+      </section>
+
+    </div><!-- /paneProducao -->
+
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- PAINEL 2 — Inteligência e Pesquisa (Trend Scanner)       -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="ps-panel" id="panePesquisa" hidden>
+
+      <div class="ytm-hero-card" style="margin-bottom:16px">
+        <div class="ytm-hero-glow"></div>
+        <label class="ytm-hero-label">🎙 Buscar por pessoa / podcast</label>
+        <div class="ps-field" style="margin-bottom:10px">
+          <input id="personInput" type="text" class="ps-field-input" placeholder="Nome da pessoa (ex: um historiador, podcaster, convidado)">
+        </div>
+        <div class="ps-field" style="margin-bottom:10px">
+          <input id="personTopic" type="text" class="ps-field-input" placeholder="(opcional) assunto — ex: Roma antiga, Segunda Guerra">
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin-bottom:12px;cursor:pointer">
+          <input id="preferPodcast" type="checkbox" checked> Priorizar entrevistas e podcasts
+        </label>
+        <button class="est-generate-btn" id="personSearchBtn" style="height:46px">
+          <span>Buscar vídeos para cortar</span>
+        </button>
+        <div id="personResults" style="margin-top:16px"></div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="ps-filter-bar ytm-filter-bar">
+        <button class="ps-filter-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          REGIÃO <strong>Brasil</strong>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="ps-filter-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          PERÍODO <strong>7d</strong>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="ps-filter-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 0-3.77-2.7C13.62 4 12 4 12 4s-1.62 0-3.82.04a4.83 4.83 0 0 0-3.77 2.7A26.18 26.18 0 0 0 4 12a26.18 26.18 0 0 0 .41 5.31 4.83 4.83 0 0 0 3.77 2.7C10.38 20 12 20 12 20s1.62 0 3.82-.04a4.83 4.83 0 0 0 3.77-2.7A26.18 26.18 0 0 0 20 12a26.18 26.18 0 0 0-.41-5.31zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
+          CANAL <strong>YouTube</strong>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+
+      <!-- Palavras-chave -->
+      <div class="ps-card ytm-kw-card">
+        <div class="ps-card-label">
+          PALAVRAS-CHAVE
+          <span class="ps-card-label-sub">(opcional, max 5)</span>
+        </div>
+        <div class="ps-keyword-row">
+          <div class="ps-field">
+            <span class="ps-field-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </span>
+            <input id="kwInput" type="text" class="ps-field-input" placeholder="Adicionar palavra-chave...">
+          </div>
+          <button class="ps-kw-add-btn" id="addKwBtn">+ Adicionar</button>
+        </div>
+        <div class="ps-keyword-chips" id="kwChips"></div>
+      </div>
+
+      <!-- Scan button -->
+      <button class="ytm-scan-btn" id="escanearBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Escanear Tendências</span>
+        <span class="ps-scan-arrow">→</span>
+      </button>
+
+      <div class="error-box" id="pesquisaErrorBox" hidden></div>
+
+      <div id="pesquisaResults" hidden>
+        <div class="ps-card" style="margin-top:20px">
+          <div class="ps-card-label-row">
+            <span class="ps-card-label">TRENDING AGORA · BR</span>
+            <span id="pesquisaTrendCount" class="ps-card-hint"></span>
+          </div>
+          <div class="ps-trend-grid" id="trendingTopics"></div>
+        </div>
+
+        <div class="ps-card" id="redditSection" hidden style="margin-top:10px">
+          <div class="ps-card-label">REDDIT BUZZ</div>
+          <div id="redditPosts"></div>
+        </div>
+
+        <div class="ps-card ps-card-flush" id="pesquisaVideosSection" hidden style="margin-top:10px">
+          <div class="ps-card-label-row">
+            <span class="ps-card-label">VÍDEOS EM ALTA</span>
+            <span class="ps-card-hint">Clique para usar na produção</span>
+          </div>
+          <div class="ps-video-grid" id="pesquisaVideosList"></div>
+        </div>
+      </div>
+
+    </div><!-- /panePesquisa -->
+
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- PAINEL 3 — Análise de Concorrência (Monitor Outlier)     -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="ps-panel" id="paneConcorrencia" hidden>
+      <div class="ytm-layout">
+        <div class="ytm-main-col">
+          <div class="ps-card ytm-comp-card">
+            <div class="ps-card-label-row">
+              <span class="ps-card-label">CONCORRENTES MONITORADOS</span>
+              <span class="ps-card-hint" id="compCount">0/5</span>
+            </div>
+            <div id="competitorList">
+              <div class="ps-comp-empty" id="compEmpty">Nenhum concorrente adicionado ainda.</div>
+            </div>
+            <div class="ps-keyword-row" style="margin-top:12px;margin-bottom:0">
+              <div class="ps-field">
+                <span class="ps-field-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </span>
+                <input id="addCompInput" type="text" class="ps-field-input" placeholder="URL do canal ou @handle do YouTube">
+              </div>
+              <button class="ps-kw-add-btn" id="addCompBtn">+ Adicionar</button>
+            </div>
+          </div>
+
+          <div class="ps-action-bar">
+            <div class="ps-selected-info">
+              <span>Vídeos por canal:</span>
+              <select id="videosPerChannel" class="ps-select">
+                <option>10</option>
+                <option selected>30</option>
+                <option>50</option>
+              </select>
+            </div>
+            <button class="est-generate-btn" id="analyzeBtn" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Analisar Selecionados (<span id="analyzeCount">0</span>)</span>
+            </button>
+          </div>
+        </div>
+
+        <aside class="est-side-col">
+          <div class="ps-card ps-card-coming-soon ytm-soon">
+            <div class="ps-coming-soon-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="ps-card-label" style="margin-bottom:8px">EM DESENVOLVIMENTO</div>
+            <p style="font-size:13px;color:var(--text-3);line-height:1.6;margin:0">
+              Monitore canais, compare métricas de crescimento e identifique oportunidades antes dos seus concorrentes.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div><!-- /paneConcorrencia -->
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/youtuber.js') }}"></script>
+</body>
+</html>

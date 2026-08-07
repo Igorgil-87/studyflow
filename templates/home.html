@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Escolha seu módulo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="home-body">
+  <div class="grain"></div>
+
+  <!-- Vídeo de fundo (Veo). Procura nas duas pastas possíveis (video e videos). -->
+  <video class="home-bg-video" autoplay muted loop playsinline preload="auto"
+         onerror="this.style.display='none'">
+    <source src="{{ url_for('static', filename='video/login-bg.mp4') }}" type="video/mp4">
+  </video>
+  <!-- Overlay escuro: garante leitura do texto mesmo com vídeo forte -->
+  <div class="home-bg-overlay"></div>
+
+  <!-- Auras (fallback quando não há vídeo; ficam atrás do overlay) -->
+  <div class="home-aura home-aura-1"></div>
+  <div class="home-aura home-aura-2"></div>
+
+  <main class="home-stage">
+
+    <header class="home-header reveal" style="--d:0s">
+      <div class="brand home-brand">
+        <div class="brand-mark">◐</div>
+        <span class="brand-name">Study<em>Flow</em></span>
+      </div>
+      <a href="/configuracoes" class="logout-btn" style="margin-right:8px">⚙ Configurações</a>
+      <a href="/logout" class="logout-btn">Sair →</a>
+    </header>
+
+    <div class="home-hero">
+      <div class="head-tag reveal" style="--d:.05s">Bem-vindo, {{ username }}</div>
+      <h1 class="headline reveal" style="--d:.12s">Escolha seu <em>módulo</em></h1>
+      <p class="sub reveal" style="--d:.2s">Dois modos de aprender e criar. Qual é o seu objetivo hoje?</p>
+    </div>
+
+    <!-- ░ CURSO EM ANDAMENTO ░ -->
+    <section class="continue reveal" style="--d:.26s" id="continueSection" hidden>
+      <div class="continue-label"><span class="continue-dot"></span> CURSO EM ANDAMENTO</div>
+      <div class="continue-card">
+        <div class="continue-info">
+          <h2 class="continue-title" id="continueTitle">—</h2>
+          <p class="continue-sub" id="continueSub">—</p>
+          <div class="continue-actions">
+            <a href="/curso" class="continue-btn">▶ Continuar onde parou</a>
+            <span class="continue-aula" id="continueAula"></span>
+          </div>
+        </div>
+        <div class="continue-ring">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" stroke-width="8"/>
+            <circle id="continueArc" cx="60" cy="60" r="52" fill="none" stroke="var(--accent)"
+                    stroke-width="8" stroke-linecap="round" transform="rotate(-90 60 60)"
+                    stroke-dasharray="327" stroke-dashoffset="327"/>
+          </svg>
+          <span class="continue-pct" id="continuePct">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="module-grid">
+
+      <a href="/curso" class="module-card reveal-card" style="--d:.3s" data-tilt>
+        <div class="module-card-glow"></div>
+        <div class="module-card-body">
+          <div class="module-card-top">
+            <div class="module-card-icon module-card-icon-curso">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 0-9 9c0 3.5 2 5.5 3 7 .5.7 1 1.5 1 2h10c0-.5.5-1.3 1-2 1-1.5 3-3.5 3-7a9 9 0 0 0-9-9z"/><path d="M9 21h6"/><path d="M10 24h4"/></svg>
+            </div>
+            <div class="module-card-tag">Aprendizado</div>
+          </div>
+          <h2 class="module-card-title">Módulo Curso</h2>
+          <p class="module-card-desc">
+            Digite um tema, o agente busca o melhor vídeo no YouTube,
+            transcreve, cria flashcards, questões e roteiro de estudo.
+          </p>
+          <div class="module-card-features">
+            <span class="feat">✦ Quiz &amp; flashcards</span>
+            <span class="feat">✦ Aulas cortadas</span>
+          </div>
+          <div class="module-card-cta">
+            Começar <span>→</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="/youtuber" class="module-card module-card-yt reveal-card" style="--d:.42s" data-tilt>
+        <div class="module-card-glow"></div>
+        <div class="module-card-body">
+          <div class="module-card-top">
+            <div class="module-card-icon module-card-icon-yt">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2s-.2-1.5-.8-2.2c-.8-.9-1.7-.9-2.1-1C15.9 3.8 12 3.8 12 3.8h0s-3.9 0-6.7.2c-.4 0-1.3.1-2.1 1-.6.7-.8 2.2-.8 2.2S2.2 9 2.2 10.7v1.6C2.2 14 2.4 15.7 2.4 15.7s.2 1.5.8 2.2c.8.9 1.9.9 2.3 1 1.7.2 7.5.2 7.5.2s3.9 0 6.7-.2c.4 0 1.3-.1 2.1-1 .6-.7.8-2.2.8-2.2s.2-1.7.2-3.4v-1.6c0-1.7-.2-3.5-.2-3.5zM9.9 14.6V8.9l5.4 2.9-5.4 2.8z"/></svg>
+            </div>
+            <div class="module-card-tag youtuber-tag">Criação</div>
+          </div>
+          <h2 class="module-card-title">Módulo Youtuber</h2>
+          <p class="module-card-desc">
+            Informe seu nicho. O agente rastreia o que está em alta no
+            YouTube, Google Trends e Reddit, e corta os momentos virais.
+          </p>
+          <div class="module-card-features">
+            <span class="feat">▶ Trending topics</span>
+            <span class="feat">▶ Shorts &amp; Reels</span>
+          </div>
+          <div class="module-card-cta youtuber-cta">
+            Começar <span>→</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="/estudio" class="module-card module-card-est reveal-card" style="--d:.54s" data-tilt>
+        <div class="module-card-glow"></div>
+        <div class="module-card-body">
+          <div class="module-card-top">
+            <div class="module-card-icon module-card-icon-est">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.8L20 8l-4 3.9.9 5.6L12 15l-4.9 2.5.9-5.6L4 8l5.6-1.2z"/></svg>
+            </div>
+            <div class="module-card-tag est-tag">Produção</div>
+          </div>
+          <h2 class="module-card-title">Módulo Criador</h2>
+          <p class="module-card-desc">
+            Digite um tema. A IA escreve o roteiro, narra e monta o
+            vídeo vertical pronto para Shorts, Reels e TikTok.
+          </p>
+          <div class="module-card-features">
+            <span class="feat">✧ Roteiro por IA</span>
+            <span class="feat">✧ Vídeo 9:16 pronto</span>
+          </div>
+          <div class="module-card-cta est-cta">
+            Começar <span>→</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- ░ COMUNIDADE ░ -->
+    <section class="community reveal" style="--d:.55s">
+      <div class="community-head">
+        <div class="head-tag">Comunidade</div>
+        <h2 class="community-title">Faça parte da <em>comunidade</em></h2>
+        <p class="community-sub">Conecte-se, tire dúvidas e acompanhe novidades nos nossos canais.</p>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           👉 EDITE AQUI: troque os href="#" pelas suas URLs reais
+              Instagram : https://instagram.com/SEU_PERFIL
+              LinkedIn  : https://linkedin.com/in/SEU_PERFIL
+              Telegram  : https://t.me/SEU_GRUPO
+              Slack     : https://SEU-WORKSPACE.slack.com
+           ═══════════════════════════════════════════════════════════════ -->
+      <div class="community-grid">
+        <a href="#" class="community-card cc-instagram" data-net="instagram" target="_blank" rel="noopener">
+          <div class="cc-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div class="cc-body">
+            <span class="cc-name">Instagram</span>
+            <span class="cc-desc">Bastidores e novidades</span>
+          </div>
+          <span class="cc-arrow">↗</span>
+        </a>
+
+        <a href="#" class="community-card cc-linkedin" data-net="linkedin" target="_blank" rel="noopener">
+          <div class="cc-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          </div>
+          <div class="cc-body">
+            <span class="cc-name">LinkedIn</span>
+            <span class="cc-desc">Conteúdo profissional</span>
+          </div>
+          <span class="cc-arrow">↗</span>
+        </a>
+
+        <a href="#" class="community-card cc-telegram" data-net="telegram" target="_blank" rel="noopener">
+          <div class="cc-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+          </div>
+          <div class="cc-body">
+            <span class="cc-name">Telegram</span>
+            <span class="cc-desc">Avisos e grupo de estudos</span>
+          </div>
+          <span class="cc-arrow">↗</span>
+        </a>
+
+        <a href="#" class="community-card cc-slack" data-net="slack" target="_blank" rel="noopener">
+          <div class="cc-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="13" y="2" width="3" height="8" rx="1.5"/><rect x="8" y="14" width="3" height="8" rx="1.5"/><rect x="14" y="13" width="8" height="3" rx="1.5"/><rect x="2" y="8" width="8" height="3" rx="1.5"/></svg>
+          </div>
+          <div class="cc-body">
+            <span class="cc-name">Slack</span>
+            <span class="cc-desc">Discussões e suporte</span>
+          </div>
+          <span class="cc-arrow">↗</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const cards = document.querySelectorAll('[data-tilt]');
+      const MAX = 8;
+      cards.forEach(card => {
+        const glow = card.querySelector('.module-card-glow');
+        card.addEventListener('mousemove', e => {
+          const r = card.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width;
+          const py = (e.clientY - r.top) / r.height;
+          const rx = (0.5 - py) * MAX * 2;
+          const ry = (px - 0.5) * MAX * 2;
+          card.style.transform =
+            `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-6px) scale(1.015)`;
+          if (glow) {
+            glow.style.opacity = '1';
+            glow.style.background =
+              `radial-gradient(420px circle at ${px*100}% ${py*100}%, var(--glow-color), transparent 60%)`;
+          }
+        });
+        card.addEventListener('mouseleave', () => {
+          card.style.transform = '';
+          if (glow) glow.style.opacity = '0';
+        });
+      });
+    })();
+
+    // Curso em andamento — carrega o último curso salvo
+    (function(){
+      fetch('/api/curso-atual').then(r=>r.json()).then(d=>{
+        const c = d.curso;
+        if(!c) return; // sem curso ainda → seção fica oculta
+        const sec = document.getElementById('continueSection');
+        document.getElementById('continueTitle').textContent = c.titulo || '';
+        document.getElementById('continueSub').textContent = c.subtitulo || '';
+        const pct = Math.max(0, Math.min(100, c.progresso || 0));
+        document.getElementById('continuePct').textContent = pct + '%';
+        const arc = document.getElementById('continueArc');
+        const circ = 327;
+        arc.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1)';
+        requestAnimationFrame(()=>{ arc.style.strokeDashoffset = String(circ - (pct/100)*circ); });
+        const aula = document.getElementById('continueAula');
+        if(c.aula_atual){ aula.textContent = 'Aula atual: ' + c.aula_atual; }
+        sec.hidden = false;
+      }).catch(()=>{});
+    })();
+  </script>
+</body>
+</html>

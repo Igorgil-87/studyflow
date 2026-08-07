@@ -1,0 +1,165 @@
+# ══════════════════════════════════════════════════════════════════════════
+# docker-compose.prod.yml — versão pra rodar num servidor na nuvem
+# (Oracle Cloud Free / Hetzner / qualquer VPS Linux).
+#
+# Principais diferenças do docker-compose.full.yml (que é pra rodar local,
+# no seu Mac):
+#
+#   1. Postgres NÃO expõe a porta 5432 pro mundo — rodando local isso não
+#      importa (só você acessa), mas num servidor público, deixar o banco
+#      de dados exposto na internet com a senha padrão é uma porta aberta
+#      de verdade pra qualquer um tentar entrar. Continua acessível pelos
+#      OUTROS containers (web, worker) pela rede interna do Docker — só
+#      não fica batendo na porta 5432 do servidor pra fora.
+#
+#   2. n8n agora exige usuário/senha (antes rodava sem nenhuma proteção —
+#      local isso é ok porque só você tem acesso à sua máquina, num
+#      servidor público, qualquer pessoa que descobrisse o IP:5678 entraria
+#      direto no painel de automação, sem senha nenhuma).
+#
+#   3. MoneyPrinterTurbo (mpt-api, o motor do Módulo Criador) virou
+#      OPCIONAL — antes, se essa pasta não existisse, o app INTEIRO não
+#      subia (dependência obrigatória). Agora o resto do StudyFlow sobe
+#      normal mesmo sem o MoneyPrinter configurado; só o Módulo Criador
+#      fica indisponível até você configurar isso depois.
+#
+#   4. Fooocus (geração de imagem) precisa de GPU — a maioria dos
+#      servidores de nuvem baratos NÃO tem GPU. Isso fica desligado por
+#      padrão aqui; a geração de IMAGEM do Módulo Criador não vai
+#      funcionar na nuvem a menos que você configure um servidor com GPU
+#      (caro) ou aponte FOOOCUS_API_URL pra outro serviço de geração de
+#      imagem compatível. Vídeo/Shorts/Curso continuam funcionando 100%.
+#
+# Comando pra subir:
+#     docker compose -f docker-compose.prod.yml up -d --build
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    shm_size: "1gb"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build: .
+    ports:
+      - "5001:5000"
+    env_file: .env
+    restart: unless-stopped
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+      CRAWL4AI_URL: http://crawl4ai:11235
+      # Fooocus fica de fora por padrão na nuvem (precisa de GPU) — se
+      # você configurar um serviço de geração de imagem compatível
+      # depois, troca essa URL aqui.
+      FOOOCUS_API_URL: ${FOOOCUS_API_URL:-http://disabled:8888}
+      # Só ativa se o MoneyPrinter estiver configurado (ver nota acima) —
+      # deixe em branco (padrão) que o Módulo Criador de vídeo fica
+      # indisponível sem travar o resto do app.
+      MPT_API_URL: ${MPT_API_URL:-}
+    volumes:
+      - videos_data:/app/static/videos
+      - images_data:/app/static/images
+      # Veja a nota sobre OAuth no DEPLOY.md — o arquivo de token precisa
+      # ser gerado na SUA máquina local primeiro (o fluxo de login do
+      # Google abre navegador, que não existe num servidor sem interface
+      # gráfica) e depois copiado pra cá.
+      - ./youtube_token.json:/app/youtube_token.json
+      - ./client_secret.json:/app/client_secret.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python worker.py
+    env_file: .env
+    restart: unless-stopped
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+      CRAWL4AI_URL: http://crawl4ai:11235
+      FOOOCUS_API_URL: ${FOOOCUS_API_URL:-http://disabled:8888}
+      MPT_API_URL: ${MPT_API_URL:-}
+    volumes:
+      - videos_data:/app/static/videos
+      - images_data:/app/static/images
+      - ./youtube_token.json:/app/youtube_token.json
+      - ./client_secret.json:/app/client_secret.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build: .
+    command: python scheduler.py
+    env_file: .env
+    restart: unless-stopped
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: studyflow
+      # TROQUE ISSO — a senha padrão "studyflow" é pública (está neste
+      # arquivo, que pode ir pro GitHub). Defina POSTGRES_PASSWORD no
+      # seu .env do servidor com uma senha de verdade.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env do servidor}
+      POSTGRES_DB: studyflow
+    # SEM "ports:" aqui de propósito — não expõe pro mundo, só os outros
+    # containers da mesma rede Docker conseguem alcançar.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init_pgvector.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studyflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      GENERIC_TIMEZONE: America/Sao_Paulo
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_USER:?defina N8N_USER no .env do servidor}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD:?defina N8N_PASSWORD no .env do servidor}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  pgdata:
+  videos_data:
+  images_data:
+  n8n_data:

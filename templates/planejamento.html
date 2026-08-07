@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Planejamento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'planejamento' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <main class="stage plan-main">
+    <header class="cat-head">
+      <div class="head-tag">Planejamento</div>
+      <div class="plan-head-row">
+        <div>
+          <h1 class="cat-title">Organize a <em>produção</em> de conteúdo</h1>
+          <p class="cat-sub">Um dado só, duas formas de ver: arraste no Board pra mudar o status, ou confira a data de publicação no Calendário.</p>
+        </div>
+        <div class="plan-alerts-wrap">
+          <button type="button" id="planAlertsBtn" class="plan-alerts-btn" title="Alertas" aria-label="Ver alertas de atividades atrasadas ou vencendo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span id="planAlertsBadge" class="plan-alerts-badge" hidden>0</span>
+          </button>
+          <div id="planAlertsPanel" class="plan-alerts-panel" hidden>
+            <div class="plan-alerts-panel-head">Alertas</div>
+            <div id="planAlertsList" class="plan-alerts-list"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ░░ RECOMENDADOR "o que eu faço agora?" ░░ -->
+    <section class="plan-recommend">
+      <div class="plan-recommend-form">
+        <span class="plan-recommend-label">⚡ Tenho</span>
+        <input type="number" id="planRecommendMin" class="plan-recommend-input" min="5" step="5" value="30">
+        <span class="plan-recommend-label">minutos livres. O que eu faço?</span>
+        <button type="button" id="planRecommendBtn" class="ghost-btn plan-recommend-btn">Sugerir</button>
+      </div>
+      <div id="planRecommendResult" class="plan-recommend-result" hidden></div>
+    </section>
+
+    <!-- alternador de visualização -->
+    <div class="plan-view-switch">
+      <button type="button" class="plan-view-btn active" data-view="board">☰ Board</button>
+      <button type="button" class="plan-view-btn" data-view="agenda">🕐 Agenda</button>
+      <button type="button" class="plan-view-btn" data-view="calendario">▦ Calendário</button>
+      <button type="button" class="est-generate-btn plan-new-btn" id="planNovaBtn">+ Nova atividade</button>
+    </div>
+
+    <div id="planErrorBox" class="error-box" hidden></div>
+
+    <!-- ░░ BOARD (kanban) ░░ -->
+    <section id="planBoardView" class="plan-board">
+      <!-- colunas geradas via JS a partir de STATUSES -->
+    </section>
+
+    <!-- ░░ AGENDA (por horário do dia) ░░ -->
+    <section id="planAgendaView" class="plan-agenda" hidden>
+      <div class="plan-agenda-head">
+        <button type="button" id="planAgendaPrev" class="ghost-btn">‹</button>
+        <h2 id="planAgendaTitle"></h2>
+        <button type="button" id="planAgendaNext" class="ghost-btn">›</button>
+        <button type="button" id="planAgendaToday" class="ghost-btn plan-agenda-today">Hoje</button>
+      </div>
+      <div id="planAgendaList" class="plan-agenda-list"></div>
+    </section>
+
+    <!-- ░░ CALENDÁRIO ░░ -->
+    <section id="planCalendarView" class="plan-calendar" hidden>
+      <div class="plan-cal-head">
+        <button type="button" id="planCalPrev" class="ghost-btn">‹</button>
+        <h2 id="planCalTitle"></h2>
+        <button type="button" id="planCalNext" class="ghost-btn">›</button>
+      </div>
+      <div class="plan-cal-grid" id="planCalGrid"></div>
+    </section>
+  </main>
+
+  <!-- ░░ MODAL: criar/editar atividade ░░ -->
+  <div id="planModal" class="plan-modal" hidden>
+    <div class="plan-modal-card">
+      <div class="plan-modal-head">
+        <h3 id="planModalTitle">Nova atividade</h3>
+        <button type="button" id="planModalClose" class="ghost-btn" aria-label="Fechar">✕</button>
+      </div>
+
+      <label class="est-theme-label">Título</label>
+      <input id="planTitulo" type="text" class="est-theme-input" placeholder="ex: Carrossel FinOps — rightsizing">
+
+      <label class="est-theme-label">Módulo</label>
+      <div class="plan-modulo-switch" id="planModuloSwitch">
+        <button type="button" class="plan-modulo-btn active" data-modulo="geral">📌 Geral</button>
+        <button type="button" class="plan-modulo-btn" data-modulo="estudo">📚 Estudo</button>
+        <button type="button" class="plan-modulo-btn" data-modulo="criador">🎬 Criador</button>
+        <button type="button" class="plan-modulo-btn" data-modulo="youtuber">📹 Youtuber</button>
+      </div>
+
+      <!-- campos específicos do módulo Estudo -->
+      <div class="plan-modal-row plan-modulo-fields" id="planFieldsEstudo" hidden>
+        <div>
+          <label class="est-theme-label">Matéria/tema</label>
+          <input id="planEstudoMateria" type="text" class="est-theme-input" placeholder="ex: React Hooks">
+        </div>
+        <div>
+          <label class="est-theme-label">Técnica sugerida</label>
+          <select id="planEstudoTecnica" class="est-theme-input">
+            <option value="Estudar teoria">Estudar teoria</option>
+            <option value="Mapa mental">Mapa mental</option>
+            <option value="Quiz/flashcards">Quiz/flashcards</option>
+            <option value="Revisão espaçada">Revisão espaçada</option>
+            <option value="Exercícios práticos">Exercícios práticos</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- campos específicos do módulo Criador -->
+      <div class="plan-modal-row plan-modulo-fields" id="planFieldsCriador" hidden>
+        <div>
+          <label class="est-theme-label">Tipo de conteúdo</label>
+          <select id="planCriadorTipo" class="est-theme-input">
+            <option value="carrossel">Carrossel</option>
+            <option value="reels">Reels/vídeo curto</option>
+            <option value="post">Post único</option>
+          </select>
+        </div>
+        <div>
+          <label class="est-theme-label">Pilar/tema do conteúdo</label>
+          <input id="planCriadorPilar" type="text" class="est-theme-input" placeholder="ex: FinOps, Cloud Native...">
+        </div>
+      </div>
+
+      <!-- campos específicos do módulo Youtuber -->
+      <div class="plan-modal-row plan-modulo-fields" id="planFieldsYoutuber" hidden>
+        <div>
+          <label class="est-theme-label">URL do vídeo fonte</label>
+          <input id="planYoutuberUrl" type="url" class="est-theme-input" placeholder="https://youtube.com/watch?v=...">
+        </div>
+        <div>
+          <label class="est-theme-label">Plataforma alvo</label>
+          <select id="planYoutuberPlataforma" class="est-theme-input">
+            <option value="youtube">YouTube</option>
+            <option value="instagram">Instagram (Reels)</option>
+            <option value="ambos">Ambos</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="est-theme-label">Descrição</label>
+      <textarea id="planDescricao" class="est-theme-input est-theme-textarea" rows="2" placeholder="opcional"></textarea>
+
+      <div class="plan-modal-row">
+        <div>
+          <label class="est-theme-label">Tipo</label>
+          <select id="planTipo" class="est-theme-input">
+            <option value="video">Vídeo</option>
+            <option value="carrossel">Carrossel</option>
+            <option value="post">Post</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="est-theme-label">Status</label>
+          <select id="planStatus" class="est-theme-input">
+            <option value="ideia">Ideia</option>
+            <option value="roteiro">Roteiro</option>
+            <option value="gravacao">Gravação</option>
+            <option value="edicao">Edição</option>
+            <option value="publicado">Publicado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="plan-modal-row">
+        <div>
+          <label class="est-theme-label">Pilar (opcional)</label>
+          <input id="planPilar" type="text" class="est-theme-input" placeholder="ex: FinOps">
+        </div>
+        <div>
+          <label class="est-theme-label">Data de publicação</label>
+          <input id="planDataPub" type="date" class="est-theme-input">
+        </div>
+      </div>
+
+      <div class="plan-modal-row">
+        <div>
+          <label class="est-theme-label">Horário de início (opcional)</label>
+          <input id="planHoraInicio" type="time" class="est-theme-input">
+        </div>
+        <div>
+          <label class="est-theme-label">Duração (minutos)</label>
+          <input id="planDuracaoMin" type="number" min="5" step="5" class="est-theme-input" placeholder="ex: 60">
+        </div>
+      </div>
+
+      <label class="est-theme-label">Checklist</label>
+      <div id="planChecklist" class="plan-checklist"></div>
+      <button type="button" id="planChecklistAdd" class="ghost-btn plan-checklist-add">+ Adicionar item</button>
+
+      <div class="plan-modal-actions">
+        <button type="button" id="planDeleteBtn" class="ghost-btn plan-delete-btn" hidden>Excluir</button>
+        <button type="button" id="planSaveBtn" class="est-generate-btn">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/planejamento.js') }}"></script>
+</body>
+</html>

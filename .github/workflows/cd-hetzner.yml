@@ -1,0 +1,29 @@
+name: Deploy Hetzner
+
+# Disparo MANUAL (botão "Run workflow" na aba Actions do GitHub) — de
+# propósito, não dispara sozinho a cada push. Deploy é uma ação com
+# consequência (pode interromper um job de vídeo em andamento no
+# servidor), então fica sob seu controle, não automático.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: test  # só roda se o CI (testes + auditoria de segurança) passar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH no servidor Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/youtube-study-agent
+            git pull origin main
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml ps

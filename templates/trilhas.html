@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Trilhas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'trilhas' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+
+  <main class="stage tr-main">
+    <header class="tr-head">
+      <div class="head-tag">Trilhas de aprendizado</div>
+      <h1 class="cat-title">Monte sua <em>trilha</em></h1>
+      <p class="tr-sub">Escolha os cursos, dê um nome à sua trilha e acompanhe seu caminho. Cada trilha é sua — salva na sua conta.</p>
+    </header>
+
+    <!-- CONSTRUTOR -->
+    <section class="tr-builder">
+      <div class="tr-builder-top">
+        <input type="text" id="trNome" class="tr-nome" placeholder="Nome da trilha (ex: Fundamentos de IA para Dados)" maxlength="60">
+        <button class="tr-create-btn" id="trCreateBtn">
+          <span id="trBtnLabel">Criar trilha</span>
+        </button>
+      </div>
+      <div class="tr-builder-hint">Selecione os cursos abaixo · <span id="trSelCount">0</span> selecionado(s) · <span id="trSelHoras">0</span>h</div>
+
+      <div class="tr-course-pick" id="trCoursePick">
+        {% for curso in cursos %}
+        <label class="tr-pick" data-horas="{{ curso.horas }}">
+          <input type="checkbox" class="tr-pick-box" value="{{ curso.id }}">
+          <div class="tr-pick-body">
+            <span class="tr-pick-cat">{{ curso.categoria }}</span>
+            <span class="tr-pick-title">{{ curso.titulo }}</span>
+            <span class="tr-pick-meta">{{ curso.nivel }} · {{ curso.horas }}h</span>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="tr-error" id="trError" hidden></div>
+    </section>
+
+    <!-- TRILHAS SALVAS -->
+    <section class="tr-saved">
+      <h2 class="tr-saved-title">Minhas trilhas</h2>
+      <div class="tr-list" id="trList">
+        <div class="tr-loading" id="trLoading">carregando suas trilhas…</div>
+      </div>
+      <div class="tr-empty" id="trEmpty" hidden>Você ainda não criou trilhas. Monte a primeira acima.</div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const CURSOS = {{ cursos|tojson }};
+      const byId = Object.fromEntries(CURSOS.map(c=>[c.id, c]));
+      const picks = Array.from(document.querySelectorAll('.tr-pick-box'));
+      const selCount = document.getElementById('trSelCount');
+      const selHoras = document.getElementById('trSelHoras');
+      const nome = document.getElementById('trNome');
+      const btn = document.getElementById('trCreateBtn');
+      const btnLabel = document.getElementById('trBtnLabel');
+      const errBox = document.getElementById('trError');
+      const list = document.getElementById('trList');
+      const loading = document.getElementById('trLoading');
+      const empty = document.getElementById('trEmpty');
+
+      function updateSel(){
+        const sel = picks.filter(p=>p.checked);
+        selCount.textContent = sel.length;
+        selHoras.textContent = sel.reduce((s,p)=> s + (byId[p.value]?.horas||0), 0);
+      }
+      picks.forEach(p=>{
+        p.addEventListener('change', ()=>{
+          p.closest('.tr-pick').classList.toggle('selected', p.checked);
+          updateSel();
+        });
+      });
+
+      function showErr(msg){ errBox.textContent = msg; errBox.hidden = false; setTimeout(()=>errBox.hidden=true, 3500); }
+
+      function renderTrilhas(trilhas){
+        loading.style.display='none';
+        list.querySelectorAll('.tr-card').forEach(e=>e.remove());
+        empty.hidden = trilhas.length > 0;
+        trilhas.forEach(t=>{
+          const el = document.createElement('div');
+          el.className = 'tr-card';
+          const cursosNomes = (t.cursos||[]).map(id => byId[id]?.titulo || id);
+          el.innerHTML = `
+            <div class="tr-card-head">
+              <div>
+                <h3 class="tr-card-name">${escapeHtmlTr(t.nome)}</h3>
+                <div class="tr-card-meta">${(t.cursos||[]).length} cursos · ${t.horas||0}h · criada em ${t.criada_em||''}</div>
+              </div>
+              <button class="tr-del" data-id="${t.id}" title="Excluir trilha">✕</button>
+            </div>
+            <ul class="tr-card-courses">
+              ${cursosNomes.map(n=>`<li>${escapeHtmlTr(n)}</li>`).join('')}
+            </ul>`;
+          list.appendChild(el);
+        });
+        list.querySelectorAll('.tr-del').forEach(b=>{
+          b.addEventListener('click', ()=> delTrilha(b.dataset.id));
+        });
+      }
+      function escapeHtmlTr(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+
+      async function loadTrilhas(){
+        try{
+          const r = await fetch('/api/trilhas');
+          const d = await r.json();
+          renderTrilhas(d.trilhas||[]);
+        }catch(e){ loading.textContent='não foi possível carregar as trilhas'; }
+      }
+      async function createTrilha(){
+        const sel = picks.filter(p=>p.checked).map(p=>p.value);
+        if(!nome.value.trim()) return showErr('Dê um nome à trilha.');
+        if(!sel.length) return showErr('Escolha ao menos um curso.');
+        btnLabel.textContent='Salvando…'; btn.disabled=true;
+        try{
+          const r = await fetch('/api/trilhas', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({nome: nome.value.trim(), cursos: sel})});
+          const d = await r.json();
+          if(!r.ok){ showErr(d.error||'erro ao criar'); }
+          else{
+            nome.value=''; picks.forEach(p=>{p.checked=false; p.closest('.tr-pick').classList.remove('selected');});
+            updateSel(); renderTrilhas(d.trilhas||[]);
+          }
+        }catch(e){ showErr('erro de conexão'); }
+        btnLabel.textContent='Criar trilha'; btn.disabled=false;
+      }
+      async function delTrilha(id){
+        try{
+          const r = await fetch('/api/trilhas/'+id, {method:'DELETE'});
+          const d = await r.json();
+          renderTrilhas(d.trilhas||[]);
+        }catch(e){}
+      }
+      btn.addEventListener('click', createTrilha);
+      loadTrilhas();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Growth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .gr-wrap{max-width:920px}
+    .gr-sync-card{background:var(--surface);border-radius:16px;padding:24px;margin-bottom:24px}
+    .gr-sync-card h2{font-size:15px;font-weight:600;margin-bottom:6px}
+    .gr-sync-card p{font-size:12.5px;color:var(--text-2);margin-bottom:16px;line-height:1.5}
+    .gr-status{font-size:12.5px;color:var(--text-2);margin-top:10px}
+    .gr-list{display:flex;flex-direction:column;gap:10px}
+    .gr-item{background:var(--surface);border-radius:12px;padding:14px 18px;
+      display:flex;justify-content:space-between;align-items:center;gap:16px}
+    .gr-item-caption{font-size:13px;color:var(--text);flex:1;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .gr-item-meta{display:flex;gap:14px;font-size:12px;color:var(--text-2);flex:0 0 auto}
+    .gr-item-meta b{color:var(--text)}
+    .gr-empty{text-align:center;color:var(--text-3);padding:40px 0;font-size:13px}
+    .gr-gancho-row{display:grid;grid-template-columns:120px 1fr 90px;gap:12px;
+      align-items:center;padding:8px 0;font-size:13px}
+    .gr-gancho-label{font-weight:600;color:var(--accent);text-transform:capitalize}
+    .gr-gancho-row .num{text-align:right;color:var(--text-2);font-size:12px}
+    .gr-item-analise{font-size:11.5px;color:var(--accent);margin-top:4px}
+    .gr-item-body{flex:1;overflow:hidden}
+    .gr-reco-list{display:flex;flex-direction:column;gap:10px}
+    .gr-reco-item{background:var(--surface-2);border-left:3px solid var(--accent);
+      border-radius:8px;padding:12px 16px;font-size:13px;line-height:1.5}
+    .gr-confianca{display:inline-block;font-size:11px;padding:3px 10px;border-radius:999px;
+      margin-bottom:12px}
+    .gr-confianca.alta{background:var(--accent-dim);color:var(--accent)}
+    .gr-confianca.media{background:rgba(255,180,60,.12);color:#ffcf8a}
+    .gr-confianca.baixa{background:var(--surface-2);color:var(--text-3)}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+    {% set active = 'crescimento' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage gr-wrap">
+    <div class="head-tag">Growth</div>
+    <h1 class="cat-title">Cresça de <em>verdade</em></h1>
+    <p class="cat-sub">Puxa o histórico real do seu perfil, cruza com a métrica de verdade, e mostra o que já está funcionando pra você.</p>
+
+    <section class="gr-sync-card">
+      <h2>🚀 O que fazer no próximo conteúdo</h2>
+      <p>Sintetiza os padrões encontrados em recomendações concretas — sempre citando o dado real que sustenta cada uma, nunca conselho genérico.</p>
+      <button class="est-generate-btn" id="recoBtn" style="width:auto;padding:0 24px" onclick="gerarRecomendacoes()">Gerar recomendações</button>
+      <div id="recoStatus" class="gr-status"></div>
+      <div id="recoContent" style="margin-top:16px"></div>
+    </section>
+
+    <section class="gr-sync-card">
+      <h2>1. Sincronizar perfil do Instagram</h2>
+      <p>Puxa TODOS os posts que já existem na sua conta (não só os publicados por aqui), e busca a métrica real de cada um. Roda de novo quando quiser — não duplica, só atualiza.</p>
+      <button class="est-generate-btn" id="syncBtn" style="width:auto;padding:0 24px" onclick="sincronizarPerfil()">Sincronizar agora</button>
+      <div id="syncStatus" class="gr-status"></div>
+    </section>
+
+    <section class="gr-sync-card">
+      <h2>2. Analisar padrões (Hook-Substance-Payoff)</h2>
+      <p>Aplica o framework de conteúdo viral em cada post — classifica o tipo de gancho, os critérios de viralização, e explica o padrão comparando com a métrica real. Só analisa quem ainda não foi analisado.</p>
+      <button class="est-generate-btn" id="analiseBtn" style="width:auto;padding:0 24px" onclick="analisarPadroes()">Analisar padrões</button>
+      <div id="analiseStatus" class="gr-status"></div>
+    </section>
+
+    <section class="gr-sync-card">
+      <h2>🎯 Qual gancho funciona NO SEU perfil</h2>
+      <p>Não é regra genérica de mercado — é a média real dos SEUS posts, por tipo de gancho identificado.</p>
+      <div id="resumoGancho"><div class="gr-empty">Ainda sem dado — sincroniza e analisa primeiro.</div></div>
+    </section>
+
+    <section>
+      <h2 style="font-size:15px;font-weight:600;margin-bottom:14px">Seus posts (por performance)</h2>
+      <div id="postsList" class="gr-list"><div class="gr-empty">Carregando...</div></div>
+    </section>
+  </main>
+
+  <script>
+    async function gerarRecomendacoes(){
+      const btn = document.getElementById('recoBtn');
+      const status = document.getElementById('recoStatus');
+      const content = document.getElementById('recoContent');
+      btn.disabled = true; btn.textContent = 'Gerando...';
+      status.textContent = 'Sintetizando os padrões encontrados...';
+      try{
+        const res = await fetch('/api/growth/recomendacoes', { method: 'POST' });
+        const data = await res.json();
+        if(data.error){ status.textContent = '⚠ ' + data.error; return; }
+        status.textContent = '';
+        if(!data.recomendacoes || !data.recomendacoes.length){
+          content.innerHTML = `<div class="gr-empty">${data.motivo_confianca || 'Sem recomendação ainda — sincroniza e analisa primeiro.'}</div>`;
+          return;
+        }
+        content.innerHTML = `
+          <span class="gr-confianca ${data.confianca}">Confiança: ${data.confianca} — ${data.motivo_confianca}</span>
+          <div class="gr-reco-list">
+            ${data.recomendacoes.map(r => `<div class="gr-reco-item">${r}</div>`).join('')}
+          </div>
+        `;
+      }catch(e){
+        status.textContent = '⚠ Erro: ' + e.message;
+      }finally{
+        btn.disabled = false; btn.textContent = 'Gerar recomendações';
+      }
+    }
+
+    async function analisarPadroes(){
+      const btn = document.getElementById('analiseBtn');
+      const status = document.getElementById('analiseStatus');
+      btn.disabled = true; btn.textContent = 'Analisando...';
+      status.textContent = 'Aplicando o framework em cada post pendente...';
+      try{
+        const res = await fetch('/api/growth/analisar_padroes', { method: 'POST' });
+        const data = await res.json();
+        if(data.error){ status.textContent = '⚠ ' + data.error; return; }
+        status.textContent = `✓ ${data.ok}/${data.processadas} post(s) analisado(s).`;
+        loadResumoGancho();
+        loadPosts();
+      }catch(e){
+        status.textContent = '⚠ Erro: ' + e.message;
+      }finally{
+        btn.disabled = false; btn.textContent = 'Analisar padrões';
+      }
+    }
+
+    async function loadResumoGancho(){
+      const el = document.getElementById('resumoGancho');
+      try{
+        const res = await fetch('/api/growth/resumo');
+        const data = await res.json();
+        const porGancho = data.por_gancho || [];
+        if(!porGancho.length){
+          el.innerHTML = '<div class="gr-empty">Ainda sem dado — sincroniza e analisa primeiro.</div>';
+          return;
+        }
+        const maxViews = Math.max(...porGancho.map(g => g.media_views || 0));
+        el.innerHTML = porGancho.map(g => `
+          <div class="gr-gancho-row">
+            <span class="gr-gancho-label">${(g.tipo_gancho || 'nenhum_claro').replace('_',' ')}</span>
+            <div class="bar"><i style="width:${maxViews ? (g.media_views||0)/maxViews*100 : 0}%"></i></div>
+            <span class="num">${Math.round(g.media_views||0)} views (n=${g.n})</span>
+          </div>
+        `).join('');
+      }catch(e){
+        el.innerHTML = `<div class="gr-empty">Erro: ${e.message}</div>`;
+      }
+    }
+      const btn = document.getElementById('syncBtn');
+      const status = document.getElementById('syncStatus');
+      btn.disabled = true; btn.textContent = 'Sincronizando...';
+      status.textContent = 'Buscando posts do seu perfil e métrica real (pode levar um tempo, um post de cada vez)...';
+      try{
+        const res = await fetch('/api/growth/sincronizar_perfil', { method: 'POST' });
+        const data = await res.json();
+        if(data.error){ status.textContent = '⚠ ' + data.error; return; }
+        status.textContent = `✓ ${data.encontrados} post(s) encontrado(s) · ${data.com_metrica} com métrica atualizada · ${data.falhas} falha(s).`;
+        loadPosts();
+      }catch(e){
+        status.textContent = '⚠ Erro: ' + e.message;
+      }finally{
+        btn.disabled = false; btn.textContent = 'Sincronizar agora';
+      }
+    }
+
+    async function loadPosts(){
+      const el = document.getElementById('postsList');
+      try{
+        const res = await fetch('/api/analytics/publicacoes?plataforma=instagram');
+        const data = await res.json();
+        const posts = (data.publicacoes || []).filter(p => p.views != null)
+          .sort((a,b) => (b.views||0) - (a.views||0));
+        if(!posts.length){
+          el.innerHTML = '<div class="gr-empty">Nenhum post com métrica ainda — clica em "Sincronizar agora" acima.</div>';
+          return;
+        }
+        el.innerHTML = posts.map(p => {
+          const analise = p.analise_ia;
+          const ganchoTag = analise ? `<div class="gr-item-analise">🪝 ${(analise.tipo_gancho||'').replace('_',' ')} — ${(analise.resumo||'').slice(0,90)}</div>` : '';
+          return `
+          <div class="gr-item">
+            <div class="gr-item-body">
+              <span class="gr-item-caption">${(p.caption || p.titulo || '(sem legenda)').slice(0,80)}</span>
+              ${ganchoTag}
+            </div>
+            <span class="gr-item-meta">
+              <span><b>${p.views}</b> views</span>
+              <span><b>${p.likes ?? '—'}</b> likes</span>
+              <span><b>${p.alcance ?? '—'}</b> alcance</span>
+            </span>
+          </div>
+        `}).join('');
+      }catch(e){
+        el.innerHTML = `<div class="gr-empty">Erro: ${e.message}</div>`;
+      }
+    }
+
+    loadPosts();
+    loadResumoGancho();
+  </script>
+</body>
+</html>

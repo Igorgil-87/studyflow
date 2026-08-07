@@ -1,0 +1,205 @@
+# ══════════════════════════════════════════════════════════════════════════
+# docker-compose.full.yml — sobe o StudyFlow + o MoneyPrinterTurbo JUNTOS.
+#
+# Um comando sobe tudo:
+#     docker compose -f docker-compose.full.yml up --build
+#
+# O que sobe:
+#   • StudyFlow  → web (5001), worker, scheduler, redis, postgres
+#   • MoneyPrinter → mpt-api (8080)  [o "motor" do Módulo Criador]
+#
+# O StudyFlow enxerga o MoneyPrinter pelo nome de serviço da rede Docker:
+#   MPT_API_URL=http://mpt-api:8080   (já setado abaixo — não precisa mexer)
+#
+# ── ANTES DE SUBIR (2 passos) ─────────────────────────────────────────────
+#   1. Coloque a pasta do MoneyPrinter ao lado do StudyFlow:
+#          seu-projeto/
+#          ├── youtube-study-agent/     (este projeto)
+#          └── MoneyPrinterTurbo-main/  (descompactado do zip)
+#      Ajuste o caminho em `mpt-api.build.context` se a pasta tiver outro nome.
+#
+#   2. Configure o config.toml do MoneyPrinter (chaves Pexels + LLM):
+#          cp MoneyPrinterTurbo-main/config.example.toml MoneyPrinterTurbo-main/config.toml
+#      e edite: pexels_api_keys (grátis em pexels.com/api) e a chave do LLM.
+#      (Edge TTS, a voz, NÃO precisa de chave.)
+#
+#   3. Crie o .env do StudyFlow com OPENAI_API_KEY (como você já faz).
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  # ─────────────── StudyFlow ───────────────
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Serviço Docker OFICIAL do Crawl4AI — roda ISOLADO, fora do ambiente
+  # Python do web/worker. Motivo: o pacote Python crawl4ai arrasta o
+  # unclecode-litellm, que exige openai>=2.8.0 — incompatível com o
+  # openai==1.51.0 que o web/worker usam. Rodando como container próprio
+  # (com o Python/deps dele isolados lá dentro), o conflito nunca existe;
+  # web/worker só falam HTTP com ele (ver tools/crawler_client.py).
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    shm_size: "1gb"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build: .
+    ports:
+      - "5001:5000"
+    env_file: .env
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+      # ↓ é isto que liga o Módulo Criador ao MoneyPrinter
+      MPT_API_URL: http://mpt-api:8080
+      # ↓ Fooocus-API roda NATIVO no Mac (fora do Docker, precisa da GPU/MPS
+      #   que o Docker Desktop não repassa) — host.docker.internal alcança
+      #   o host a partir de dentro do container.
+      FOOOCUS_API_URL: http://host.docker.internal:8888
+      # ↓ Crawl4AI roda em container próprio (nome do serviço = hostname
+      #   interno do Docker) — ver tools/crawler_client.py
+      CRAWL4AI_URL: http://crawl4ai:11235
+    extra_hosts:
+      # no Mac o Docker Desktop já resolve isso sozinho; a linha garante
+      # que também funcione se um dia isto rodar num host Linux.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # web e worker são containers separados — sem isto, o vídeo/imagem que
+      # o worker gera (Estúdio, cortes do Youtuber, Imagens) não aparece pro
+      # web, que serve o player/galeria. Volume = "disco compartilhado".
+      - videos_data:/app/static/videos
+      - images_data:/app/static/images
+      # token/credenciais do YouTube: monta o arquivo do HOST direto no
+      # container (bind mount, não named volume) — sem isso, reautorizar
+      # (python -m publish.auth) só valeria depois de um rebuild da
+      # imagem inteira. Assim, escreveu no host, o container já enxerga
+      # na hora, sem rebuild. ":ro" no client_secret (nunca precisa
+      # escrever nele) — o token SEM ro porque é reescrito a cada refresh.
+      - ./youtube_token.json:/app/youtube_token.json
+      - ./client_secret.json:/app/client_secret.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      mpt-api:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python worker.py
+    env_file: .env
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+      MPT_API_URL: http://mpt-api:8080
+      FOOOCUS_API_URL: http://host.docker.internal:8888
+      CRAWL4AI_URL: http://crawl4ai:11235
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - videos_data:/app/static/videos
+      - images_data:/app/static/images
+      - ./youtube_token.json:/app/youtube_token.json
+      - ./client_secret.json:/app/client_secret.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build: .
+    command: python scheduler.py
+    env_file: .env
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: studyflow
+      POSTGRES_PASSWORD: studyflow
+      POSTGRES_DB: studyflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init_pgvector.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studyflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ─────────────── MoneyPrinterTurbo (motor do Módulo Criador) ───────────────
+  mpt-api:
+    build:
+      # aponta para a pasta do MoneyPrinter ao lado deste projeto.
+      # Se a pasta tiver outro nome, ajuste aqui.
+      context: ../MoneyPrinterTurbo-main
+      dockerfile: Dockerfile
+      args:
+        # usa mirrors padrão (não os da China, que vêm no default do projeto)
+        DOCKER_BUILD_MIRROR: default
+        PIP_USE_OFFICIAL: "1"
+    # (sem container_name customizado — deixa o Compose nomear e resolver
+    #  pelo nome do serviço "mpt-api", que é o que o MPT_API_URL usa)
+    command: ["python3", "main.py"]
+    ports:
+      - "8080:8080"
+    volumes:
+      # monta o config.toml e a pasta do projeto (onde ele salva os vídeos)
+      - ../MoneyPrinterTurbo-main:/MoneyPrinterTurbo
+    healthcheck:
+      # /ping existe no código do MPT mas nunca é registrado em app/router.py
+      # nesta versão (v1.3.2) — sempre daria 404. /openapi.json é gerado
+      # automaticamente por qualquer app FastAPI padrão, então é confiável.
+      test: ["CMD", "python3", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/openapi.json',timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── n8n (automação de workflow/comunicações) ──────────────────────────
+  # Roda na configuração PADRÃO dele (raiz da própria origem, porta
+  # própria) — testei embutir via iframe atrás de proxy reverso e achei
+  # issues abertas e não resolvidas no GitHub oficial do n8n (#18596,
+  # #19635, ago-set/2025): redirecionamento de login duplica o caminho,
+  # assets somem, autenticação quebra. Não é bug de configuração nossa,
+  # é limitação real da arquitetura deles rodando fora da raiz. Por isso
+  # abre em ABA NOVA a partir do StudyFlow (link, não iframe) — 1 clique,
+  # sem a fragilidade.
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      GENERIC_TIMEZONE: America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  videos_data:
+  images_data:
+  n8n_data:

@@ -1,0 +1,52 @@
+# Segredos — NUNCA versionar
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Artefatos gerados
+output/quizzes/*.json
+output/roadmaps/*.json
+output/*.txt
+output/*.json
+static/videos/*.mp4
+static/videos/clips/
+static/videos/highlights/
+
+# SO / editores
+.DS_Store
+.idea/
+.vscode/
+
+# Banco de observabilidade (SQLite)
+*.db
+*.db-wal
+*.db-shm
+output/*.db*
+
+# Segredos do YouTube OAuth — NUNCA versionar
+client_secret.json
+youtube_token.json
+*_token.json
+
+# JSON de importação do Bitwarden — fica em TEXTO PURO no disco depois de
+# gerado (env_to_bitwarden.py já avisa pra apagar, mas cobre aqui também)
+bitwarden_import.json
+
+# Vídeos pessoais (identidade/branding) — NÃO são código, são asset
+# grande demais pro git (o login-bg.mp4 sozinho tem ~17MB). Ficam fora
+# do repositório; copiados pro servidor manualmente (ver DEPLOY.md,
+# mesmo esquema do youtube_token.json).
+static/video/*.mp4
+
+# Arquivos temporários que o moviepy cria durante o corte (áudio
+# intermediário) — nunca deveriam sobreviver, mas por segurança:
+*TEMP_MPY_*.mp4
+
+# Backups do Postgres — contêm dados reais (RAG, atividades), nunca versionar
+backups/

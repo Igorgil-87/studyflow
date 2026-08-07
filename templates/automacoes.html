@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Automações</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .automacoes-launch{background:var(--surface);border-radius:16px;padding:40px;
+      margin-top:16px;text-align:center;display:flex;flex-direction:column;
+      align-items:center;gap:16px;max-width:560px}
+    .automacoes-launch-icon{width:56px;height:56px;border-radius:14px;background:var(--surface-2);
+      display:flex;align-items:center;justify-content:center;color:var(--accent)}
+    .automacoes-launch h2{font-size:20px;font-weight:600}
+    .automacoes-launch p{font-size:14px;color:var(--text-2);line-height:1.6;max-width:420px}
+    .automacoes-launch-btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);
+      color:#000;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;
+      font-size:14px;margin-top:6px;transition:opacity .15s}
+    .automacoes-launch-btn:hover{opacity:.85}
+    .automacoes-note{font-size:12px;color:var(--text-3);margin-top:6px;max-width:420px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+    {% set active = 'automacoes' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage">
+    <header class="cat-head">
+      <div class="head-tag">Automações</div>
+      <h1 class="cat-title">Fluxos com <em>n8n</em></h1>
+      <p class="cat-sub">Automatize notificações, publicações agendadas e integrações — sem escrever código de integração pra cada serviço novo.</p>
+    </header>
+
+    <div class="automacoes-launch">
+      <div class="automacoes-launch-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <h2>Editor de fluxos n8n</h2>
+      <p>O n8n roda como um serviço próprio, isolado. Abre num clique — todos os fluxos e credenciais ficam salvos lá, com seu próprio login.</p>
+      <a href="http://localhost:5678" target="_blank" rel="noopener" class="automacoes-launch-btn">
+        Abrir n8n
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+      </a>
+      <p class="automacoes-note">Abre em outra aba (não como um quadro dentro dessa tela) — o editor completo do n8n tem bugs conhecidos e não resolvidos quando embutido em iframe atrás de um proxy, então optamos pelo caminho confiável.</p>
+    </div>
+  </main>
+</body>
+</html>
+

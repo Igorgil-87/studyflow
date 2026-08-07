@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'curso' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <main class="stage cx-main">
+    <!-- ░ HERO ENTERPRISE ░ -->
+    <header class="cx-hero">
+      <div class="cx-hero-left">
+        <div class="cx-eyebrow"><span class="cx-eyebrow-dot"></span> MÓDULO CURSO · IA</div>
+        <h1 class="cx-title">O que você quer <em>dominar</em> hoje?</h1>
+        <p class="cx-sub">Digite um tema. O agente busca no YouTube, transcreve com Whisper e monta seu quiz, roteiro de estudo e aulas cortadas — automaticamente.</p>
+        <div class="cx-pipeline-hint">
+          <span class="cx-hint-step">1 · Busca</span>
+          <span class="cx-hint-arrow">→</span>
+          <span class="cx-hint-step">2 · Transcreve</span>
+          <span class="cx-hint-arrow">→</span>
+          <span class="cx-hint-step">3 · Quiz + Roteiro</span>
+          <span class="cx-hint-arrow">→</span>
+          <span class="cx-hint-step">4 · Aulas</span>
+        </div>
+      </div>
+      <div class="cx-hero-badges">
+        <div class="cx-badge"><div class="cx-badge-num">4</div><div class="cx-badge-lbl">saídas por tema</div></div>
+        <div class="cx-badge"><div class="cx-badge-num">IA</div><div class="cx-badge-lbl">multi-modelo</div></div>
+      </div>
+    </header>
+
+    <!-- ░ COMPOSER ░ -->
+    <section class="composer cx-composer" id="composer">
+      <div class="composer-glow"></div>
+      <label class="cx-composer-label">Tema do curso</label>
+      <textarea id="topic" rows="1" placeholder="ex: redes neurais convolucionais, contratos inteligentes, fotossíntese..."></textarea>
+
+      <div class="composer-bar cx-composer-bar">
+        <div class="controls cx-controls">
+          <label class="ctrl cx-ctrl">
+            <span>Flashcards</span>
+            <select id="flashcards">
+              <option>3</option><option selected>5</option><option>8</option><option>10</option>
+            </select>
+          </label>
+          <label class="ctrl cx-ctrl">
+            <span>Questões</span>
+            <select id="questions">
+              <option>3</option><option selected>5</option><option>8</option><option>10</option>
+            </select>
+          </label>
+        </div>
+        <button class="generate-btn cx-generate" id="generateBtn">
+          <span class="btn-label">Gerar curso</span>
+          <span class="btn-ico">→</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ░ MATERIAL DE APOIO (PDF/PPTX/DOCX ou URL → RAG do curso) ░ -->
+    <section class="cx-material" id="cxMaterial">
+      <div class="cx-material-head">
+        <span class="cx-material-title">📎 Material de apoio (opcional)</span>
+        <span class="cx-material-hint">PDF, PPTX, DOCX, XLSX, CSV, HTML, EPUB, ZIP, imagem ou uma URL — o conteúdo entra na base de conhecimento pra enriquecer as perguntas do curso.</span>
+      </div>
+      <label class="cx-material-upload" for="cxMaterialInput">
+        <span id="cxMaterialLabel">Escolher arquivo (até 20MB)</span>
+      </label>
+      <input id="cxMaterialInput" type="file" accept=".pdf,.pptx,.docx,.xlsx,.xls,.csv,.json,.xml,.html,.htm,.zip,.epub,.png,.jpg,.jpeg,.gif,.bmp" hidden>
+
+      <div class="cx-material-url-row">
+        <input id="cxMaterialUrl" type="url" class="est-theme-input" placeholder="ou cole uma URL (ex: artigo, documentação)">
+        <button type="button" id="cxMaterialUrlBtn" class="ghost-btn">Indexar URL</button>
+      </div>
+
+      <div id="cxMaterialList" class="cx-material-list"></div>
+      <div id="cxMaterialError" class="error-box" hidden></div>
+    </section>
+
+    <!-- ░ PIPELINE LOG ░ -->
+    <section class="pipeline" id="pipeline" hidden>
+      <div class="pipeline-head">
+        <h2>Agente trabalhando</h2>
+        <button class="reset-btn" id="resetBtn">Cancelar</button>
+      </div>
+
+      <div class="video-card" id="videoCard" hidden>
+        <div class="video-thumb">▶</div>
+        <div class="video-meta">
+          <div class="video-title" id="videoTitle"></div>
+          <div class="video-sub" id="videoSub"></div>
+        </div>
+      </div>
+
+      <ol class="steps" id="steps">
+        <li class="step" data-step="search">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Buscar no YouTube</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="download">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Baixar e extrair áudio</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="video_dl">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Baixar vídeo para reprodução</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="transcribe">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Transcrever com Whisper</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="quiz">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Gerar quiz com LLM</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="roadmap">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Montar roteiro de treinamento</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="segment">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Identificar blocos de aulas</span><span class="step-detail"></span></div>
+        </li>
+        <li class="step" data-step="cut">
+          <span class="step-dot"></span>
+          <div class="step-body"><span class="step-name">Cortar vídeo em aulas</span><span class="step-detail"></span></div>
+        </li>
+      </ol>
+
+      <div class="error-box" id="errorBox" hidden></div>
+    </section>
+
+    <!-- ░ QUIZ RESULT ░ -->
+    <section class="result cx-result" id="result" hidden>
+      <div class="result-head cx-result-head">
+        <div>
+          <div class="result-tag cx-result-tag">✓ Curso gerado</div>
+          <h2 class="result-title" id="resultTitle"></h2>
+        </div>
+        <div class="result-tabs cx-tabs">
+          <button class="tab active" data-tab="flashcards">Flashcards</button>
+          <button class="tab" data-tab="questoes">Questões</button>
+          <button class="tab" data-tab="roteiro">Roteiro</button>
+          <button class="tab" data-tab="aulas">Aulas</button>
+        </div>
+      </div>
+
+      <div class="video-player cx-player" id="videoPlayer" hidden>
+        <video id="videoEl" controls preload="metadata"></video>
+      </div>
+
+      <div class="cards-grid" id="flashcardsView"></div>
+      <div class="questions-view" id="questoesView" hidden></div>
+      <div class="roadmap-view" id="roteiroView" hidden></div>
+      <div class="clips-view" id="aulasView" hidden></div>
+
+      <div class="result-foot">
+        <button class="ghost-btn" id="newBtn">＋ Novo curso</button>
+        <button class="cx-conclude-btn" id="concludeBtn">🎓 Concluir e emitir certificado</button>
+      </div>
+    </section>
+
+    <script>
+      // botão de concluir curso — isolado, não mexe na lógica de geração
+      (function(){
+        var btn = document.getElementById('concludeBtn');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+          var titulo = (document.getElementById('resultTitle')||{}).textContent || '';
+          titulo = titulo.trim();
+          if(!titulo){ alert('Gere um curso primeiro.'); return; }
+          btn.disabled = true; btn.textContent = 'Emitindo…';
+          fetch('/api/concluidos', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({curso: titulo})})
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              btn.textContent = '✓ Concluído! Ver certificado';
+              btn.classList.add('cx-conclude-done');
+              btn.onclick = function(){ window.location.href = '/certificados'; };
+              btn.disabled = false;
+            })
+            .catch(function(){ btn.disabled=false; btn.textContent='🎓 Concluir e emitir certificado'; });
+        });
+      })();
+    </script>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

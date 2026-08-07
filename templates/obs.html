@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Observabilidade &amp; Custos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* estilos específicos dessa página (cards de KPI, tabelas) — os
+    tokens de cor/fonte (--bg, --surface, --accent etc.) já vêm do
+    style.css compartilhado, não precisam ser redeclarados aqui. */
+    .obs-wrap{max-width:1100px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+    .card{background:var(--surface);border:1px solid var(--line);
+      border-radius:var(--radius);padding:20px}
+    .kpi .label{color:var(--text-2);font-size:12px;text-transform:uppercase;
+      letter-spacing:.06em}
+    .kpi .value{font-family:'Instrument Serif',serif;font-size:34px;margin-top:6px}
+    .kpi .value.accent{color:var(--accent)}
+    .full{grid-column:1/-1}
+    h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;
+      color:var(--text-2);margin-bottom:14px;font-weight:600}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+    th{color:var(--text-2);font-weight:500}
+    td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .pill{display:inline-block;padding:2px 10px;border-radius:999px;
+      background:var(--accent-dim);color:var(--accent);font-size:12px}
+    .bar{height:6px;background:var(--accent-dim);border-radius:3px;overflow:hidden}
+    .bar>i{display:block;height:100%;background:var(--accent)}
+    .row{display:flex;justify-content:space-between;align-items:center;
+      padding:10px 0;border-bottom:1px solid var(--line)}
+    .row:last-child{border:0}
+    .foot{color:var(--text-2);font-size:12px;margin-top:24px;line-height:1.6}
+    .refresh{float:right;background:var(--accent-dim);color:var(--accent);
+      border:1px solid var(--line);border-radius:var(--radius-sm);
+      padding:8px 16px;font-family:'Geist',sans-serif;font-size:13px;cursor:pointer}
+    .alert{padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:8px;
+      font-size:13px;border:1px solid var(--line)}
+    .alert.critical{background:rgba(255,100,100,0.10);border-color:rgba(255,100,100,0.4);color:#ff9b9b}
+    .alert.warning{background:rgba(255,180,60,0.10);border-color:rgba(255,180,60,0.35);color:#ffcf8a}
+    .badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:600}
+    .badge.ok{background:var(--accent-dim);color:var(--accent)}
+    .badge.alert{background:rgba(255,100,100,0.15);color:#ff9b9b}
+    .delta-bad{color:#ff9b9b}.delta-good{color:var(--accent)}.delta-flat{color:var(--text-2)}
+.tier-row{display:grid;grid-template-columns:70px 1fr 90px 90px;gap:12px;
+  align-items:center;padding:8px 0;font-size:13px}
+.tier-row .tier-label{font-weight:700;color:var(--accent)}
+.tier-row .num{text-align:right;color:var(--text-2);font-size:12px}
+.top-item{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.top-item:last-child{border:0}
+.top-item-rank{color:var(--accent);font-weight:700;margin-right:10px}
+.top-item-meta{color:var(--text-2);font-size:12px}
+.empty-hint{color:var(--text-2);font-size:12.5px;padding:8px 0}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'obs' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <main class="stage obs-wrap">
+  <button class="refresh" onclick="load()">↻ Atualizar</button>
+  <div class="head-tag">Análise &amp; Custos</div>
+  <h1 class="cat-title">Observabilidade <em>&amp; Evals</em></h1>
+  <div class="sub">Tracing das chains · custo · qualidade (LLM-as-Judge) · feedback humano</div>
+
+  <div class="grid" id="kpis"></div>
+
+  <div class="card full" style="margin-bottom:28px">
+    <h2>🎯 A previsão da IA está batendo com a realidade?</h2>
+    <p style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">
+      Compara o tier que a IA previu (S/A/B/C) com a média de views REAIS
+      de cada grupo. Se a IA estiver calibrada, S deveria ter mais view
+      que A, que deveria ter mais que B — nessa ordem.
+    </p>
+    <div id="resumoPorTier">Carregando...</div>
+
+    <h2 style="margin-top:24px">🏆 Top 5 publicações reais (todas as plataformas)</h2>
+    <div id="topPublicacoes">Carregando...</div>
+  </div>
+
+  <div class="card full" style="margin-bottom:28px">
+    <h2>Previsão da IA vs. Realidade (Instagram)</h2>
+    <p style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">
+      Métrica de engajamento só fica disponível pra contas com 1000+
+      seguidores (limitação da própria API do Instagram, não daqui).
+    </p>
+    <button class="refresh" style="float:none;margin-bottom:14px" onclick="atualizarMetricasInstagram()">↻ Atualizar métricas do Instagram</button>
+    <div id="analyticsStatusIg" style="font-size:12.5px;color:var(--text-2);margin-bottom:10px"></div>
+    <table id="analyticsTableIg">
+      <thead><tr>
+        <th>Título</th><th>Score previsto</th><th class="num">Views</th>
+        <th class="num">Alcance</th><th class="num">Likes</th>
+      </tr></thead>
+      <tbody id="analyticsBodyIg"><tr><td colspan="5">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card full" style="margin-bottom:28px">
+    <h2>Previsão da IA vs. Realidade (YouTube)</h2>
+    <p style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">
+      Fecha o loop: compara o que a IA previu (viral score, hook) com o que
+      aconteceu de verdade depois de publicado. Só busca vídeos com 24h+ no
+      ar (métrica fina do YouTube demora a aparecer).
+    </p>
+    <button class="refresh" style="float:none;margin-bottom:14px" onclick="atualizarMetricasYoutube()">↻ Atualizar métricas do YouTube</button>
+    <div id="analyticsStatus" style="font-size:12.5px;color:var(--text-2);margin-bottom:10px"></div>
+    <table id="analyticsTable">
+      <thead><tr>
+        <th>Título</th><th>Score previsto</th><th class="num">Views</th>
+        <th class="num">Retenção</th><th class="num">Likes</th>
+      </tr></thead>
+      <tbody id="analyticsBody"><tr><td colspan="5">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="grid">
+    <div class="card kpi"><div class="label">Cache · acertos</div>
+      <div class="value accent" id="cachehits">—</div></div>
+    <div class="card kpi"><div class="label">Cache · economia (USD)</div>
+      <div class="value accent" id="cachesaved">—</div></div>
+    <div class="card kpi"><div class="label">Cache · taxa de acerto</div>
+      <div class="value" id="cacherate">—</div></div>
+    <div class="card kpi"><div class="label">Cache · entradas</div>
+      <div class="value" id="cacheentries">—</div></div>
+  </div>
+
+  <!-- FINOPS -->
+  <div class="grid">
+    <div class="card kpi"><div class="label">FinOps · custo total</div>
+      <div class="value accent" id="fin_total">—</div></div>
+    <div class="card kpi"><div class="label">FinOps · tokens (in/out)</div>
+      <div class="value" id="fin_tokens">—</div></div>
+    <div class="card kpi"><div class="label">FinOps · projeção mensal</div>
+      <div class="value" id="fin_month">—</div></div>
+    <div class="card kpi"><div class="label">FinOps · dias com uso</div>
+      <div class="value" id="fin_days">—</div></div>
+  </div>
+  <div class="grid">
+    <div class="card full"><h2>FinOps · custo por operação</h2>
+      <table id="finops"><thead><tr>
+        <th>Operação</th><th class="num">Chamadas</th><th class="num">Tokens (in/out)</th>
+        <th class="num">Custo (USD)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card full"><h2>FinOps · gasto por dia</h2>
+      <table id="finday"><thead><tr>
+        <th>Dia</th><th class="num">Custo (USD)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- RAG -->
+  <div class="grid">
+    <div class="card kpi"><div class="label">RAG · perguntas</div>
+      <div class="value accent" id="rag_q">—</div></div>
+    <div class="card kpi"><div class="label">RAG · chunks indexados</div>
+      <div class="value" id="rag_idx">—</div></div>
+    <div class="card kpi"><div class="label">RAG · custo (USD)</div>
+      <div class="value" id="rag_cost">—</div></div>
+    <div class="card kpi"><div class="label">RAG · latência p95</div>
+      <div class="value" id="rag_p95">—</div></div>
+  </div>
+
+      <table id="models"><thead><tr>
+        <th>Modelo</th><th class="num">Chamadas</th><th class="num">Tokens (in/out)</th>
+        <th class="num">Custo (USD)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card full"><h2>Latência por operação (p50 / p95)</h2>
+      <table id="ops"><thead><tr>
+        <th>Operação</th><th class="num">Chamadas</th>
+        <th class="num">p50 (ms)</th><th class="num">p95 (ms)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>Qualidade (LLM-as-Judge)</h2><div id="evals"></div></div>
+    <div class="card"><h2>Feedback humano</h2><div id="feedback"></div></div>
+    <div class="card"><h2>Saúde</h2><div id="health"></div></div>
+    <div class="card kpi"><div class="label">Custo total</div>
+      <div class="value accent" id="totalcost">—</div></div>
+  </div>
+
+  <!-- LLM-AS-JUDGE detalhado -->
+  <div class="grid">
+    <div class="card full"><h2>LLM-as-Judge · avaliações recentes</h2>
+      <table id="judgetbl"><thead><tr>
+        <th>Quando</th><th>Alvo</th><th class="num">Judge</th><th class="num">Ground.</th>
+        <th class="num">Relev.</th><th class="num">Coer.</th><th>Alucina?</th>
+        <th>Racional</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- LOGS / EVENTOS -->
+  <div class="grid">
+    <div class="card full">
+      <button class="refresh" onclick="loadLogs()">↻ Atualizar logs</button>
+      <h2>Logs · todos os eventos de IA</h2>
+      <div class="sub" id="logcount">—</div>
+      <table id="logs"><thead><tr>
+        <th>Quando</th><th>Operação</th><th>Modelo</th><th>Status</th>
+        <th class="num">Lat (ms)</th><th class="num">Tokens</th>
+        <th class="num">Custo</th><th>Erro</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card full">
+      <button class="refresh" onclick="runDrift()">▶ Rodar verificação de drift</button>
+      <h2>Drift de IA — recente vs. baseline</h2>
+      <div id="driftbanner" class="sub">Carregando...</div>
+      <table id="drifttable"><thead><tr>
+        <th>Métrica</th><th class="num">Baseline</th><th class="num">Recente</th>
+        <th class="num">Δ</th></tr></thead><tbody></tbody></table>
+      <div id="driftalerts" style="margin-top:16px"></div>
+      <h2 style="margin-top:22px">Histórico de verificações automáticas (scheduler)</h2>
+      <table id="drifthist"><thead><tr>
+        <th>Quando</th><th>Status</th><th class="num">Alertas</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="foot">
+    Dados de <code>output/observability.db</code> (SQLite). Os custos usam tokens
+    estimados e tabela de preços aproximada — veja <code>obs/pricing.py</code>.
+    Para ativar a avaliação automática do quiz, rode com <code>EVAL_ENABLED=1</code>.
+  </div>
+
+<script>
+function kpi(label,value,accent){
+  return `<div class="card kpi"><div class="label">${label}</div>
+    <div class="value ${accent?'accent':''}">${value}</div></div>`;
+}
+function pct(v){ return v==null?'—':(v*100).toFixed(0)+'%'; }
+function bar(v){ return `<div class="bar"><i style="width:${(v||0)*100}%"></i></div>`; }
+
+async function load(){
+  let d;
+  try{ d = await (await fetch('/api/observability/summary')).json(); }
+  catch(e){ document.getElementById('kpis').innerHTML =
+    '<div class="card full">Falha ao carregar métricas.</div>'; return; }
+
+  const t = d.totals||{};
+  document.getElementById('kpis').innerHTML =
+    kpi('Chamadas de IA', t.calls??0) +
+    kpi('Custo total (USD)', '$'+(t.cost_usd??0).toFixed(4), true) +
+    kpi('Taxa de erro', pct(t.error_rate)) +
+    kpi('Evals', (d.evals?.count??0));
+  document.getElementById('totalcost').textContent = '$'+(t.cost_usd??0).toFixed(4);
+
+  const ca = d.cache||{};
+  document.getElementById('cachehits').textContent = ca.hits??0;
+  document.getElementById('cachesaved').textContent = '$'+(ca.estimated_saved_usd??0).toFixed(4);
+  document.getElementById('cacherate').textContent = pct(ca.hit_rate);
+  document.getElementById('cacheentries').textContent = ca.entries??0;
+
+  const mb = document.querySelector('#models tbody'); mb.innerHTML='';
+  for(const [m,v] of Object.entries(d.by_model||{})){
+    mb.innerHTML += `<tr><td>${m}</td><td class="num">${v.calls}</td>
+      <td class="num">${v.in_tokens}/${v.out_tokens}</td>
+      <td class="num">$${v.cost_usd.toFixed(4)}</td></tr>`;
+  }
+  if(!mb.innerHTML) mb.innerHTML='<tr><td colspan="4">Sem dados ainda.</td></tr>';
+
+  const ob = document.querySelector('#ops tbody'); ob.innerHTML='';
+  for(const [op,v] of Object.entries(d.by_operation||{})){
+    ob.innerHTML += `<tr><td>${op}</td><td class="num">${v.calls}</td>
+      <td class="num">${v.p50_ms}</td><td class="num">${v.p95_ms}</td></tr>`;
+  }
+  if(!ob.innerHTML) ob.innerHTML='<tr><td colspan="4">Sem dados ainda.</td></tr>';
+
+  // ── FinOps ──
+  const fin = d.finops||{};
+  document.getElementById('fin_total').textContent = '$'+(fin.total_cost_usd??0).toFixed(4);
+  document.getElementById('fin_tokens').textContent = `${(fin.total_in_tokens??0).toLocaleString()} / ${(fin.total_out_tokens??0).toLocaleString()}`;
+  document.getElementById('fin_month').textContent = '$'+(fin.projected_month_usd??0).toFixed(2);
+  document.getElementById('fin_days').textContent = fin.days_active??0;
+  const fb2 = document.querySelector('#finops tbody'); fb2.innerHTML='';
+  const ops = Object.entries(fin.by_operation||{}).sort((a,b)=>b[1].cost_usd-a[1].cost_usd);
+  for(const [op,v] of ops){
+    fb2.innerHTML += `<tr><td>${op}</td><td class="num">${v.calls}</td>
+      <td class="num">${v.in_tokens}/${v.out_tokens}</td>
+      <td class="num">$${v.cost_usd.toFixed(4)}</td></tr>`;
+  }
+  if(!fb2.innerHTML) fb2.innerHTML='<tr><td colspan="4">Sem dados ainda.</td></tr>';
+  const fd = document.querySelector('#finday tbody'); fd.innerHTML='';
+  for(const [day,cost] of Object.entries(fin.spend_by_day||{}).reverse()){
+    fd.innerHTML += `<tr><td>${day}</td><td class="num">$${(cost||0).toFixed(4)}</td></tr>`;
+  }
+  if(!fd.innerHTML) fd.innerHTML='<tr><td colspan="2">Sem dados ainda.</td></tr>';
+
+  // ── RAG ──
+  const rg = d.rag||{};
+  document.getElementById('rag_q').textContent = rg.queries??0;
+  document.getElementById('rag_idx').textContent = (rg.indexed_chunks==null)?'—':rg.indexed_chunks;
+  document.getElementById('rag_cost').textContent = '$'+(rg.cost_usd??0).toFixed(4);
+  document.getElementById('rag_p95').textContent = (rg.p95_ms??0)+' ms';
+
+  const e = d.evals||{};
+  document.getElementById('evals').innerHTML = e.count ? `
+    <div class="row"><span>Groundedness</span><b>${e.avg_groundedness}</b></div>${bar(e.avg_groundedness)}
+    <div class="row"><span>Relevance</span><b>${e.avg_relevance}</b></div>${bar(e.avg_relevance)}
+    <div class="row"><span>Coherence</span><b>${e.avg_coherence}</b></div>${bar(e.avg_coherence)}
+    <div class="row"><span>Judge score</span><b>${e.avg_judge_score}</b></div>${bar(e.avg_judge_score)}
+    <div class="row"><span>Alucinação</span><b>${pct(e.hallucination_rate)}</b></div>`
+    : '<div class="sub">Nenhum eval ainda. Rode com EVAL_ENABLED=1.</div>';
+
+  const f = d.feedback||{};
+  document.getElementById('feedback').innerHTML = `
+    <div class="row"><span>👍 Positivos</span><b>${f.up||0}</b></div>
+    <div class="row"><span>👎 Negativos</span><b>${f.down||0}</b></div>
+    <div class="row"><span>Aprovação</span><span class="pill">${pct(f.ratio)}</span></div>`;
+
+  document.getElementById('health').innerHTML = `
+    <div class="row"><span>Erros</span><b>${t.errors||0}</b></div>
+    <div class="row"><span>Taxa de erro</span><b>${pct(t.error_rate)}</b></div>
+    <div class="row"><span>Total de chamadas</span><b>${t.calls||0}</b></div>`;
+}
+load();
+
+async function loadLogs(){
+  try{
+    const d = await (await fetch('/api/observability/logs?limit=150')).json();
+    const tb = document.querySelector('#logs tbody'); tb.innerHTML='';
+    const logs = d.logs||[];
+    document.getElementById('logcount').textContent = `${logs.length} eventos mais recentes`;
+    for(const r of logs){
+      const when = r.ts ? new Date(r.ts*1000).toLocaleString('pt-BR') : '—';
+      const tok = `${r.input_tokens||0}/${r.output_tokens||0}`;
+      const cost = r.cost_usd!=null ? '$'+Number(r.cost_usd).toFixed(5) : '—';
+      let cls = ''; if(r.status==='error'||r.status==='circuit_open') cls='delta-bad';
+      else if(r.status==='cache_hit') cls='delta-good';
+      tb.innerHTML += `<tr>
+        <td>${when}</td><td>${r.operation||'—'}</td><td>${r.model||'—'}</td>
+        <td class="${cls}">${r.status||'—'}</td>
+        <td class="num">${r.latency_ms!=null?Math.round(r.latency_ms):'—'}</td>
+        <td class="num">${tok}</td><td class="num">${cost}</td>
+        <td class="delta-bad">${r.error?String(r.error).slice(0,60):''}</td></tr>`;
+    }
+    if(!tb.innerHTML) tb.innerHTML='<tr><td colspan="8" class="sub">Nenhum evento ainda.</td></tr>';
+  }catch(e){ /* */ }
+}
+
+async function loadJudge(){
+  try{
+    const d = await (await fetch('/api/observability/evals')).json();
+    const tb = document.querySelector('#judgetbl tbody'); tb.innerHTML='';
+    for(const r of (d.evals||[])){
+      const when = r.ts ? new Date(r.ts*1000).toLocaleString('pt-BR') : '—';
+      const hal = r.hallucination ? '<span class="delta-bad">sim</span>' : '<span class="delta-good">não</span>';
+      tb.innerHTML += `<tr>
+        <td>${when}</td><td>${r.target||'—'}</td>
+        <td class="num">${(r.judge_score??0).toFixed(2)}</td>
+        <td class="num">${(r.groundedness??0).toFixed(2)}</td>
+        <td class="num">${(r.relevance??0).toFixed(2)}</td>
+        <td class="num">${(r.coherence??0).toFixed(2)}</td>
+        <td>${hal}</td><td class="sub">${(r.rationale||'').slice(0,90)}</td></tr>`;
+    }
+    if(!tb.innerHTML) tb.innerHTML='<tr><td colspan="8" class="sub">Nenhuma avaliação ainda. Rode com EVAL_ENABLED=1.</td></tr>';
+  }catch(e){ /* */ }
+}
+
+loadLogs();
+loadJudge();
+
+const DRIFT_METRICS = [
+  ["p95_latency_ms","Latência p95 (ms)","up_bad"],
+  ["avg_latency_ms","Latência média (ms)","up_bad"],
+  ["error_rate","Taxa de erro","up_bad","pct"],
+  ["avg_cost_usd","Custo médio/chamada (USD)","up_bad","usd"],
+  ["avg_judge_score","Judge score","down_bad"],
+  ["hallucination_rate","Alucinação","up_bad","pct"],
+  ["cache_hit_rate","Cache hit rate","down_bad","pct"],
+];
+function fmt(v,kind){ if(v==null) return "—";
+  if(kind==="pct") return (v*100).toFixed(1)+"%";
+  if(kind==="usd") return "$"+Number(v).toFixed(5);
+  return Number(v).toFixed(2); }
+function deltaCls(b,r,dir){ if(b==null||r==null) return "delta-flat";
+  if(Math.abs(r-b) < 1e-9) return "delta-flat";
+  const worse = dir==="up_bad" ? r>b : r<b;
+  return worse ? "delta-bad" : "delta-good"; }
+
+function renderDrift(d){
+  const banner=document.getElementById("driftbanner");
+  if(!d.enough_data){
+    banner.innerHTML='<span class="badge ok">dados insuficientes</span> '+
+      'Rode <code>python seed_demo.py</code> para uma demonstração, ou gere jobs reais.';
+  } else {
+    const st=d.status==="alert"
+      ? `<span class="badge alert">⚠ ${d.alerts.length} alerta(s) de drift</span>`
+      : '<span class="badge ok">✓ sem drift relevante</span>';
+    banner.innerHTML = st + ` &nbsp; janela recente: ${d.window.recent_h}h · baseline: ${d.window.baseline_h}h`;
+  }
+  const tb=document.querySelector("#drifttable tbody"); tb.innerHTML="";
+  for(const [k,label,dir,kind] of DRIFT_METRICS){
+    const b=d.baseline[k], r=d.recent[k];
+    tb.innerHTML += `<tr><td>${label}</td>
+      <td class="num">${fmt(b,kind)}</td>
+      <td class="num ${deltaCls(b,r,dir)}">${fmt(r,kind)}</td>
+      <td class="num ${deltaCls(b,r,dir)}">${(b!=null&&r!=null)?((r-b>=0?'+':'')+fmt(r-b,kind)):'—'}</td></tr>`;
+  }
+  const al=document.getElementById("driftalerts");
+  al.innerHTML = (d.alerts||[]).map(a=>
+    `<div class="alert ${a.severity}"><b>${a.message}</b> · ${a.metric}: `+
+    `${a.baseline} → ${a.recent}</div>`).join("") ||
+    (d.enough_data ? '<div class="sub">Nenhum alerta — métricas estáveis.</div>' : '');
+}
+async function loadDriftHistory(){
+  try{
+    const d = await (await fetch('/api/observability/drift/history')).json();
+    const tb = document.querySelector('#drifthist tbody'); tb.innerHTML='';
+    for(const r of (d.runs||[])){
+      const when = new Date(r.ts*1000).toLocaleString('pt-BR');
+      const badge = r.status==='alert'
+        ? '<span class="badge alert">alert</span>'
+        : '<span class="badge ok">ok</span>';
+      tb.innerHTML += `<tr><td>${when}</td><td>${badge}</td><td class="num">${r.n_alerts}</td></tr>`;
+    }
+    if(!tb.innerHTML) tb.innerHTML='<tr><td colspan="3" class="sub">Nenhuma verificação ainda. Rode o scheduler ou clique no botão acima.</td></tr>';
+  }catch(e){}
+}
+async function loadDrift(){
+  try{ renderDrift(await (await fetch('/api/observability/drift')).json()); loadDriftHistory(); }
+  catch(e){ document.getElementById("driftbanner").textContent="Falha ao carregar drift."; }
+}
+async function runDrift(){
+  try{ renderDrift(await (await fetch('/api/observability/drift/check',{method:'POST'})).json());
+    load(); loadDriftHistory(); }
+  catch(e){ document.getElementById("driftbanner").textContent="Falha ao rodar verificação."; }
+}
+async function loadPublicacoes(){
+  try{
+    const res = await fetch('/api/analytics/publicacoes?plataforma=youtube');
+    const data = await res.json();
+    const tbody = document.getElementById('analyticsBody');
+    const pubs = data.publicacoes || [];
+    if(!pubs.length){
+      tbody.innerHTML = '<tr><td colspan="5">Nenhuma publicação registrada ainda.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = pubs.map(p => `
+      <tr>
+        <td>${(p.titulo||'').slice(0,50)}</td>
+        <td>${p.viral_score ?? '—'}${p.tier ? ' ('+p.tier+')' : ''}</td>
+        <td class="num">${p.views ?? '—'}</td>
+        <td class="num">${p.retencao_media_pct != null ? p.retencao_media_pct.toFixed(1)+'%' : '—'}</td>
+        <td class="num">${p.likes ?? '—'}</td>
+      </tr>
+    `).join('');
+  }catch(e){
+    document.getElementById('analyticsBody').innerHTML =
+      `<tr><td colspan="5">Erro ao carregar: ${e.message}</td></tr>`;
+  }
+}
+
+async function atualizarMetricasYoutube(){
+  const status = document.getElementById('analyticsStatus');
+  status.textContent = 'Buscando métricas reais no YouTube...';
+  try{
+    const res = await fetch('/api/analytics/atualizar_youtube', { method: 'POST' });
+    const data = await res.json();
+    if(data.error){ status.textContent = '⚠ ' + data.error; return; }
+    status.textContent = `✓ ${data.ok}/${data.processadas} publicação(ões) atualizada(s).`;
+    loadPublicacoes();
+    loadResumo();
+  }catch(e){
+    status.textContent = '⚠ Erro: ' + e.message;
+  }
+}
+
+async function loadPublicacoesIg(){
+  try{
+    const res = await fetch('/api/analytics/publicacoes?plataforma=instagram');
+    const data = await res.json();
+    const tbody = document.getElementById('analyticsBodyIg');
+    const pubs = data.publicacoes || [];
+    if(!pubs.length){
+      tbody.innerHTML = '<tr><td colspan="5">Nenhuma publicação registrada ainda.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = pubs.map(p => `
+      <tr>
+        <td>${(p.titulo||'').slice(0,50)}</td>
+        <td>${p.viral_score ?? '—'}${p.tier ? ' ('+p.tier+')' : ''}</td>
+        <td class="num">${p.views ?? '—'}</td>
+        <td class="num">${p.alcance ?? '—'}</td>
+        <td class="num">${p.likes ?? '—'}</td>
+      </tr>
+    `).join('');
+  }catch(e){
+    document.getElementById('analyticsBodyIg').innerHTML =
+      `<tr><td colspan="5">Erro ao carregar: ${e.message}</td></tr>`;
+  }
+}
+
+async function atualizarMetricasInstagram(){
+  const status = document.getElementById('analyticsStatusIg');
+  status.textContent = 'Buscando métricas reais no Instagram...';
+  try{
+    const res = await fetch('/api/analytics/atualizar_instagram', { method: 'POST' });
+    const data = await res.json();
+    if(data.error){ status.textContent = '⚠ ' + data.error; return; }
+    status.textContent = `✓ ${data.ok}/${data.processadas} publicação(ões) atualizada(s).`;
+    loadPublicacoesIg();
+    loadResumo();
+  }catch(e){
+    status.textContent = '⚠ Erro: ' + e.message;
+  }
+}
+
+async function loadResumo(){
+  try{
+    const res = await fetch('/api/analytics/resumo');
+    const data = await res.json();
+
+    const porTier = data.por_tier || [];
+    const elTier = document.getElementById('resumoPorTier');
+    if(!porTier.length){
+      elTier.innerHTML = '<div class="empty-hint">Ainda sem dado suficiente — precisa de publicações com métrica já buscada (botões de "Atualizar métricas" acima/abaixo).</div>';
+    } else {
+      const maxViews = Math.max(...porTier.map(t => t.media_views || 0));
+      elTier.innerHTML = porTier.map(t => `
+        <div class="tier-row">
+          <span class="tier-label">Tier ${t.tier}</span>
+          ${bar(maxViews ? (t.media_views||0)/maxViews : 0)}
+          <span class="num">${Math.round(t.media_views||0)} views</span>
+          <span class="num">${t.media_retencao != null ? t.media_retencao.toFixed(0)+'% ret.' : '—'}</span>
+        </div>
+      `).join('');
+    }
+
+    const top = data.top || [];
+    const elTop = document.getElementById('topPublicacoes');
+    if(!top.length){
+      elTop.innerHTML = '<div class="empty-hint">Nenhuma publicação com métrica ainda.</div>';
+    } else {
+      elTop.innerHTML = top.map((p, i) => `
+        <div class="top-item">
+          <span><span class="top-item-rank">#${i+1}</span>${(p.titulo||'(sem título)').slice(0,60)}</span>
+          <span class="top-item-meta">${p.views} views · previsto: tier ${p.tier||'—'} · ${p.plataforma}</span>
+        </div>
+      `).join('');
+    }
+  }catch(e){
+    document.getElementById('resumoPorTier').innerHTML = `<div class="empty-hint">Erro: ${e.message}</div>`;
+  }
+}
+
+loadResumo();
+loadPublicacoes();
+loadPublicacoesIg();
+loadDrift();
+</script>
+</main>
+</body>
+</html>

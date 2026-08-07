@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Configurações</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .cfg-wrap{max-width:620px}
+    .cfg-card{background:var(--surface);border-radius:16px;padding:24px;margin-bottom:20px}
+    .cfg-card h2{font-size:15px;font-weight:600;margin-bottom:4px}
+    .cfg-card .cfg-sub{font-size:12.5px;color:var(--text-2);margin-bottom:18px}
+    .cfg-row{display:flex;justify-content:space-between;align-items:center;
+      padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+    .cfg-row:last-child{border:0}
+    .cfg-row-label{color:var(--text-2)}
+    .cfg-row-value{font-weight:500}
+    .cfg-field{margin-bottom:14px}
+    .cfg-field label{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:6px}
+    .cfg-field input{width:100%;box-sizing:border-box;padding:10px 12px;background:var(--surface-2);
+      color:var(--text);border:1px solid var(--line);border-radius:9px;font-size:14px}
+    .cfg-msg{font-size:13px;margin-top:10px;padding:10px 12px;border-radius:8px;display:none}
+    .cfg-msg.ok{background:var(--accent-dim);color:var(--accent);display:block}
+    .cfg-msg.err{background:rgba(255,100,100,.12);color:#ff9b9b;display:block}
+    .cfg-badge{font-size:11px;padding:3px 10px;border-radius:999px}
+    .cfg-badge.on{background:var(--accent-dim);color:var(--accent)}
+    .cfg-badge.off{background:var(--surface-2);color:var(--text-3)}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'configuracoes' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <main class="stage cfg-wrap">
+    <div class="head-tag">Conta</div>
+    <h1 class="cat-title">Configurações</h1>
+    <p class="cat-sub">Sua conta, senha e segurança.</p>
+
+    <section class="cfg-card">
+      <h2>Conta</h2>
+      <div class="cfg-sub">Informações da sessão atual.</div>
+      <div class="cfg-row">
+        <span class="cfg-row-label">Usuário</span>
+        <span class="cfg-row-value">{{ username }}</span>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-row-label">Verificação em duas etapas (MFA)</span>
+        <span class="cfg-badge {{ 'on' if mfa_enabled else 'off' }}">
+          {{ 'Ativada' if mfa_enabled else 'Desativada' }}
+        </span>
+      </div>
+    </section>
+
+    <section class="cfg-card">
+      <h2>Trocar senha</h2>
+      <div class="cfg-sub">Só funciona pra contas cadastradas com e-mail/senha — login administrativo (.env) ou OAuth não usam senha própria aqui.</div>
+
+      <div class="cfg-field">
+        <label for="cfgSenhaAtual">Senha atual</label>
+        <input id="cfgSenhaAtual" type="password" autocomplete="current-password">
+      </div>
+      <div class="cfg-field">
+        <label for="cfgSenhaNova">Senha nova</label>
+        <input id="cfgSenhaNova" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres">
+      </div>
+      <div class="cfg-field">
+        <label for="cfgSenhaConfirma">Confirmar senha nova</label>
+        <input id="cfgSenhaConfirma" type="password" autocomplete="new-password">
+      </div>
+
+      <button type="button" id="cfgSalvarBtn" class="est-generate-btn">Salvar nova senha</button>
+      <div id="cfgMsg" class="cfg-msg"></div>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('cfgSalvarBtn').addEventListener('click', async () => {
+      const atual = document.getElementById('cfgSenhaAtual').value;
+      const nova = document.getElementById('cfgSenhaNova').value;
+      const confirma = document.getElementById('cfgSenhaConfirma').value;
+      const msg = document.getElementById('cfgMsg');
+      msg.className = 'cfg-msg';
+
+      if (!atual || !nova) {
+        msg.textContent = 'Preenche a senha atual e a nova.';
+        msg.classList.add('err');
+        return;
+      }
+      if (nova !== confirma) {
+        msg.textContent = 'A confirmação não bate com a senha nova.';
+        msg.classList.add('err');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/configuracoes/senha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senha_atual: atual, senha_nova: nova }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Falha ao trocar a senha.');
+        msg.textContent = '✓ Senha trocada com sucesso.';
+        msg.classList.add('ok');
+        document.getElementById('cfgSenhaAtual').value = '';
+        document.getElementById('cfgSenhaNova').value = '';
+        document.getElementById('cfgSenhaConfirma').value = '';
+      } catch (e) {
+        msg.textContent = e.message;
+        msg.classList.add('err');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+name: CI
+
+# Roda em todo push e pull request — antes de qualquer deploy acontecer
+# (os workflows de deploy, cd-hetzner.yml/cd-oracle.yml, dependem deste
+# passar primeiro, ver `needs: test` neles).
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_call:  # permite os workflows de deploy chamarem este como pré-requisito
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: |
+          python3 -m pip install --upgrade pip
+          # requirements.txt completo, não uma lista reduzida — o pacote
+          # tools/__init__.py importa TUDO antecipadamente (Whisper,
+          # moviepy, yt-dlp etc.) assim que qualquer teste faz
+          # "import tools.<qualquer_coisa>", então não dá pra pular essas
+          # dependências mesmo achando que o teste específico não usa.
+          # Confirmado testando localmente antes de subir este workflow.
+          pip install -r requirements.txt --break-system-packages
+          pip install pytest --break-system-packages
+
+      - name: Rodar suíte de testes
+        run: python3 -m pytest tests/ -v
+
+      - name: Auditoria de segredos expostos
+        run: bash scripts/security_check.sh

@@ -1,0 +1,29 @@
+name: Deploy Oracle
+
+# Mesma lógica do cd-hetzner.yml — disparo manual, exige o CI passar
+# antes. Segredos SEPARADOS (HETZNER_* vs ORACLE_*) porque são servidores
+# diferentes — nada impede de ter os dois configurados ao mesmo tempo e
+# escolher qual workflow disparar.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH no servidor Oracle
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/youtube-study-agent
+            git pull origin main
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml ps

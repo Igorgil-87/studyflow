@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Certificados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+<body>
+  <div class="grain"></div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Módulo Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'certificados' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage ct-main">
+    <header class="ct-head">
+      <div class="head-tag">Conquistas</div>
+      <h1 class="cat-title">Seus <em>certificados</em></h1>
+      <p class="ct-sub">Cada curso concluído vira um certificado que você pode baixar e compartilhar no LinkedIn e nas redes.</p>
+    </header>
+
+    <div class="ct-list" id="ctList"><div class="ct-loading">carregando…</div></div>
+    <div class="ct-empty" id="ctEmpty" hidden>
+      <div class="ct-empty-emoji">🎓</div>
+      <p>Você ainda não concluiu nenhum curso.<br>Vá ao <a href="/curso">Módulo Curso</a>, gere um curso e clique em <strong>Concluir</strong> para emitir seu primeiro certificado.</p>
+    </div>
+
+    <!-- modal de preview -->
+    <div class="ct-modal" id="ctModal" hidden>
+      <div class="ct-modal-backdrop" id="ctBackdrop"></div>
+      <div class="ct-modal-box">
+        <img id="ctModalImg" class="ct-modal-img" alt="Certificado">
+        <div class="ct-modal-actions">
+          <a id="ctDownload" class="ct-dl-btn" download="certificado.png">⬇ Baixar PNG</a>
+          <button class="ct-close-btn" id="ctClose">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      var list=document.getElementById('ctList'), empty=document.getElementById('ctEmpty');
+      var modal=document.getElementById('ctModal'), modalImg=document.getElementById('ctModalImg'), dl=document.getElementById('ctDownload');
+      function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+      function render(cs){
+        (list.querySelector('.ct-loading')||{}).remove && list.querySelector('.ct-loading').remove();
+        list.querySelectorAll('.ct-card').forEach(function(e){e.remove();});
+        empty.hidden = cs.length>0;
+        list.hidden = cs.length===0;
+        cs.forEach(function(c){
+          var url='/certificado/'+c.id+'.png';
+          var el=document.createElement('div'); el.className='ct-card';
+          el.innerHTML='<div class="ct-card-thumb"><img src="'+url+'" loading="lazy" alt="'+esc(c.curso)+'"></div>'+
+            '<div class="ct-card-body"><h3 class="ct-card-title">'+esc(c.curso)+'</h3>'+
+            '<div class="ct-card-meta">Concluído em '+esc(c.data)+(c.nota?' · nota '+esc(c.nota):'')+'</div>'+
+            '<div class="ct-card-actions">'+
+            '<button class="ct-view" data-url="'+url+'">Ver</button>'+
+            '<a class="ct-dl" href="'+url+'" download="certificado.png">Baixar</a>'+
+            '<button class="ct-del" data-id="'+c.id+'">Excluir</button>'+
+            '</div></div>';
+          list.appendChild(el);
+        });
+        list.querySelectorAll('.ct-view').forEach(function(b){b.addEventListener('click',function(){openModal(b.dataset.url);});});
+        list.querySelectorAll('.ct-del').forEach(function(b){b.addEventListener('click',function(){del(b.dataset.id);});});
+      }
+      function openModal(url){ modalImg.src=url; dl.href=url; modal.hidden=false; }
+      function closeModal(){ modal.hidden=true; modalImg.src=''; }
+      document.getElementById('ctClose').addEventListener('click',closeModal);
+      document.getElementById('ctBackdrop').addEventListener('click',closeModal);
+      function load(){ fetch('/api/concluidos').then(function(r){return r.json();}).then(function(d){render(d.concluidos||[]);}).catch(function(){list.innerHTML='<div class="ct-loading">erro ao carregar</div>';}); }
+      function del(id){ fetch('/api/concluidos/'+id,{method:'DELETE'}).then(function(r){return r.json();}).then(function(d){render(d.concluidos||[]);}); }
+      load();
+    })();
+  </script>
+</body>
+</html>

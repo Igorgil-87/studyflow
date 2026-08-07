@@ -1,0 +1,86 @@
+# docker-compose.yml — sobe a stack em modo redis (web + worker + redis).
+#
+#   docker compose up --build
+#
+# O web escala stateless e o worker escala separado:
+#   docker compose up --build --scale worker=3
+#
+# Lembre de criar um .env com OPENAI_API_KEY (e ANTHROPIC_API_KEY) antes.
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file: .env
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      # web e worker são containers separados — sem isto, vídeos gerados
+      # pelo worker (cortes do Youtuber, etc) não aparecem pro web.
+      - videos_data:/app/static/videos
+      - images_data:/app/static/images
+    depends_on:
+      redis:
+        condition: service_healthy
+    # SSE precisa de threads no gunicorn (gthread). Ver Dockerfile.
+
+  worker:
+    build: .
+    command: python worker.py
+    env_file: .env
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - videos_data:/app/static/videos
+      - images_data:/app/static/images
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Escala independente do web:  docker compose up --scale worker=3
+
+  scheduler:
+    build: .
+    command: python scheduler.py
+    env_file: .env
+    environment:
+      RUN_MODE: redis
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Roda 1 réplica só (não escala). Verifica drift periodicamente e notifica.
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: studyflow
+      POSTGRES_PASSWORD: studyflow
+      POSTGRES_DB: studyflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init_pgvector.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studyflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
+  videos_data:
+  images_data:

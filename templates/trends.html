@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Trends</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+
+    {% set active = 'trends' %}
+    {% set modulo_group = 'youtuber' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <main class="stage gt-main">
+
+    <!-- ── NEWS CHANNEL BANNER (estilo canal de notícias) ── -->
+    <div class="nx-broadcast">
+      <div class="nx-bar">
+        <span class="nx-logo">TREND<strong>LIVE</strong></span>
+        <span class="nx-live"><span class="nx-live-dot"></span>AO VIVO</span>
+        <span class="nx-clock" id="nxClock">--:--:--</span>
+      </div>
+      <div class="nx-ticker" id="nxTicker">
+        <span class="nx-ticker-tag">PLANTÃO</span>
+        <div class="nx-ticker-viewport">
+          <div class="nx-ticker-track" id="nxTickerTrack">
+            <span class="nx-ticker-item">Clique em “Analisar Tendências” para puxar as manchetes do momento…</span>
+          </div>
+        </div>
+      </div>
+      <div class="nx-market" id="nxMarket">
+        <span class="nx-market-tag">MERCADO</span>
+        <div class="nx-market-strip" id="nxMarketStrip">
+          <span class="nx-market-item nx-market-loading">carregando cotações…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE HEADER ── -->
+    <header class="ps-page-head">
+      <div class="ps-page-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="ps-page-title">Tendências Globais</h1>
+        <p class="ps-page-sub">
+          Orquestração multi-IA: GPT-4o-mini · Claude Haiku · Claude Sonnet
+          — Perplexity · GNews · X · Reddit · HackerNews · Wikipedia · YouTube
+        </p>
+      </div>
+      <div class="gt-header-right">
+        <span class="gt-last-updated" id="lastUpdated"></span>
+        <button class="ps-scan-btn ps-scan-btn-inline" id="analyzeBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span id="analyzeBtnLabel">Analisar Tendências Globais</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- URLs de referência extra (Crawl4AI) — opcional, some se vazio -->
+    <div class="gt-crawl-row">
+      <input id="gtCrawlUrls" type="text" class="est-theme-input"
+        placeholder="URLs de referência extra (opcional, separadas por vírgula) — ex: um artigo que você quer que a análise considere">
+    </div>
+
+    <!-- ── CATEGORY FILTER TABS ── -->
+    <div class="gt-cat-bar">
+      <button class="gt-cat-btn active" data-cat="todos">Todos</button>
+      <button class="gt-cat-btn" data-cat="esportes">⚽ Esportes</button>
+      <button class="gt-cat-btn" data-cat="games">🎮 Games</button>
+      <button class="gt-cat-btn" data-cat="politica">🏛 Política</button>
+      <button class="gt-cat-btn" data-cat="ciencia">🔬 Ciência</button>
+      <button class="gt-cat-btn" data-cat="cultura">🎭 Cultura</button>
+      <button class="gt-cat-btn" data-cat="historia">📜 História</button>
+      <button class="gt-cat-btn" data-cat="beleza">💄 Beleza</button>
+      <button class="gt-cat-btn" data-cat="fitness">💪 Mundo Fitness</button>
+      <button class="gt-cat-btn" data-cat="economia">📈 Economia</button>
+    </div>
+
+    <!-- ── PIPELINE PROGRESS ── -->
+    <section id="gtPipeline" hidden>
+      <div class="ps-card gt-pipeline-card">
+        <div class="ps-card-label">PROCESSANDO — ORQUESTRAÇÃO MULTI-IA</div>
+        <div class="gt-pipeline-steps">
+
+          <div class="gt-pip-step" id="pipColeta">
+            <div class="gt-pip-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div class="gt-pip-label">Coleta</div>
+            <div class="gt-pip-sub">Reddit · HN · Wiki · YouTube</div>
+            <div class="gt-pip-detail step-detail"></div>
+          </div>
+
+          <div class="gt-pip-step" id="pipAnalise">
+            <div class="gt-pip-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <div class="gt-pip-label">Chain 1 + 2</div>
+            <div class="gt-pip-sub">GPT-4o-mini + Claude Haiku</div>
+            <div class="gt-pip-detail step-detail"></div>
+          </div>
+
+          <div class="gt-pip-step" id="pipSintese">
+            <div class="gt-pip-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div class="gt-pip-label">Chain 3</div>
+            <div class="gt-pip-sub">Claude Sonnet · síntese global</div>
+            <div class="gt-pip-detail step-detail"></div>
+          </div>
+
+        </div>
+        <!-- Category progress dots -->
+        <div class="gt-cat-progress" id="catProgress"></div>
+      </div>
+    </section>
+
+    <!-- ── ERROR BOX ── -->
+    <div class="error-box" id="gtError" hidden></div>
+
+    <!-- ── EMPTY STATE ── -->
+    <div class="gt-empty" id="gtEmpty">
+      <div class="gt-empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h2 class="gt-empty-title">Inteligência de Tendências</h2>
+      <p class="gt-empty-sub">
+        Clique em <strong>Analisar Tendências Globais</strong> para iniciar a orquestração.
+        <br>Três modelos de IA analisam 4 fontes de dados em paralelo.
+      </p>
+      <div class="gt-model-badges">
+        <span class="gt-model-badge gt-badge-gpt">GPT-4o-mini</span>
+        <span class="gt-model-badge gt-badge-arrow">→</span>
+        <span class="gt-model-badge gt-badge-haiku">Claude Haiku</span>
+        <span class="gt-model-badge gt-badge-arrow">→</span>
+        <span class="gt-model-badge gt-badge-sonnet">Claude Sonnet</span>
+      </div>
+    </div>
+
+    <!-- ── RESULTS ── -->
+    <div id="gtResults" hidden>
+
+      <!-- ═══ MISSION CONTROL — grid de widgets ═══ -->
+      <div class="mc-grid">
+
+        <!-- Widget: Resumo Editorial -->
+        <section data-wid="gtSummaryCard" draggable="false" class="mc-widget mc-w-full" id="gtSummaryCard" hidden>
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-blue"></span> Resumo Editorial</span>
+            <span class="mc-widget-tag">Claude Sonnet</span>
+          </header>
+          <div class="mc-widget-body">
+            <p class="gt-summary-text" id="gtSummaryText"></p>
+          </div>
+        </section>
+
+        <!-- Widget: Clima (OpenWeather) -->
+        <section data-wid="mcWeatherWidget" draggable="false" class="mc-widget mc-w-narrow" id="mcWeatherWidget">
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-blue"></span> 🌤️ Clima</span>
+            <span class="mc-widget-tag">agora</span>
+          </header>
+          <div class="mc-widget-body" id="mcWeatherBody">
+            <div class="mc-weather-empty">carregando clima…</div>
+          </div>
+        </section>
+
+        <!-- Widget: Mercado -->
+        <section data-wid="mcMarketWidget" draggable="false" class="mc-widget mc-w-narrow" id="mcMarketWidget">
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-green"></span> 📈 Mercado</span>
+            <span class="mc-widget-tag" id="mcMarketTime">ao vivo</span>
+          </header>
+          <div class="mc-widget-body" id="mcMarketBody">
+            <div class="mc-market-loading">carregando cotações…</div>
+          </div>
+        </section>
+
+        <!-- Widget: NASA Foto do Dia -->
+        <section data-wid="mcNasaWidget" draggable="false" class="mc-widget mc-w-narrow" id="mcNasaWidget">
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-purple"></span> 🌌 NASA · Foto do Dia</span>
+            <span class="mc-widget-tag">hoje</span>
+          </header>
+          <div class="mc-widget-body" id="mcNasaBody">
+            <div class="mc-nasa-loading">carregando imagem…</div>
+          </div>
+        </section>
+
+        <!-- Widget: GitHub em alta -->
+        <section data-wid="mcGithubWidget" draggable="false" class="mc-widget mc-w-wide" id="mcGithubWidget">
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-orange"></span> 🐙 GitHub em Alta</span>
+            <span class="mc-widget-tag">repos da semana</span>
+          </header>
+          <div class="mc-widget-body" id="mcGithubBody">
+            <div class="mc-gh-loading">carregando repositórios…</div>
+          </div>
+        </section>
+
+        <!-- Widget: Hacker News Top -->
+        <section data-wid="mcHnWidget" draggable="false" class="mc-widget mc-w-narrow" id="mcHnWidget">
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-orange"></span> 🔶 Hacker News</span>
+            <span class="mc-widget-tag">top agora</span>
+          </header>
+          <div class="mc-widget-body" id="mcHnBody">
+            <div class="mc-hn-loading">carregando histórias…</div>
+          </div>
+        </section>
+
+        <!-- Widget: Oportunidades (cross-themes) -->
+        <section data-wid="gtCrossThemes" draggable="false" class="mc-widget mc-w-wide" id="gtCrossThemes" hidden>
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-orange"></span> 🎯 Oportunidades Detectadas</span>
+            <span class="mc-widget-tag">temas que cruzam categorias</span>
+          </header>
+          <div class="mc-widget-body">
+            <div class="gt-cross-grid" id="gtCrossGrid"></div>
+          </div>
+        </section>
+
+        <!-- Widget: Em Alta Agora (feed principal) -->
+        <section data-wid="mcFeedWidget" draggable="false" class="mc-widget mc-w-full" id="mcFeedWidget">
+          <header class="mc-widget-head">
+            <span class="mc-drag-handle" title="Arraste para reordenar">⋮⋮</span>
+            <span class="mc-widget-title"><span class="mc-dot mc-dot-red"></span> 🔥 Em Alta Agora</span>
+            <span class="mc-widget-tag" id="trendsHeaderCount"></span>
+          </header>
+          <div class="mc-widget-body">
+            <div class="gt-trends-grid" id="gtTrendsGrid"></div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- compat: cabeçalho legado oculto -->
+      <div class="gt-section-header" id="trendsHeader" hidden>
+        <span class="gt-section-label" id="trendsHeaderLabel"></span>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/trends.js') }}"></script>
+</body>
+</html>
