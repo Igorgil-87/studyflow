@@ -13,7 +13,7 @@ anthropic==0.34.0             # tools/claude_copy_client.py — texto de impacto
 yt-dlp>=2025.1.1              # mantenha sempre atualizado: pip install -U yt-dlp
 
 # ─── Áudio e vídeo ────────────────────────────────────────
-moviepy==1.0.3
+moviepy==2.2.1
 ffmpeg-python==0.2.0          # moviepy depende do ffmpeg no PATH
 
 # ─── Transcrição ──────────────────────────────────────────
