@@ -12,7 +12,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    needs: test  # só roda se o CI (testes + auditoria de segurança) passar
+    needs: test # só roda se o CI (testes + auditoria de segurança) passar
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH no servidor Hetzner
@@ -23,7 +23,7 @@ jobs:
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
             set -e
-            cd ~/youtube-study-agent
+            cd /opt/studyflow/studyflow
             git pull origin main
             docker compose -f docker-compose.prod.yml up -d --build
             docker compose -f docker-compose.prod.yml ps
