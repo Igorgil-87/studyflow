@@ -1,6 +1,6 @@
 # ─── LangChain core ───────────────────────────────────────
 langchain==0.2.16
-langchain-community==0.2.16
+langchain-community==0.4.2
 langchain-openai==0.1.23      # troque por langchain-anthropic se usar Claude
 
 # ─── LLM providers ────────────────────────────────────────
