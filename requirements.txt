@@ -17,7 +17,7 @@ moviepy==1.0.3
 ffmpeg-python==0.2.0          # moviepy depende do ffmpeg no PATH
 
 # ─── Transcrição ──────────────────────────────────────────
-faster-whisper==1.0.3         # wheel pré-compilado, roda em Python 3.12
+faster-whisper==1.2.1         # wheel pré-compilado, roda em Python 3.12
 
 # ─── Tendências / Trends ──────────────────────────────────
 pytrends==4.9.2               # Google Trends
