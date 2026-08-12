@@ -136,6 +136,15 @@ Isso vai gerar/atualizar o `youtube_token.json` local. Copia ele (e o
 scp -i ~/Downloads/sua-chave.key youtube_token.json client_secret.json ubuntu@SEU_IP_PUBLICO:~/youtube-study-agent/
 ```
 
+**Os vídeos de identidade também** (`login-bg.mp4` e `fechamento.mp4`)
+— eles ficam de propósito **fora do git** (são asset pessoal, não
+código; o `login-bg.mp4` sozinho tem ~17MB, pesado demais pro
+repositório). Copia manualmente, uma vez:
+
+```bash
+scp -i ~/Downloads/sua-chave.key static/video/login-bg.mp4 static/video/fechamento.mp4 ubuntu@SEU_IP_PUBLICO:~/youtube-study-agent/static/video/
+```
+
 ### A.7 — Subir tudo
 
 **No servidor**:
