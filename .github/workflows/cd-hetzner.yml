@@ -22,6 +22,9 @@ jobs:
     needs: test # só roda se o CI (testes + auditoria de segurança) passar
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment:
+      name: production
+      url: https://studyflow.vip
     steps:
       - name: Deploy via SSH no servidor Hetzner (com backup e rollback automático)
         uses: appleboy/ssh-action@v1
@@ -68,3 +71,21 @@ jobs:
             fi
 
             echo "Deploy concluído com sucesso e aplicação saudável."
+
+      - name: Notificar por e-mail (sucesso ou falha)
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "StudyFlow Deploy #${{ github.run_number }} — ${{ job.status }}"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: StudyFlow CI/CD
+          body: |
+            Deploy #${{ github.run_number }} em ${{ github.repository }}
+            Status: ${{ job.status }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Detalhes: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
