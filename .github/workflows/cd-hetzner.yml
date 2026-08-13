@@ -82,7 +82,7 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
           subject: "StudyFlow Deploy #${{ github.run_number }} — ${{ job.status }}"
           to: ${{ secrets.NOTIFY_EMAIL }}
-          from: StudyFlow CI/CD
+          from: StudyFlow CI/CD <${{ secrets.SMTP_USERNAME }}>
           body: |
             Deploy #${{ github.run_number }} em ${{ github.repository }}
             Status: ${{ job.status }}
