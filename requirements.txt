@@ -47,7 +47,7 @@ psycopg2-binary==2.9.12   # driver Postgres (camada rag/)
 
 # ─── Login social (OAuth) ─────────────────────────────────
 Authlib==1.3.2           # OAuth Google/LinkedIn/Instagram (opcional)
-certifi>=2024.2.2          # certificados SSL (resolve SSL no Mac)
+certifi>=2024.12.14          # certificados SSL (resolve SSL no Mac)
 langchain-anthropic==0.1.23   # mesma geração do langchain 0.2.16 (0.2.4 exige langchain-core 0.3+, conflita)
 yfinance>=0.2.40    # cotações de ações sem chave (faixa de mercado)
 Pillow>=10.0.0
