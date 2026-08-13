@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
-import random
+import secrets
 import smtplib
 import ssl
 import time
@@ -29,7 +29,7 @@ def is_enabled() -> bool:
 
 
 def generate_code() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _hash(code: str, email: str) -> str:
