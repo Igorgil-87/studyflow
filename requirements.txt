@@ -29,7 +29,7 @@ flask-cors==5.0.0
 
 # ─── Utilitários ──────────────────────────────────────────
 python-dotenv==1.0.1
-pydantic==2.9.2
+pydantic==2.13.4
 colorama==0.4.6               # logs coloridos no terminal
 
 # ─── Fila externa / escala horizontal (modo redis) ────────
