@@ -111,6 +111,7 @@
     <div class="divider">ou com e-mail</div>
 
     <form method="POST" action="/login" id="loginForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field">
         <label for="li-user">E-mail</label>
         <input id="li-user" type="text" name="username" placeholder="voce@email.com" autocomplete="username" required>
@@ -123,6 +124,7 @@
     </form>
 
     <form method="POST" action="/signup" id="signupForm" class="hidden">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field">
         <label for="su-name">Nome</label>
         <input id="su-name" type="text" name="name" placeholder="Como devemos te chamar">
