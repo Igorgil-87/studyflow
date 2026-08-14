@@ -744,12 +744,18 @@ def youtuber_vertical():
     if not arquivo:
         return jsonify({"ok": False, "erro": "arquivo não informado"}), 400
 
-    src = os.path.join("static", arquivo)
-    if not os.path.exists(src):
-        return jsonify({"ok": False, "erro": "clip não encontrado"}), 404
-    base, _ = os.path.splitext(arquivo)
-    out_rel = f"{base}_9x16.mp4"
-    out_abs = os.path.join("static", out_rel)
+    # Valida o caminho de entrada: precisa ficar dentro de static/
+    # (evita path traversal via "../../..." no campo arquivo).
+    static_base = os.path.normpath("static")
+    src = os.path.normpath(os.path.join(static_base, arquivo))
+    if not src.startswith(static_base + os.sep) or not os.path.isfile(src):
+        return jsonify({"ok": False, "erro": "clip inválido ou não encontrado"}), 400
+
+    nome_base, _ = os.path.splitext(arquivo)
+    out_rel = f"{nome_base}_9x16.mp4"
+    out_abs = os.path.normpath(os.path.join(static_base, out_rel))
+    if not out_abs.startswith(static_base + os.sep):
+        return jsonify({"ok": False, "erro": "caminho de saída inválido"}), 400
     os.makedirs(os.path.dirname(out_abs), exist_ok=True)
 
     result = export_vertical(src, out_abs, mode=mode)
