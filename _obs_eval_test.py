@@ -1,5 +1,7 @@
 import os, tempfile, json
-os.environ["OBS_DB"] = tempfile.mktemp(suffix=".db")
+_fd, _tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
+os.environ["OBS_DB"] = _tmpdb
 from obs import db, judge, report
 db.init()
 

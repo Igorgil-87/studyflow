@@ -1,6 +1,8 @@
 # valida o módulo de preferências (layout do Mission Control)
 import importlib.util as u, os, tempfile
-os.environ["USERS_DB"] = tempfile.mktemp(suffix=".db")
+_fd, _tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
+os.environ["USERS_DB"] = _tmpdb
 s=u.spec_from_file_location("prefs","auth/prefs.py"); p=u.module_from_spec(s); s.loader.exec_module(p)
 
 # default quando vazio
