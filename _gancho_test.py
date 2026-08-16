@@ -20,7 +20,10 @@ print("lógica original intacta (renderQuiz, resultTitle, views)")
 
 # 3) o endpoint salva e a home lê
 s=u.spec_from_file_location("prefs","auth/prefs.py"); prefs=u.module_from_spec(s)
-tmpdb=tempfile.mktemp(suffix=".db"); os.environ["USERS_DB"]=tmpdb; s.loader.exec_module(prefs)
+tmp_fd, tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(tmp_fd)
+os.environ["USERS_DB"] = tmpdb
+s.loader.exec_module(prefs)
 user="aluno@sf"
 curso={"titulo":"Redes Neurais","subtitulo":"Curso gerado por IA · Whisper + LLM","progresso":0,"aula_atual":""}
 prefs.set_pref(user,"curso_atual",curso)

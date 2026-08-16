@@ -1,5 +1,7 @@
 import os, tempfile
-os.environ["USERS_DB"] = tempfile.mktemp(suffix=".db")
+_fd, _tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
+os.environ["USERS_DB"] = _tmpdb
 from auth import users
 
 users.init()

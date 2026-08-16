@@ -10,7 +10,8 @@ print("catálogo OK (12 cursos, lookup por id)")
 
 # persistência via prefs (usa db temporário)
 s = u.spec_from_file_location("prefs", "auth/prefs.py"); prefs = u.module_from_spec(s)
-tmpdb = tempfile.mktemp(suffix=".db")
+tmp_fd, tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(tmp_fd)
 os.environ["USERS_DB"] = tmpdb
 s.loader.exec_module(prefs)
 

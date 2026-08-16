@@ -1,5 +1,7 @@
 import os, tempfile, time
-os.environ["TTL_CACHE_DB"] = tempfile.mktemp(suffix=".db")
+_fd, _tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
+os.environ["TTL_CACHE_DB"] = _tmpdb
 from cache import ttl_cache
 
 # ── 1) set/get dentro do TTL ──

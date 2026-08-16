@@ -1,5 +1,8 @@
 import os, tempfile, time
-os.environ["OBS_DB"] = tempfile.mktemp(suffix=".db")
+from urllib.parse import urlparse
+_fd, _tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
+os.environ["OBS_DB"] = _tmpdb
 os.environ["DRIFT_WEBHOOK_URL"] = "https://example.com/hook"  # ativa envio
 from obs import db, drift, notify
 import seed_demo
@@ -26,7 +29,7 @@ def fake_opener(url, data):
     sent_payloads.append((url, data))
 assert notify.send_alert(alert_rep, _opener=fake_opener) is True
 assert notify.send_alert(ok_rep, _opener=fake_opener) is False, "ok não envia"
-assert len(sent_payloads)==1 and "example.com" in sent_payloads[0][0]
+assert len(sent_payloads)==1 and urlparse(sent_payloads[0][0]).netloc.endswith("example.com")
 import json
 body = json.loads(sent_payloads[0][1].decode())
 assert "text" in body and "alerts" in body and body["status"]=="alert"
