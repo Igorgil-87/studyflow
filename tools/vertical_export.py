@@ -18,6 +18,7 @@ Requer ffmpeg instalado. check_ffmpeg() detecta.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 
@@ -25,6 +26,20 @@ import subprocess
 def check_ffmpeg() -> bool:
     """True se o ffmpeg está disponível no PATH."""
     return shutil.which("ffmpeg") is not None
+
+
+def _is_safe_cli_path(path: str) -> bool:
+    """Bloqueia dois vetores de injeção de linha de comando:
+    1) começar com '-' — o ffmpeg (e qualquer CLI) pode interpretar o
+       'arquivo' como uma FLAG em vez de um caminho (ex: um nome de
+       arquivo literal "-rf" vira opção, não path).
+    2) '..' no caminho normalizado — path traversal."""
+    normalized = os.path.normpath(path)
+    if normalized.startswith("-"):
+        return False
+    if normalized.startswith(".." + os.sep) or normalized == "..":
+        return False
+    return True
 
 
 def _escape_subtitle_path(path: str) -> str:
@@ -99,6 +114,8 @@ def export_vertical(input_path: str, output_path: str, mode: str = "blur",
     if not check_ffmpeg():
         return {"ok": False, "erro": "ffmpeg não encontrado. Instale o ffmpeg "
                 "(macOS: 'brew install ffmpeg')."}
+    if not _is_safe_cli_path(input_path) or not _is_safe_cli_path(output_path):
+        return {"ok": False, "erro": "caminho de entrada/saída inválido."}
     cmd = build_vertical_command(input_path, output_path, mode,
                                   subtitle_path=subtitle_path, preset=preset)
     try:

@@ -65,10 +65,17 @@ def verify(challenge: dict | None, code: str) -> tuple[bool, str]:
 
 
 def send_code(email: str, code: str) -> bool:
-    """Envia o código por SMTP. Sem SMTP, modo DEV (imprime no console)."""
+    """Envia o código por SMTP. Sem SMTP, modo DEV — só imprime o código
+    de verdade no console se MFA_DEV_LOG=1 estiver explicitamente ligado
+    (evita vazar o código em log de produção se o SMTP cair de config
+    por engano)."""
     host = os.getenv("SMTP_HOST")
     if not host:
-        print(f"[mfa] SMTP não configurado — código DEV para {email}: {code}")
+        if os.getenv("MFA_DEV_LOG", "0") == "1":
+            print(f"[mfa] SMTP não configurado — código DEV para {email}: {code}")
+        else:
+            print(f"[mfa] SMTP não configurado — código não enviado para {email}. "
+                  "Defina MFA_DEV_LOG=1 pra ver o código no console em desenvolvimento.")
         return True
     try:
         port = int(os.getenv("SMTP_PORT", "587"))
