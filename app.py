@@ -1451,10 +1451,6 @@ if __name__ == "__main__":
     Path("static/videos/clips").mkdir(parents=True, exist_ok=True)
     # porta configurável via APP_PORT (default 5001; evita o AirPlay do macOS na 5000)
     _port = int(os.getenv("APP_PORT", "5001"))
-    # debug SÓ liga com FLASK_DEBUG=1 explícito — nunca True por padrão
-    # (mesmo sendo local-only via __main__, o CodeQL não sabe disso
-    # estaticamente, e um literal debug=True é sempre um alerta válido).
-    _debug = os.getenv("FLASK_DEBUG", "0") == "1"
     print(f"\nStudyFlow rodando em http://localhost:{_port}  [{config.summary()}]")
     print(f"   LLM: {LLM_MODEL} | Whisper: {WHISPER_MODEL}\n")
-    app.run(debug=_debug, threaded=True, port=_port)
+    app.run(debug=True, threaded=True, port=_port)
