@@ -72,10 +72,10 @@ def send_code(email: str, code: str) -> bool:
     host = os.getenv("SMTP_HOST")
     if not host:
         if os.getenv("MFA_DEV_LOG", "0") == "1":
-            print(f"[mfa] SMTP não configurado — código DEV para {email}: {code}")
+            print("[mfa] SMTP não configurado — envio de código suprimido (modo DEV).")
         else:
-            print(f"[mfa] SMTP não configurado — código não enviado para {email}. "
-                  "Defina MFA_DEV_LOG=1 pra ver o código no console em desenvolvimento.")
+            print("[mfa] SMTP não configurado — código não enviado. "
+                  "Configure SMTP para entrega de MFA.")
         return True
     try:
         port = int(os.getenv("SMTP_PORT", "587"))
