@@ -49,14 +49,12 @@ def get_pot_provider_url() -> str:
 def get_player_clients() -> str:
     """Clientes preferidos quando há PO Token Provider.
 
-    O guia atual do yt-dlp recomenda mweb + provider para GVS. web_safari
-    fica como fallback porque ainda oferece HLS em cenários onde formatos
-    HTTPS/DASH podem sofrer enforcement diferente. "default" deixa o
-    extractor escolher alternativas quando necessário.
+    O guia atual do yt-dlp recomenda mweb + PO Token Provider para GVS.
+    Mantemos apenas mweb no caminho principal para evitar misturar clients
+    com requisitos de token diferentes. web_safari continua disponível como
+    fallback explícito nos downloaders quando necessário.
     """
-    return os.getenv(
-        "YTDLP_PLAYER_CLIENTS", "mweb,web_safari,default"
-    ).strip()
+    return os.getenv("YTDLP_PLAYER_CLIENTS", "mweb").strip()
 
 
 def get_socket_timeout() -> int:

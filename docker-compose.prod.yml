@@ -67,8 +67,20 @@ services:
 
 
   bgutil-pot:
-    image: brainicism/bgutil-ytdlp-pot-provider:1.3.1-deno
+    build:
+      context: ./infra/bgutil-pot
+      args:
+        BGUTIL_COMMIT: 411d8d6d04a6bcb00108fd16165d2aae213d08a6
     restart: unless-stopped
+    # Provider customizado baseado no upstream PR #247. O patch troca axios
+    # por node:https nos fetches do BotGuard, evitando socket hang up/503
+    # quando o yt-dlp encaminha o proxy residencial ao provider.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4416/').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     # Não publique 4416 no host: web/worker acessam pela rede interna.
 
   web:
@@ -86,7 +98,7 @@ services:
       PROXY_URL: ${PROXY_URL:-}
       # PO Token Provider interno para formatos GVS que retornam HTTP 403.
       YTDLP_POT_PROVIDER_URL: ${YTDLP_POT_PROVIDER_URL:-http://bgutil-pot:4416}
-      YTDLP_PLAYER_CLIENTS: ${YTDLP_PLAYER_CLIENTS:-mweb,web_safari,default}
+      YTDLP_PLAYER_CLIENTS: ${YTDLP_PLAYER_CLIENTS:-mweb}
       # Cookie persistente e compartilhado com os workers. Uploads feitos
       # pela tela de Configurações são gravados neste volume.
       COOKIES_FILE: /app/secrets/cookies.txt
@@ -112,7 +124,7 @@ services:
       redis:
         condition: service_healthy
       bgutil-pot:
-        condition: service_started
+        condition: service_healthy
 
   worker:
     build: .
@@ -125,7 +137,7 @@ services:
       CRAWL4AI_URL: http://crawl4ai:11235
       PROXY_URL: ${PROXY_URL:-}
       YTDLP_POT_PROVIDER_URL: ${YTDLP_POT_PROVIDER_URL:-http://bgutil-pot:4416}
-      YTDLP_PLAYER_CLIENTS: ${YTDLP_PLAYER_CLIENTS:-mweb,web_safari,default}
+      YTDLP_PLAYER_CLIENTS: ${YTDLP_PLAYER_CLIENTS:-mweb}
       COOKIES_FILE: /app/secrets/cookies.txt
       FOOOCUS_API_URL: ${FOOOCUS_API_URL:-http://disabled:8888}
       MPT_API_URL: ${MPT_API_URL:-}
@@ -139,7 +151,7 @@ services:
       redis:
         condition: service_healthy
       bgutil-pot:
-        condition: service_started
+        condition: service_healthy
 
   scheduler:
     build: .
