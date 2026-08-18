@@ -4,7 +4,7 @@ langchain-community==0.2.16
 langchain-openai==0.1.23      # troque por langchain-anthropic se usar Claude
 
 # ─── LLM providers ────────────────────────────────────────
-openai==1.51.0
+openai==1.109.1
 httpx==0.27.2                 # 0.28+ remove 'proxies' e quebra o cliente openai
 # anthropic==0.34.0
 anthropic==0.34.0             # tools/claude_copy_client.py — texto de impacto dos carrosséis
@@ -57,13 +57,13 @@ python-pptx==1.0.2            # rag/document_extractor.py — FALLBACK de PPTX (
 python-docx==1.1.2            # rag/document_extractor.py — FALLBACK de DOCX (se markitdown faltar)
 markitdown[pdf,pptx,docx,xlsx,xls]==0.1.6   # rag/document_extractor.py — motor PRINCIPAL,
                                 # cobre PDF/PPTX/DOCX/XLSX/XLS/CSV/JSON/XML/HTML/ZIP/EPUB/imagem/áudio.
-                                # Testado: SEM conflito com openai==1.51.0 (ao contrário do crawl4ai,
+                                # Testado: SEM conflito com openai==1.109.1 (ao contrário do crawl4ai,
                                 # que por isso roda em container Docker separado — ver docker-compose.full.yml).
                                 # Extras opcionais NÃO instalados por padrão (adicionar manualmente se quiser):
                                 #   markitdown-ocr        -> PDF/imagem escaneada via LLM de visão
                                 #   markitdown[audio-transcription] -> transcrição de áudio
 # crawl4ai NÃO entra aqui como pacote Python — ele arrasta unclecode-litellm,
-# que exige openai>=2.8.0, incompatível com o openai==1.51.0 travado neste
+# que exige openai>=2.8.0, incompatível com o openai==1.109.1 travado neste
 # projeto (e com langchain-openai==0.1.23, que exige openai<2.0.0). Roda como
 # serviço Docker separado (ver docker-compose.full.yml, serviço "crawl4ai") —
 # tools/crawler_client.py fala com ele via HTTP simples (requests), sem
