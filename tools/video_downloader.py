@@ -1,18 +1,25 @@
 """
 tools/video_downloader.py
-Baixa o vídeo (.mp4) do YouTube para tocar localmente na interface.
-Reaproveita as mesmas estratégias de fallback do audio_extractor
-(player_client android, cookies do navegador, modo padrão).
+Baixa vídeo do YouTube para reprodução local na interface.
+
+Produção 2026:
+- proxy residencial via PROXY_URL para evitar bloqueio de IP de datacenter;
+- cookies.txt via COOKIES_FILE para autenticação headless;
+- Deno/EJS para JavaScript challenges;
+- PO Token Provider (BgUtils) para GVS/HTTP 403;
+- fallback web_safari/HLS quando formatos HTTPS/DASH continuam rejeitados.
 """
 
+import glob
 import os
+import time
 from pathlib import Path
 
 import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from tools.youtube_runtime import common_ydl_opts
+from tools.youtube_runtime import common_ydl_opts, with_youtube_client
 
 
 class VideoDownloaderInput(BaseModel):
@@ -28,14 +35,16 @@ class VideoDownloaderTool(BaseTool):
     args_schema: type[BaseModel] = VideoDownloaderInput
     output_dir: str = "static/videos"
     cookies_browser: str = ""
-    # arquivo cookies.txt (formato Netscape) — funciona em servidor
-    # headless, sem precisar de navegador instalado (ao contrário de
-    # cookies_browser, que exige um Chrome/Firefox de verdade na mesma
-    # máquina). Exportado de um navegador logado no YouTube.
     cookies_file: str = ""
 
-    def _base_opts(self, out_template: str, *, use_auth: bool = False,
-                   cookies_browser: str = "", cookies_file: str = "") -> dict:
+    def _base_opts(
+        self,
+        out_template: str,
+        *,
+        use_auth: bool = False,
+        cookies_browser: str = "",
+        cookies_file: str = "",
+    ) -> dict:
         opts = common_ydl_opts(
             cookies_browser=cookies_browser,
             cookies_file=cookies_file,
@@ -43,7 +52,13 @@ class VideoDownloaderTool(BaseTool):
             quiet=True,
         )
         opts.update({
-            "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
+            # Mantém compatibilidade com navegador e limita custo/banda.
+            # Se não houver combinação MP4/M4A, permite fallback geral.
+            "format": (
+                "bv*[height<=720][ext=mp4]+ba[ext=m4a]/"
+                "b[height<=720][ext=mp4]/"
+                "best[height<=720]/best"
+            ),
             "outtmpl": out_template,
             "merge_output_format": "mp4",
             "continuedl": False,
@@ -51,49 +66,46 @@ class VideoDownloaderTool(BaseTool):
         })
         return opts
 
-    def _try_download(self, url: str, opts: dict) -> str | None:
+    def _hls_fallback_opts(self, opts: dict) -> dict:
+        """Fallback deliberado para web_safari/HLS.
+
+        O guia atual do yt-dlp informa que HLS do web_safari pode continuar
+        disponível em cenários onde GVS HTTPS/DASH exige PO Token. Mantemos
+        isto como segunda tentativa, não como caminho principal.
+        """
+        fallback = with_youtube_client(opts, "web_safari")
+        fallback["format"] = (
+            "best[protocol^=m3u8][height<=720]/"
+            "best[height<=720]/best"
+        )
+        return fallback
+
+    @staticmethod
+    def _try_download(url: str, opts: dict) -> str | None:
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 ydl.download([url])
             return None
-        except Exception as e:
-            return str(e)
+        except Exception as exc:
+            return str(exc)
 
-    def _run(self, url: str, progress_callback=None, job_id: str | None = None) -> str:
-        import glob
-        import time
-
-        output_path = Path(self.output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
-
-        # nome único por job (job_id) quando disponível — antes era um
-        # nome FIXO ("current_video.mp4") compartilhado entre TODOS os
-        # jobs. Isso significava que qualquer resquício deixado por um
-        # job que falhou podia, em teoria, interferir no próximo job que
-        # rodasse (mesmo nome de arquivo = mesmo "slot"). Com nome único,
-        # cada job tem seu próprio arquivo, sem chance de um afetar o
-        # outro. Sem job_id (chamada fora do pipeline), cai no nome fixo
-        # de antes — mantém compatibilidade com qualquer outro uso.
-        base_name = f"current_video_{job_id}" if job_id else "current_video"
-        out_template = str(output_path / f"{base_name}.%(ext)s")
-        final_video = str(output_path / f"{base_name}.mp4")
-
-        # limpa QUALQUER resquício de tentativa anterior DESSE MESMO job
-        # (não só o .mp4 final) — inclui .part, .ytdl, fragmentos .f###
-        # etc. Deixar isso pra trás é o que fazia o yt-dlp tentar
-        # "continuar" um download velho e tomar HTTP 416 do YouTube.
+    @staticmethod
+    def _clean_job_files(output_path: Path, base_name: str) -> None:
         for leftover in glob.glob(str(output_path / f"{base_name}.*")):
             try:
                 os.remove(leftover)
             except OSError:
                 pass
 
-        # Progresso real de download (%, velocidade, ETA) — antes disso a
-        # tela ficava com a mesma mensagem estática o tempo todo durante
-        # um download longo (vídeo de horas = minutos de download), o que
-        # parecia "travado" mesmo funcionando normal. yt-dlp chama esse
-        # hook várias vezes por segundo — throttla pra 1x/2s, senão inunda
-        # o SSE com evento demais.
+    def _run(self, url: str, progress_callback=None, job_id: str | None = None) -> str:
+        output_path = Path(self.output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        base_name = f"current_video_{job_id}" if job_id else "current_video"
+        out_template = str(output_path / f"{base_name}.%(ext)s")
+        final_video = str(output_path / f"{base_name}.mp4")
+        self._clean_job_files(output_path, base_name)
+
         last_emit = [0.0]
 
         def _hook(d):
@@ -108,44 +120,58 @@ class VideoDownloaderTool(BaseTool):
             eta = (d.get("_eta_str") or "").strip()
             progress_callback(f"{pct} a {speed} · ETA {eta}".strip(" ·"))
 
-        # Ordem conservadora: primeiro vídeo público sem sessão; depois
-        # cookies.txt (servidor headless); por último browser local. O Deno/EJS
-        # é usado automaticamente pelo yt-dlp quando instalado no container.
-        attempts = []
+        # O cookies.txt tem precedência sobre cookies-from-browser em headless.
+        auth_configs: list[tuple[str, dict]] = []
+
         opts_public = self._base_opts(out_template, use_auth=False)
-        opts_public["progress_hooks"] = [_hook]
-        attempts.append(("sem_cookies", opts_public))
+        auth_configs.append(("sem_cookies", opts_public))
 
         has_cookie_file = bool(self.cookies_file and os.path.isfile(self.cookies_file))
-
         if has_cookie_file:
-            opts_cookie = self._base_opts(
-                out_template, use_auth=True, cookies_file=self.cookies_file
-            )
-            opts_cookie["progress_hooks"] = [_hook]
-            attempts.append(("cookies_file", opts_cookie))
+            auth_configs.append((
+                "cookies_file",
+                self._base_opts(
+                    out_template,
+                    use_auth=True,
+                    cookies_file=self.cookies_file,
+                ),
+            ))
 
-        # Browser cookies are a local-development fallback only. If a valid
-        # cookies.txt exists, NEVER fall through to cookies-from-browser:
-        # headless production containers do not have a Chrome profile and
-        # that secondary failure would mask the real YouTube/cookie error.
         if self.cookies_browser and not has_cookie_file:
-            opts_browser = self._base_opts(
-                out_template, use_auth=True, cookies_browser=self.cookies_browser
-            )
-            opts_browser["progress_hooks"] = [_hook]
-            attempts.append((f"cookies_browser={self.cookies_browser}", opts_browser))
+            auth_configs.append((
+                f"cookies_browser={self.cookies_browser}",
+                self._base_opts(
+                    out_template,
+                    use_auth=True,
+                    cookies_browser=self.cookies_browser,
+                ),
+            ))
+
+        attempts: list[tuple[str, dict]] = []
+        for label, base_opts in auth_configs:
+            normal = dict(base_opts)
+            normal["progress_hooks"] = [_hook]
+            attempts.append((label, normal))
+
+            hls = self._hls_fallback_opts(base_opts)
+            hls["progress_hooks"] = [_hook]
+            attempts.append((f"{label}+web_safari_hls", hls))
 
         last_error = ""
-        for label, opts in attempts:
+        for index, (label, opts) in enumerate(attempts):
+            if index:
+                # Evita que um arquivo parcial de uma tentativa 403/416
+                # contamine a estratégia seguinte.
+                self._clean_job_files(output_path, base_name)
+
             print(f"[video_downloader] Tentando download de vídeo ({label})...")
             err = self._try_download(url, opts)
             if err is None and os.path.exists(final_video):
                 print(f"[video_downloader] Vídeo baixado via {label}")
-                # retorna o caminho relativo a /static para o front montar a URL
                 return f"videos/{base_name}.mp4"
+
             last_error = err or "arquivo não encontrado"
-            print(f"[video_downloader] Falhou ({label}): {str(last_error)[:120]}")
+            print(f"[video_downloader] Falhou ({label}): {str(last_error)[:240]}")
 
         from tools.yt_error_classifier import classify_download_error
         return classify_download_error(last_error)
