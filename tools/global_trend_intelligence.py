@@ -187,8 +187,10 @@ class GlobalTrendIntelligence:
         claude_model: str = "claude-sonnet-4-6",
         claude_fast_model: str = "claude-haiku-4-5-20251001",
         cookies_browser: str = "",
+        cookies_file: str = "",
     ):
         self.cookies_browser = cookies_browser
+        self.cookies_file = cookies_file
 
         from tools.llm_fallback import build_llm_with_fallback
 
@@ -538,6 +540,8 @@ class GlobalTrendIntelligence:
         opts: dict = {"quiet": True, "no_warnings": True, "extract_flat": True}
         if self.cookies_browser:
             opts["cookiesfrombrowser"] = (self.cookies_browser,)
+        elif self.cookies_file:
+            opts["cookiefile"] = self.cookies_file
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(f"ytsearch8:{query}", download=False)

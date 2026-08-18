@@ -33,6 +33,7 @@ class TrendFetcherTool(BaseTool):
     )
     args_schema: type[BaseModel] = TrendFetcherInput
     cookies_browser: str = ""
+    cookies_file: str = ""
 
     # ── YouTube ───────────────────────────────────────────────
     def _fetch_youtube(self, niche: str) -> list[dict]:
@@ -43,6 +44,8 @@ class TrendFetcherTool(BaseTool):
         }
         if self.cookies_browser:
             opts["cookiesfrombrowser"] = (self.cookies_browser,)
+        elif self.cookies_file:
+            opts["cookiefile"] = self.cookies_file
 
         queries = [f"{niche} trending 2025", f"{niche} viral"]
         videos, seen = [], set()

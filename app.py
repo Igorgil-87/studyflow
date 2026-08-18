@@ -44,6 +44,7 @@ from obs import db as obs_db
 from obs import drift as obs_drift
 from obs import report as obs_report
 from tools import TrendFetcherTool, CATEGORIES as TREND_CATEGORIES
+from tools import cookies_config
 
 load_dotenv()
 
@@ -274,6 +275,36 @@ def configuracoes_trocar_senha():
         return jsonify({"ok": True})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+
+# ══════════ Cookies do YouTube (yt-dlp) — upload pela interface ══════════
+# Servidor na nuvem não tem navegador instalado, então COOKIES_BROWSER
+# (que exige um Chrome/Firefox de verdade na máquina) não funciona lá.
+# Essa rota permite subir um cookies.txt exportado de qualquer navegador
+# — resolve o "Sign in to confirm you're not a bot" do YouTube em produção.
+COOKIES_MAX_UPLOAD_BYTES = cookies_config.MAX_COOKIES_FILE_BYTES + 1024
+
+
+@app.route("/api/configuracoes/cookies", methods=["GET"])
+@login_required
+def api_cookies_status():
+    return jsonify(cookies_config.cookies_status())
+
+
+@app.route("/api/configuracoes/cookies", methods=["POST"])
+@login_required
+def api_cookies_upload():
+    file = request.files.get("cookies")
+    if not file or not file.filename:
+        return jsonify({"error": "Nenhum arquivo enviado."}), 400
+    content = file.read(COOKIES_MAX_UPLOAD_BYTES + 1)
+    if len(content) > COOKIES_MAX_UPLOAD_BYTES:
+        return jsonify({"error": "Arquivo grande demais pra ser um cookies.txt."}), 400
+    try:
+        cookies_config.save_uploaded_cookies(content)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(cookies_config.cookies_status())
 
 
 @app.route("/planejamento")
@@ -685,7 +716,8 @@ def youtuber_trends():
     if not niche:
         return jsonify({"error": "Nicho obrigatório"}), 400
 
-    fetcher = TrendFetcherTool(cookies_browser=COOKIES_BROWSER)
+    fetcher = TrendFetcherTool(cookies_browser=COOKIES_BROWSER,
+                              cookies_file=cookies_config.get_cookies_file())
     result = fetcher._run(niche=niche)
     if result.startswith("ERRO"):
         return jsonify({"error": result}), 500

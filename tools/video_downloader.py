@@ -25,6 +25,11 @@ class VideoDownloaderTool(BaseTool):
     args_schema: type[BaseModel] = VideoDownloaderInput
     output_dir: str = "static/videos"
     cookies_browser: str = ""
+    # arquivo cookies.txt (formato Netscape) — funciona em servidor
+    # headless, sem precisar de navegador instalado (ao contrário de
+    # cookies_browser, que exige um Chrome/Firefox de verdade na mesma
+    # máquina). Exportado de um navegador logado no YouTube.
+    cookies_file: str = ""
 
     def _base_opts(self, out_template: str) -> dict:
         return {
@@ -129,6 +134,12 @@ class VideoDownloaderTool(BaseTool):
             opts_b["cookiesfrombrowser"] = (self.cookies_browser,)
             opts_b["progress_hooks"] = [_hook]
             attempts.append((f"cookies={self.cookies_browser}", opts_b))
+
+        if self.cookies_file:
+            opts_b2 = self._base_opts(out_template)
+            opts_b2["cookiefile"] = self.cookies_file
+            opts_b2["progress_hooks"] = [_hook]
+            attempts.append((f"cookies_file={self.cookies_file}", opts_b2))
 
         opts_c = self._base_opts(out_template)
         opts_c["progress_hooks"] = [_hook]
