@@ -59,5 +59,14 @@ def save_uploaded_cookies(file_bytes: bytes) -> None:
     if "# Netscape" not in text and "youtube.com" not in text:
         raise ValueError("Arquivo não parece ser um cookies.txt exportado do YouTube. "
                           "Confirme que exportou com a aba do YouTube aberta.")
-    with open(DEFAULT_COOKIES_PATH, "wb") as f:
+    # Em produção COOKIES_FILE pode apontar para um volume compartilhado
+    # entre web e worker (ex.: /app/secrets/cookies.txt). Assim, um upload
+    # feito pela UI passa a valer também para os workers sem rebuild.
+    target = os.getenv("COOKIES_FILE", "").strip() or DEFAULT_COOKIES_PATH
+    parent = os.path.dirname(target)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    tmp = f"{target}.tmp"
+    with open(tmp, "wb") as f:
         f.write(file_bytes)
+    os.replace(tmp, target)
