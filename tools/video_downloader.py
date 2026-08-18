@@ -1,13 +1,15 @@
 """
 tools/video_downloader.py
-Baixa vídeo do YouTube para reprodução local na interface.
+Baixa vídeo do YouTube para reprodução local e geração de cortes.
 
 Produção 2026:
 - proxy residencial via PROXY_URL para evitar bloqueio de IP de datacenter;
 - cookies.txt via COOKIES_FILE para autenticação headless;
 - Deno/EJS para JavaScript challenges;
 - PO Token Provider (BgUtils) para GVS/HTTP 403;
-- fallback web_safari/HLS quando formatos HTTPS/DASH continuam rejeitados.
+- estratégia progressive-first: prioriza formato 18 (MP4 com áudio+vídeo),
+  comprovadamente baixável no ambiente Hetzner + Decodo + mweb + POT;
+- DASH fica apenas como último fallback de seleção de formato.
 """
 
 import glob
@@ -19,7 +21,7 @@ import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from tools.youtube_runtime import common_ydl_opts, with_youtube_client
+from tools.youtube_runtime import common_ydl_opts
 
 
 class VideoDownloaderInput(BaseModel):
@@ -37,6 +39,18 @@ class VideoDownloaderTool(BaseTool):
     cookies_browser: str = ""
     cookies_file: str = ""
 
+    # O formato 18 é progressivo (vídeo+áudio no mesmo MP4) e, no ambiente
+    # de produção atual, evita o 403 observado em formatos DASH separados.
+    # Se ele não existir, tentamos outro progressivo antes de cair em DASH.
+    VIDEO_FORMAT = (
+        "18/"
+        "b[ext=mp4][vcodec!=none][acodec!=none][height<=720]/"
+        "b[vcodec!=none][acodec!=none][height<=720]/"
+        "bv*[height<=720][ext=mp4]+ba[ext=m4a]/"
+        "bestvideo[height<=720]+bestaudio/"
+        "best"
+    )
+
     def _base_opts(
         self,
         out_template: str,
@@ -52,33 +66,13 @@ class VideoDownloaderTool(BaseTool):
             quiet=True,
         )
         opts.update({
-            # Mantém compatibilidade com navegador e limita custo/banda.
-            # Se não houver combinação MP4/M4A, permite fallback geral.
-            "format": (
-                "bv*[height<=720][ext=mp4]+ba[ext=m4a]/"
-                "b[height<=720][ext=mp4]/"
-                "best[height<=720]/best"
-            ),
+            "format": self.VIDEO_FORMAT,
             "outtmpl": out_template,
             "merge_output_format": "mp4",
             "continuedl": False,
             "nopart": True,
         })
         return opts
-
-    def _hls_fallback_opts(self, opts: dict) -> dict:
-        """Fallback deliberado para web_safari/HLS.
-
-        O guia atual do yt-dlp informa que HLS do web_safari pode continuar
-        disponível em cenários onde GVS HTTPS/DASH exige PO Token. Mantemos
-        isto como segunda tentativa, não como caminho principal.
-        """
-        fallback = with_youtube_client(opts, "web_safari")
-        fallback["format"] = (
-            "best[protocol^=m3u8][height<=720]/"
-            "best[height<=720]/best"
-        )
-        return fallback
 
     @staticmethod
     def _try_download(url: str, opts: dict) -> str | None:
@@ -120,16 +114,19 @@ class VideoDownloaderTool(BaseTool):
             eta = (d.get("_eta_str") or "").strip()
             progress_callback(f"{pct} a {speed} · ETA {eta}".strip(" ·"))
 
-        # O cookies.txt tem precedência sobre cookies-from-browser em headless.
+        # Ordem deliberada:
+        # 1) público sem cookie; 2) cookies.txt; 3) browser apenas em dev.
+        # O formato progressivo é usado em todas as variantes.
         auth_configs: list[tuple[str, dict]] = []
-
-        opts_public = self._base_opts(out_template, use_auth=False)
-        auth_configs.append(("sem_cookies", opts_public))
+        auth_configs.append((
+            "sem_cookies+progressive_first",
+            self._base_opts(out_template, use_auth=False),
+        ))
 
         has_cookie_file = bool(self.cookies_file and os.path.isfile(self.cookies_file))
         if has_cookie_file:
             auth_configs.append((
-                "cookies_file",
+                "cookies_file+progressive_first",
                 self._base_opts(
                     out_template,
                     use_auth=True,
@@ -139,7 +136,7 @@ class VideoDownloaderTool(BaseTool):
 
         if self.cookies_browser and not has_cookie_file:
             auth_configs.append((
-                f"cookies_browser={self.cookies_browser}",
+                f"cookies_browser={self.cookies_browser}+progressive_first",
                 self._base_opts(
                     out_template,
                     use_auth=True,
@@ -147,25 +144,20 @@ class VideoDownloaderTool(BaseTool):
                 ),
             ))
 
-        attempts: list[tuple[str, dict]] = []
-        for label, base_opts in auth_configs:
-            normal = dict(base_opts)
-            normal["progress_hooks"] = [_hook]
-            attempts.append((label, normal))
-
-            hls = self._hls_fallback_opts(base_opts)
-            hls["progress_hooks"] = [_hook]
-            attempts.append((f"{label}+web_safari_hls", hls))
-
         last_error = ""
-        for index, (label, opts) in enumerate(attempts):
+        for index, (label, opts) in enumerate(auth_configs):
             if index:
-                # Evita que um arquivo parcial de uma tentativa 403/416
-                # contamine a estratégia seguinte.
+                # Evita que arquivo parcial de 403/416 contamine a tentativa seguinte.
                 self._clean_job_files(output_path, base_name)
 
+            opts = dict(opts)
+            opts["progress_hooks"] = [_hook]
             print(f"[video_downloader] Tentando download de vídeo ({label})...")
             err = self._try_download(url, opts)
+
+            # yt-dlp pode terminar com extensão diferente antes do merge; o
+            # merge_output_format garante MP4 quando há DASH. Para progressivo
+            # 18 o arquivo já nasce MP4.
             if err is None and os.path.exists(final_video):
                 print(f"[video_downloader] Vídeo baixado via {label}")
                 return f"videos/{base_name}.mp4"
