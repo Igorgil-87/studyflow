@@ -116,14 +116,20 @@ class VideoDownloaderTool(BaseTool):
         opts_public["progress_hooks"] = [_hook]
         attempts.append(("sem_cookies", opts_public))
 
-        if self.cookies_file and os.path.isfile(self.cookies_file):
+        has_cookie_file = bool(self.cookies_file and os.path.isfile(self.cookies_file))
+
+        if has_cookie_file:
             opts_cookie = self._base_opts(
                 out_template, use_auth=True, cookies_file=self.cookies_file
             )
             opts_cookie["progress_hooks"] = [_hook]
             attempts.append(("cookies_file", opts_cookie))
 
-        if self.cookies_browser:
+        # Browser cookies are a local-development fallback only. If a valid
+        # cookies.txt exists, NEVER fall through to cookies-from-browser:
+        # headless production containers do not have a Chrome profile and
+        # that secondary failure would mask the real YouTube/cookie error.
+        if self.cookies_browser and not has_cookie_file:
             opts_browser = self._base_opts(
                 out_template, use_auth=True, cookies_browser=self.cookies_browser
             )
