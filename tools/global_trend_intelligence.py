@@ -542,6 +542,9 @@ class GlobalTrendIntelligence:
             opts["cookiesfrombrowser"] = (self.cookies_browser,)
         elif self.cookies_file:
             opts["cookiefile"] = self.cookies_file
+        pot_url = os.getenv("POT_PROVIDER_URL", "").strip()
+        if pot_url:
+            opts.setdefault("extractor_args", {})["youtubepot-bgutilhttp"] = {"base_url": [pot_url]}
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(f"ytsearch8:{query}", download=False)
