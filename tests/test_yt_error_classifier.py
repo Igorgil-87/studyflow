@@ -31,11 +31,16 @@ def test_video_privado_erro_real_reportado_pelo_usuario():
     assert "Atualizar o yt-dlp não resolve" in msg
 
 
-def test_bloqueio_de_bot_sugere_atualizar_e_cookies():
+def test_bloqueio_de_bot_sugere_diagnostico_headless():
     erro = "ERROR: [youtube] abc: Sign in to confirm you're not a bot."
     msg = classify_download_error(erro)
-    assert "bot" in msg
-    assert "Atualize o yt-dlp" in msg
+
+    assert "anti-bot" in msg
+    assert "Deno/EJS" in msg
+    assert "python -m tools.youtube_doctor" in msg
+    assert "COOKIES_FILE" in msg
+    assert "PROXY_URL" in msg
+    assert erro in msg
 
 
 def test_restricao_de_idade():
