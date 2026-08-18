@@ -45,6 +45,8 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "output/quizzes")
 COOKIES_BROWSER = os.getenv("COOKIES_BROWSER", "").strip()
+
+from tools.cookies_config import get_cookies_file  # noqa: E402
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 CLAUDE_FAST_MODEL = os.getenv("CLAUDE_FAST_MODEL", "claude-haiku-4-5-20251001")
 
@@ -150,10 +152,12 @@ def run_curso_pipeline(
 
         emit("download", "running", "Baixando áudio e vídeo em paralelo...")
         audio_tool = AudioExtractorTool(
-            output_dir="output", cookies_browser=COOKIES_BROWSER
+            output_dir="output", cookies_browser=COOKIES_BROWSER,
+            cookies_file=get_cookies_file(),
         )
         video_tool = VideoDownloaderTool(
-            output_dir="static/videos", cookies_browser=COOKIES_BROWSER
+            output_dir="static/videos", cookies_browser=COOKIES_BROWSER,
+            cookies_file=get_cookies_file(),
         )
         with ThreadPoolExecutor(max_workers=2) as dl_ex:
             audio_fut = dl_ex.submit(audio_tool._run, url=chosen["url"], max_minutes=10, job_id=job_id)
@@ -283,10 +287,12 @@ def run_youtuber_pipeline(
     try:
         emit("download", "running", "Baixando áudio e vídeo em paralelo...")
         audio_tool = AudioExtractorTool(
-            output_dir="output", cookies_browser=COOKIES_BROWSER
+            output_dir="output", cookies_browser=COOKIES_BROWSER,
+            cookies_file=get_cookies_file(),
         )
         video_tool = VideoDownloaderTool(
-            output_dir="static/videos", cookies_browser=COOKIES_BROWSER
+            output_dir="static/videos", cookies_browser=COOKIES_BROWSER,
+            cookies_file=get_cookies_file(),
         )
         with ThreadPoolExecutor(max_workers=2) as dl_ex:
             audio_fut = dl_ex.submit(
@@ -641,6 +647,7 @@ def run_global_trends_pipeline(job_id: str, categories: list[str], urls: list[st
             claude_model=CLAUDE_MODEL,
             claude_fast_model=CLAUDE_FAST_MODEL,
             cookies_browser=COOKIES_BROWSER,
+            cookies_file=get_cookies_file(),
         )
 
         # Stage 1: coleta paralela de 4 fontes.

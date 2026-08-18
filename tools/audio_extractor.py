@@ -32,6 +32,9 @@ class AudioExtractorTool(BaseTool):
     # navegador de onde puxar cookies (chrome, firefox, safari, edge, brave...)
     # configurado via .env / app.py. Vazio = não usa cookies.
     cookies_browser: str = ""
+    # arquivo cookies.txt (Netscape) — alternativa que funciona em
+    # servidor headless, sem navegador instalado.
+    cookies_file: str = ""
 
     def _base_opts(self, raw_audio: str) -> dict:
         return {
@@ -126,6 +129,13 @@ class AudioExtractorTool(BaseTool):
             opts_b["cookiesfrombrowser"] = (self.cookies_browser,)
             opts_b["progress_hooks"] = [_hook]
             attempts.append((f"cookies={self.cookies_browser}", opts_b))
+
+        # b2) arquivo cookies.txt — funciona sem navegador (servidor)
+        if self.cookies_file:
+            opts_b2 = self._base_opts(raw_audio)
+            opts_b2["cookiefile"] = self.cookies_file
+            opts_b2["progress_hooks"] = [_hook]
+            attempts.append((f"cookies_file={self.cookies_file}", opts_b2))
 
         # c) padrão
         opts_c = self._base_opts(raw_audio)
