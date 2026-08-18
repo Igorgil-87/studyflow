@@ -1,9 +1,15 @@
 FROM python:3.12-slim
 
-# ffmpeg é exigido por moviepy/faster-whisper (precisa estar no PATH).
+# ffmpeg/ffprobe são exigidos por áudio/vídeo.
+# Deno é o runtime JS recomendado pelo yt-dlp para resolver os desafios
+# JavaScript atuais do YouTube (EJS). Mantemos uma versão mínima suportada
+# fixa para builds reproduzíveis; yt-dlp[default] instala os scripts EJS.
+ARG DENO_VERSION=2.3.0
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends ffmpeg curl ca-certificates unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s v${DENO_VERSION} \
+    && deno --version
 
 WORKDIR /app
 

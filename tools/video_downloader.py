@@ -12,10 +12,7 @@ import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-# URL do provedor de PO Token (bgutil-ytdlp-pot-provider), se configurado
-# via docker-compose (serviço bgutil-pot). Vazio = não usa — cai nas outras
-# estratégias (android client, cookies) normalmente.
-POT_PROVIDER_URL = os.getenv("POT_PROVIDER_URL", "").strip()
+from tools.youtube_runtime import common_ydl_opts
 
 
 class VideoDownloaderInput(BaseModel):
@@ -37,42 +34,21 @@ class VideoDownloaderTool(BaseTool):
     # máquina). Exportado de um navegador logado no YouTube.
     cookies_file: str = ""
 
-    def _base_opts(self, out_template: str) -> dict:
-        opts = {
-            # limita a 720p para o arquivo não ficar gigante
+    def _base_opts(self, out_template: str, *, use_auth: bool = False,
+                   cookies_browser: str = "", cookies_file: str = "") -> dict:
+        opts = common_ydl_opts(
+            cookies_browser=cookies_browser,
+            cookies_file=cookies_file,
+            use_auth=use_auth,
+            quiet=True,
+        )
+        opts.update({
             "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
             "outtmpl": out_template,
-            "quiet": True,
-            "no_warnings": True,
             "merge_output_format": "mp4",
-            # "continuedl": False força baixar do zero sempre, em vez de
-            # tentar "continuar" um download parcial de uma tentativa
-            # anterior — é isso que causava HTTP 416 (Requested Range Not
-            # Satisfiable): as URLs de streaming do YouTube expiram rápido,
-            # então o intervalo de bytes de uma tentativa antiga já não é
-            # mais válido na hora de retomar. Sem isso, o download de
-            # VÍDEO ficava falhando sempre (mesmo o de ÁUDIO, que usa
-            # lógica separada, continuava funcionando — por isso a
-            # transcrição/IA funcionavam mas o corte do vídeo, não).
             "continuedl": False,
             "nopart": True,
-            # socket_timeout: sem isso, se a conexão TRAVAR (não falhar,
-            # só ficar sem responder), o yt-dlp espera pra sempre — parece
-            # "looping infinito" mas na real é uma leitura de rede que
-            # nunca recebe resposta nem erro. Com o timeout, isso vira um
-            # erro de verdade depois de 30s, que o classify_download_error
-            # consegue explicar, em vez de travar o job pro sempre.
-            "socket_timeout": 30,
-            # limite explícito de tentativas — o padrão do yt-dlp já é
-            # finito (10), mas deixamos explícito e mais baixo aqui: se
-            # vai falhar, é melhor falhar rápido e cair pro próximo dos 3
-            # métodos de download, em vez de gastar minutos tentando de
-            # novo o mesmo método que já não está funcionando.
-            "retries": 3,
-            "fragment_retries": 3,
-        }
-        if POT_PROVIDER_URL:
-            opts["extractor_args"] = {"youtubepot-bgutilhttp": {"base_url": [POT_PROVIDER_URL]}}
+        })
         return opts
 
     def _try_download(self, url: str, opts: dict) -> str | None:
@@ -132,27 +108,27 @@ class VideoDownloaderTool(BaseTool):
             eta = (d.get("_eta_str") or "").strip()
             progress_callback(f"{pct} a {speed} · ETA {eta}".strip(" ·"))
 
+        # Ordem conservadora: primeiro vídeo público sem sessão; depois
+        # cookies.txt (servidor headless); por último browser local. O Deno/EJS
+        # é usado automaticamente pelo yt-dlp quando instalado no container.
         attempts = []
-        opts_a = self._base_opts(out_template)
-        opts_a.setdefault("extractor_args", {})["youtube"] = {"player_client": ["android", "web"]}
-        opts_a["progress_hooks"] = [_hook]
-        attempts.append(("player_client=android", opts_a))
+        opts_public = self._base_opts(out_template, use_auth=False)
+        opts_public["progress_hooks"] = [_hook]
+        attempts.append(("sem_cookies", opts_public))
+
+        if self.cookies_file and os.path.isfile(self.cookies_file):
+            opts_cookie = self._base_opts(
+                out_template, use_auth=True, cookies_file=self.cookies_file
+            )
+            opts_cookie["progress_hooks"] = [_hook]
+            attempts.append(("cookies_file", opts_cookie))
 
         if self.cookies_browser:
-            opts_b = self._base_opts(out_template)
-            opts_b["cookiesfrombrowser"] = (self.cookies_browser,)
-            opts_b["progress_hooks"] = [_hook]
-            attempts.append((f"cookies={self.cookies_browser}", opts_b))
-
-        if self.cookies_file:
-            opts_b2 = self._base_opts(out_template)
-            opts_b2["cookiefile"] = self.cookies_file
-            opts_b2["progress_hooks"] = [_hook]
-            attempts.append((f"cookies_file={self.cookies_file}", opts_b2))
-
-        opts_c = self._base_opts(out_template)
-        opts_c["progress_hooks"] = [_hook]
-        attempts.append(("padrão", opts_c))
+            opts_browser = self._base_opts(
+                out_template, use_auth=True, cookies_browser=self.cookies_browser
+            )
+            opts_browser["progress_hooks"] = [_hook]
+            attempts.append((f"cookies_browser={self.cookies_browser}", opts_browser))
 
         last_error = ""
         for label, opts in attempts:

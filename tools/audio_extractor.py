@@ -12,9 +12,7 @@ import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-# URL do provedor de PO Token (bgutil-ytdlp-pot-provider), se configurado
-# via docker-compose (serviço bgutil-pot). Vazio = não usa.
-POT_PROVIDER_URL = os.getenv("POT_PROVIDER_URL", "").strip()
+from tools.youtube_runtime import common_ydl_opts
 
 
 class AudioExtractorInput(BaseModel):
@@ -41,31 +39,25 @@ class AudioExtractorTool(BaseTool):
     # servidor headless, sem navegador instalado.
     cookies_file: str = ""
 
-    def _base_opts(self, raw_audio: str) -> dict:
-        opts = {
+    def _base_opts(self, raw_audio: str, *, use_auth: bool = False,
+                   cookies_browser: str = "", cookies_file: str = "") -> dict:
+        opts = common_ydl_opts(
+            cookies_browser=cookies_browser,
+            cookies_file=cookies_file,
+            use_auth=use_auth,
+            quiet=True,
+        )
+        opts.update({
             "format": "bestaudio/best",
             "outtmpl": raw_audio,
-            "quiet": True,
-            "no_warnings": True,
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
                 "preferredquality": "128",
             }],
-            # mesma blindagem do video_downloader.py contra HTTP 416
-            # (Requested Range Not Satisfiable): nunca tenta "continuar"
-            # um download parcial de tentativa anterior — as URLs de
-            # streaming do YouTube expiram rápido, e retomar com um range
-            # de bytes velho é o que causa esse erro.
             "continuedl": False,
             "nopart": True,
-            # mesma blindagem contra travamento de rede do video_downloader.py
-            "socket_timeout": 30,
-            "retries": 3,
-            "fragment_retries": 3,
-        }
-        if POT_PROVIDER_URL:
-            opts["extractor_args"] = {"youtubepot-bgutilhttp": {"base_url": [POT_PROVIDER_URL]}}
+        })
         return opts
 
     def _try_download(self, url: str, opts: dict) -> str | None:
@@ -125,30 +117,23 @@ class AudioExtractorTool(BaseTool):
         #   c) modo padrão
         attempts = []
 
-        # a) client android/ios
-        opts_a = self._base_opts(raw_audio)
-        opts_a.setdefault("extractor_args", {})["youtube"] = {"player_client": ["android", "web"]}
-        opts_a["progress_hooks"] = [_hook]
-        attempts.append(("player_client=android", opts_a))
+        opts_public = self._base_opts(raw_audio, use_auth=False)
+        opts_public["progress_hooks"] = [_hook]
+        attempts.append(("sem_cookies", opts_public))
 
-        # b) cookies do navegador
+        if self.cookies_file and os.path.isfile(self.cookies_file):
+            opts_cookie = self._base_opts(
+                raw_audio, use_auth=True, cookies_file=self.cookies_file
+            )
+            opts_cookie["progress_hooks"] = [_hook]
+            attempts.append(("cookies_file", opts_cookie))
+
         if self.cookies_browser:
-            opts_b = self._base_opts(raw_audio)
-            opts_b["cookiesfrombrowser"] = (self.cookies_browser,)
-            opts_b["progress_hooks"] = [_hook]
-            attempts.append((f"cookies={self.cookies_browser}", opts_b))
-
-        # b2) arquivo cookies.txt — funciona sem navegador (servidor)
-        if self.cookies_file:
-            opts_b2 = self._base_opts(raw_audio)
-            opts_b2["cookiefile"] = self.cookies_file
-            opts_b2["progress_hooks"] = [_hook]
-            attempts.append((f"cookies_file={self.cookies_file}", opts_b2))
-
-        # c) padrão
-        opts_c = self._base_opts(raw_audio)
-        opts_c["progress_hooks"] = [_hook]
-        attempts.append(("padrão", opts_c))
+            opts_browser = self._base_opts(
+                raw_audio, use_auth=True, cookies_browser=self.cookies_browser
+            )
+            opts_browser["progress_hooks"] = [_hook]
+            attempts.append((f"cookies_browser={self.cookies_browser}", opts_browser))
 
         last_error = ""
         for label, opts in attempts:

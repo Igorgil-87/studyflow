@@ -6,6 +6,7 @@ Usa yt-dlp em modo extractor (sem download) para evitar APIs pagas.
 
 import json
 import yt_dlp
+from tools.youtube_runtime import common_ydl_opts
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -27,12 +28,11 @@ class YouTubeSearchTool(BaseTool):
     args_schema: type[BaseModel] = YouTubeSearchInput
 
     def _run(self, query: str, max_results: int = 3, suffix: str = "tutorial") -> str:
-        ydl_opts = {
-            "quiet": True,
-            "no_warnings": True,
+        ydl_opts = common_ydl_opts(quiet=True)
+        ydl_opts.update({
             "extract_flat": True,          # não baixa, só extrai metadados
             "playlist_items": f"1-{max_results}",
-        }
+        })
 
         term = f"{query} {suffix}".strip() if suffix else query.strip()
         search_url = f"ytsearch{max_results}:{term}"
