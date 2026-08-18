@@ -150,7 +150,7 @@ def run_curso_pipeline(
         emit("search", "done", f"Vídeo: {chosen['titulo']}")
         bus.publish(job_id, "video", chosen)
 
-        emit("download", "running", "Baixando áudio e vídeo em paralelo...")
+        emit("download", "running", "Baixando vídeo (progressive-first)...")
         audio_tool = AudioExtractorTool(
             output_dir="output", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
@@ -159,22 +159,28 @@ def run_curso_pipeline(
             output_dir="static/videos", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
         )
-        with ThreadPoolExecutor(max_workers=2) as dl_ex:
-            audio_fut = dl_ex.submit(audio_tool._run, url=chosen["url"], max_minutes=10, job_id=job_id)
-            video_fut = dl_ex.submit(video_tool._run, url=chosen["url"], job_id=job_id)
-            audio_path = audio_fut.result()
-            video_rel = video_fut.result()
-
-        if audio_path.startswith("ERRO"):
-            raise RuntimeError(audio_path)
-        emit("download", "done", "Áudio extraído.")
+        video_rel = video_tool._run(url=chosen["url"], job_id=job_id)
 
         if video_rel.startswith("ERRO"):
+            # Curso ainda pode funcionar apenas com áudio; usamos o downloader
+            # direto como fallback se o vídeo local não estiver disponível.
+            emit("video_dl", "done", "Vídeo indisponível; tentando áudio direto...")
             video_rel = None
-            emit("video_dl", "done", "Vídeo indisponível.")
+            audio_path = audio_tool._run(
+                url=chosen["url"], max_minutes=10, job_id=job_id
+            )
         else:
             jobs.set(job_id, "video_file", video_rel)
             emit("video_dl", "done", "Vídeo pronto.")
+            local_video = f"static/{video_rel}"
+            emit("download", "running", "Extraindo áudio do vídeo local...")
+            audio_path = audio_tool.extract_from_video(
+                local_video, max_minutes=10, job_id=job_id
+            )
+
+        if audio_path.startswith("ERRO"):
+            raise RuntimeError(audio_path)
+        emit("download", "done", "Áudio extraído do vídeo local.")
 
         emit("transcribe", "running",
              f"Transcrevendo com Whisper '{WHISPER_MODEL}'...")
@@ -285,7 +291,7 @@ def run_youtuber_pipeline(
                     {"step": step, "status": status, "detail": detail})
 
     try:
-        emit("download", "running", "Baixando áudio e vídeo em paralelo...")
+        emit("download", "running", "Baixando vídeo (progressive-first)...")
         audio_tool = AudioExtractorTool(
             output_dir="output", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
@@ -294,26 +300,27 @@ def run_youtuber_pipeline(
             output_dir="static/videos", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
         )
-        with ThreadPoolExecutor(max_workers=2) as dl_ex:
-            audio_fut = dl_ex.submit(
-                audio_tool._run, url=video_url, max_minutes=20, job_id=job_id,
-                progress_callback=lambda msg: emit("download", "running", f"Áudio: {msg}"))
-            video_fut = dl_ex.submit(
-                video_tool._run, url=video_url, job_id=job_id,
-                progress_callback=lambda msg: emit("download", "running", f"Vídeo: {msg}"))
-            audio_path = audio_fut.result()
-            video_rel = video_fut.result()
-
-        if audio_path.startswith("ERRO"):
-            raise RuntimeError(audio_path)
-        emit("download", "done", "Áudio extraído.")
+        video_rel = video_tool._run(
+            url=video_url, job_id=job_id,
+            progress_callback=lambda msg: emit("download", "running", f"Vídeo: {msg}"),
+        )
 
         if video_rel.startswith("ERRO"):
-            video_rel = None
-            emit("video_dl", "done", "Vídeo indisponível.")
-        else:
-            jobs.set(job_id, "video_file", video_rel)
-            emit("video_dl", "done", "Vídeo pronto.")
+            # O módulo Youtuber precisa do vídeo para gerar cortes; não vale
+            # continuar só com transcrição quando o arquivo de vídeo falha.
+            raise RuntimeError(video_rel)
+
+        jobs.set(job_id, "video_file", video_rel)
+        emit("video_dl", "done", "Vídeo pronto.")
+
+        local_video = f"static/{video_rel}"
+        emit("download", "running", "Extraindo áudio do vídeo local...")
+        audio_path = audio_tool.extract_from_video(
+            local_video, max_minutes=20, job_id=job_id
+        )
+        if audio_path.startswith("ERRO"):
+            raise RuntimeError(audio_path)
+        emit("download", "done", "Áudio extraído do vídeo local.")
 
         emit("transcribe", "running",
              f"Transcrevendo com Whisper '{WHISPER_MODEL}'...")
