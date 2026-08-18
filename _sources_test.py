@@ -40,7 +40,8 @@ fake_gnews = {"articles": [
   {"title": "", "url": "https://news.com/c"},   # sem título → descartado
 ]}
 def fake_fetch_news(url, timeout):
-    assert urlparse(url).netloc.endswith("gnews.io") and "lang=pt" in url
+    _netloc = urlparse(url).netloc
+    assert (_netloc == "gnews.io" or _netloc.endswith(".gnews.io")) and "lang=pt" in url
     return fake_gnews
 n = news.fetch_news("ciência", api_key="TEST", provider="gnews", fetch=fake_fetch_news)
 assert len(n["headlines"]) == 2

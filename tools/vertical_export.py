@@ -19,6 +19,7 @@ Requer ffmpeg instalado. check_ffmpeg() detecta.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 
@@ -28,12 +29,21 @@ def check_ffmpeg() -> bool:
     return shutil.which("ffmpeg") is not None
 
 
+# Allowlist estrita: só letras, números, espaço e um punhado de símbolos de
+# caminho de arquivo comuns. Qualquer coisa fora disso (aspas, ';', '|', '$',
+# backtick etc — os caracteres usados em injeção de comando) é rejeitada.
+# Combinado com subprocess.run(lista) [sem shell=True], isso fecha os dois
+# vetores possíveis: injeção via shell E path/flag injection (arquivo
+# começando com "-" sendo lido como opção do ffmpeg em vez de caminho).
+_SAFE_CLI_PATH_RE = re.compile(r"^[A-Za-z0-9_./ -]+$")
+
+
 def _is_safe_cli_path(path: str) -> bool:
-    """Bloqueia dois vetores de injeção de linha de comando:
-    1) começar com '-' — o ffmpeg (e qualquer CLI) pode interpretar o
-       'arquivo' como uma FLAG em vez de um caminho (ex: um nome de
-       arquivo literal "-rf" vira opção, não path).
-    2) '..' no caminho normalizado — path traversal."""
+    """Bloqueia os vetores de injeção de linha de comando: caracteres fora
+    da allowlist, começar com '-' (viraria flag do ffmpeg) e '..' (path
+    traversal)."""
+    if not _SAFE_CLI_PATH_RE.fullmatch(path):
+        return False
     normalized = os.path.normpath(path)
     if normalized.startswith("-"):
         return False
@@ -114,8 +124,9 @@ def export_vertical(input_path: str, output_path: str, mode: str = "blur",
     if not check_ffmpeg():
         return {"ok": False, "erro": "ffmpeg não encontrado. Instale o ffmpeg "
                 "(macOS: 'brew install ffmpeg')."}
-    if not _is_safe_cli_path(input_path) or not _is_safe_cli_path(output_path):
-        return {"ok": False, "erro": "caminho de entrada/saída inválido."}
+    for _p in (input_path, output_path):
+        if not _is_safe_cli_path(_p):
+            return {"ok": False, "erro": "caminho de entrada/saída inválido."}
     cmd = build_vertical_command(input_path, output_path, mode,
                                   subtitle_path=subtitle_path, preset=preset)
     try:

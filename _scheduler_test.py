@@ -29,7 +29,8 @@ def fake_opener(url, data):
     sent_payloads.append((url, data))
 assert notify.send_alert(alert_rep, _opener=fake_opener) is True
 assert notify.send_alert(ok_rep, _opener=fake_opener) is False, "ok não envia"
-assert len(sent_payloads)==1 and urlparse(sent_payloads[0][0]).netloc.endswith("example.com")
+_netloc = urlparse(sent_payloads[0][0]).netloc
+assert len(sent_payloads)==1 and (_netloc == "example.com" or _netloc.endswith(".example.com"))
 import json
 body = json.loads(sent_payloads[0][1].decode())
 assert "text" in body and "alerts" in body and body["status"]=="alert"
