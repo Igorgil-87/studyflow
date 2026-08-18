@@ -34,7 +34,8 @@ print("fetch_x (twitterapi.io header X-API-Key) OK")
 
 # getxapi usa Authorization: Bearer + q/product
 def fake_getx(url, headers, timeout):
-    assert urlparse(url).netloc.endswith("getxapi.com") and "q=" in url and "product=Latest" in url
+    _netloc = urlparse(url).netloc
+    assert (_netloc == "getxapi.com" or _netloc.endswith(".getxapi.com")) and "q=" in url and "product=Latest" in url
     assert headers.get("Authorization") == "Bearer K2"
     return fake
 out2 = X.fetch_x("Roma", provider="getxapi", api_key="K2", fetch=fake_getx)

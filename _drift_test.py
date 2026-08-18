@@ -1,5 +1,7 @@
 import os, tempfile
-os.environ["OBS_DB"] = tempfile.mktemp(suffix=".db")
+_fd, _tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
+os.environ["OBS_DB"] = _tmpdb
 import random
 random.seed(42)   # determinístico (evita flakiness do seed sintético)
 from obs import db, drift
