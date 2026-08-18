@@ -13,6 +13,9 @@ import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
+# URL do provedor de PO Token (bgutil-ytdlp-pot-provider), se configurado.
+POT_PROVIDER_URL = os.getenv("POT_PROVIDER_URL", "").strip()
+
 try:
     from pytrends.request import TrendReq
     _PYTRENDS = True
@@ -46,6 +49,8 @@ class TrendFetcherTool(BaseTool):
             opts["cookiesfrombrowser"] = (self.cookies_browser,)
         elif self.cookies_file:
             opts["cookiefile"] = self.cookies_file
+        if POT_PROVIDER_URL:
+            opts.setdefault("extractor_args", {})["youtubepot-bgutilhttp"] = {"base_url": [POT_PROVIDER_URL]}
 
         queries = [f"{niche} trending 2025", f"{niche} viral"]
         videos, seen = [], set()

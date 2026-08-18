@@ -7,9 +7,15 @@ Reaproveita as mesmas estratégias de fallback do audio_extractor
 
 import os
 from pathlib import Path
+
+import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
-import yt_dlp
+
+# URL do provedor de PO Token (bgutil-ytdlp-pot-provider), se configurado
+# via docker-compose (serviço bgutil-pot). Vazio = não usa — cai nas outras
+# estratégias (android client, cookies) normalmente.
+POT_PROVIDER_URL = os.getenv("POT_PROVIDER_URL", "").strip()
 
 
 class VideoDownloaderInput(BaseModel):
@@ -32,7 +38,7 @@ class VideoDownloaderTool(BaseTool):
     cookies_file: str = ""
 
     def _base_opts(self, out_template: str) -> dict:
-        return {
+        opts = {
             # limita a 720p para o arquivo não ficar gigante
             "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
             "outtmpl": out_template,
@@ -65,6 +71,9 @@ class VideoDownloaderTool(BaseTool):
             "retries": 3,
             "fragment_retries": 3,
         }
+        if POT_PROVIDER_URL:
+            opts["extractor_args"] = {"youtubepot-bgutilhttp": {"base_url": [POT_PROVIDER_URL]}}
+        return opts
 
     def _try_download(self, url: str, opts: dict) -> str | None:
         try:
@@ -125,7 +134,7 @@ class VideoDownloaderTool(BaseTool):
 
         attempts = []
         opts_a = self._base_opts(out_template)
-        opts_a["extractor_args"] = {"youtube": {"player_client": ["android", "web"]}}
+        opts_a.setdefault("extractor_args", {})["youtube"] = {"player_client": ["android", "web"]}
         opts_a["progress_hooks"] = [_hook]
         attempts.append(("player_client=android", opts_a))
 

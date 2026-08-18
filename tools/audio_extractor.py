@@ -7,9 +7,14 @@ opcionalmente corta os primeiros N minutos com moviepy.
 import os
 import subprocess
 from pathlib import Path
+
+import yt_dlp
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
-import yt_dlp
+
+# URL do provedor de PO Token (bgutil-ytdlp-pot-provider), se configurado
+# via docker-compose (serviço bgutil-pot). Vazio = não usa.
+POT_PROVIDER_URL = os.getenv("POT_PROVIDER_URL", "").strip()
 
 
 class AudioExtractorInput(BaseModel):
@@ -37,7 +42,7 @@ class AudioExtractorTool(BaseTool):
     cookies_file: str = ""
 
     def _base_opts(self, raw_audio: str) -> dict:
-        return {
+        opts = {
             "format": "bestaudio/best",
             "outtmpl": raw_audio,
             "quiet": True,
@@ -59,6 +64,9 @@ class AudioExtractorTool(BaseTool):
             "retries": 3,
             "fragment_retries": 3,
         }
+        if POT_PROVIDER_URL:
+            opts["extractor_args"] = {"youtubepot-bgutilhttp": {"base_url": [POT_PROVIDER_URL]}}
+        return opts
 
     def _try_download(self, url: str, opts: dict) -> str | None:
         """Tenta baixar; retorna mensagem de erro ou None se deu certo."""
@@ -119,7 +127,7 @@ class AudioExtractorTool(BaseTool):
 
         # a) client android/ios
         opts_a = self._base_opts(raw_audio)
-        opts_a["extractor_args"] = {"youtube": {"player_client": ["android", "web"]}}
+        opts_a.setdefault("extractor_args", {})["youtube"] = {"player_client": ["android", "web"]}
         opts_a["progress_hooks"] = [_hook]
         attempts.append(("player_client=android", opts_a))
 

@@ -30,6 +30,14 @@
 #      (caro) ou aponte FOOOCUS_API_URL pra outro serviço de geração de
 #      imagem compatível. Vídeo/Shorts/Curso continuam funcionando 100%.
 #
+#   5. bgutil-pot: gera "PO Token" (Proof of Origin) pro yt-dlp — o
+#      YouTube passou a exigir isso de qualquer requisição vinda de IP de
+#      datacenter (Hetzner, AWS, GCP etc), mesmo com cookie válido. Sem
+#      esse serviço, downloads em produção têm boa chance de falhar com
+#      "Sign in to confirm you're not a bot", mesmo funcionando local no
+#      seu Mac (que tem IP residencial, não sinalizado). Não é garantia
+#      100% (o YouTube muda a defesa com frequência), mas ajuda bastante.
+#
 # Comando pra subir:
 #     docker compose -f docker-compose.prod.yml up -d --build
 # ══════════════════════════════════════════════════════════════════════════
@@ -55,6 +63,13 @@ services:
       retries: 10
       start_period: 30s
 
+  # Gera o PO Token que o yt-dlp precisa pra passar na checagem de bot do
+  # YouTube quando rodando de um IP de datacenter. Fica só na rede interna
+  # do Docker — não expõe porta pro host/mundo, só web/worker acessam.
+  bgutil-pot:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    restart: unless-stopped
+
   web:
     build: .
     ports:
@@ -65,6 +80,8 @@ services:
       RUN_MODE: redis
       REDIS_URL: redis://redis:6379/0
       CRAWL4AI_URL: http://crawl4ai:11235
+      # Endereço interno do provedor de PO Token (ver comentário acima).
+      POT_PROVIDER_URL: http://bgutil-pot:4416
       # Fooocus fica de fora por padrão na nuvem (precisa de GPU) — se
       # você configurar um serviço de geração de imagem compatível
       # depois, troca essa URL aqui.
@@ -85,6 +102,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      bgutil-pot:
+        condition: service_started
 
   worker:
     build: .
@@ -95,6 +114,7 @@ services:
       RUN_MODE: redis
       REDIS_URL: redis://redis:6379/0
       CRAWL4AI_URL: http://crawl4ai:11235
+      POT_PROVIDER_URL: http://bgutil-pot:4416
       FOOOCUS_API_URL: ${FOOOCUS_API_URL:-http://disabled:8888}
       MPT_API_URL: ${MPT_API_URL:-}
     volumes:
@@ -105,6 +125,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      bgutil-pot:
+        condition: service_started
 
   scheduler:
     build: .
