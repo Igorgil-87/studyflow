@@ -23,8 +23,13 @@ QUEUE_NAME = os.getenv("QUEUE_NAME", "studyflow")
 # Tempo de vida (segundos) dos logs de evento e metadados de job no Redis.
 JOB_TTL_SECONDS = int(os.getenv("JOB_TTL_SECONDS", "3600"))
 
-# Timeout máximo de execução de um job no worker (segundos).
+# Timeout padrão para jobs comuns no worker (segundos).
 JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "1800"))
+
+# Pipelines de vídeo podem incluir download, Whisper, IA, múltiplos encodes
+# ffmpeg, legendas e fechamento. Em hardware menor, 30 min é insuficiente.
+# Mantemos um timeout separado para não alongar desnecessariamente jobs simples.
+VIDEO_JOB_TIMEOUT_SECONDS = int(os.getenv("VIDEO_JOB_TIMEOUT_SECONDS", "7200"))
 
 
 def is_redis() -> bool:
