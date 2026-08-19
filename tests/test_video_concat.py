@@ -79,3 +79,19 @@ def test_saida_e_ultimo_argumento():
     outro_info = {"width": 1280, "height": 720, "has_audio": True}
     cmd = build_concat_command("main.mp4", "outro.mp4", "saida_final.mp4", main_info, outro_info)
     assert cmd[-1] == "saida_final.mp4"
+
+
+def test_concat_usa_preset_rapido_por_padrao(monkeypatch):
+    monkeypatch.delenv("VIDEO_CONCAT_PRESET", raising=False)
+    main_info = {"width": 1080, "height": 1920, "has_audio": True}
+    outro_info = {"width": 1280, "height": 720, "has_audio": True}
+    cmd = build_concat_command("main.mp4", "outro.mp4", "out.mp4", main_info, outro_info)
+    assert cmd[cmd.index("-preset") + 1] == "veryfast"
+
+
+def test_concat_preset_pode_ser_configurado(monkeypatch):
+    monkeypatch.setenv("VIDEO_CONCAT_PRESET", "fast")
+    main_info = {"width": 1080, "height": 1920, "has_audio": True}
+    outro_info = {"width": 1280, "height": 720, "has_audio": True}
+    cmd = build_concat_command("main.mp4", "outro.mp4", "out.mp4", main_info, outro_info)
+    assert cmd[cmd.index("-preset") + 1] == "fast"

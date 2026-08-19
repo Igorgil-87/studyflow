@@ -12,6 +12,7 @@ fechamento, sem esticar/distorcer) antes de colar os dois.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 
 
@@ -96,7 +97,7 @@ def build_concat_command(main_path: str, outro_path: str, output_path: str,
         "ffmpeg", "-y", *inputs,
         "-filter_complex", filter_complex,
         *map_args,
-        "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", os.getenv("VIDEO_CONCAT_PRESET", "veryfast"), "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-ar", "44100",
         "-movflags", "+faststart",
         output_path,
@@ -104,8 +105,15 @@ def build_concat_command(main_path: str, outro_path: str, output_path: str,
 
 
 def append_outro(main_path: str, outro_path: str, output_path: str,
-                  timeout: int = 180) -> dict:
-    """Executa o ffmpeg de verdade. Retorna {ok, output|erro}."""
+                  timeout: int | None = None) -> dict:
+    """Executa o ffmpeg de verdade. Retorna {ok, output|erro}.
+
+    O timeout pode ser sobrescrito por chamada. Quando omitido, usa
+    VIDEO_CONCAT_TIMEOUT_SECONDS (padrão: 600s). Assim o mesmo código
+    funciona localmente e na cloud, mudando só configuração.
+    """
+    if timeout is None:
+        timeout = int(os.getenv("VIDEO_CONCAT_TIMEOUT_SECONDS", "600"))
     if not check_ffmpeg():
         return {"ok": False, "erro": "ffmpeg/ffprobe não encontrado."}
 
@@ -122,6 +130,6 @@ def append_outro(main_path: str, outro_path: str, output_path: str,
             return {"ok": False, "erro": f"ffmpeg falhou: {(proc.stderr or '')[-400:]}"}
         return {"ok": True, "output": output_path}
     except subprocess.TimeoutExpired:
-        return {"ok": False, "erro": "ffmpeg demorou demais (timeout)."}
+        return {"ok": False, "erro": f"ffmpeg demorou mais de {timeout}s (timeout)."}
     except Exception as e:
         return {"ok": False, "erro": f"{type(e).__name__}: {e}"}
