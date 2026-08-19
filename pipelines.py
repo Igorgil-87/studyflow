@@ -475,6 +475,11 @@ def run_youtuber_pipeline(
                             or clip.get("hook_otimizado") \
                             or clip.get("thumb_texto") or "Corte viral"
                 _make_thumbnails(clips_result, content_type, emit)
+                # Os cortes-base já existem neste ponto. As etapas pesadas de
+                # reenquadre, legenda e fechamento têm progresso próprio; não
+                # deixe a UI parecer parada em "Corte 5/5" enquanto o ffmpeg
+                # ainda está renderizando.
+                emit("cut", "done", f"{len(clips_result)} cortes-base criados.")
 
                 # Libera qualquer memória do moviepy/corte que ainda esteja
                 # solta antes de começar o ffmpeg (etapa mais pesada em RAM
@@ -525,14 +530,19 @@ def run_youtuber_pipeline(
                     return clip_rel_path
 
                 if is_corte_longo:
-                    for clip in clips_result:
-                        if clip.get("arquivo"):
-                            clip["arquivo"] = _colar_fechamento(clip["arquivo"])
                     emit("vertical", "done",
-                         "Corte longo (formato paisagem, YouTube) — pulando reenquadre "
-                         "vertical/legenda, que é só pra Shorts. Isso é o que deixa o "
-                         "processamento rápido pra cortes longos."
-                         + (" Fechamento adicionado." if adicionar_fechamento else ""))
+                         "Corte longo em paisagem — reenquadre vertical/legenda não se aplica.")
+                    longos = [c for c in clips_result if c.get("arquivo")]
+                    if longos:
+                        emit("finalize", "running",
+                             f"Finalizando {len(longos)} corte(s)...")
+                        for idx, clip in enumerate(longos, start=1):
+                            clip["arquivo"] = _colar_fechamento(clip["arquivo"])
+                            emit("finalize", "running",
+                                 f"{idx}/{len(longos)} corte(s) finalizado(s)")
+                    emit("finalize", "done",
+                         ("Fechamento/finalização concluídos." if adicionar_fechamento
+                          else "Arquivos finais prontos — fechamento desativado."))
                 elif not clips_result:
                     pass
                 else:
@@ -577,7 +587,10 @@ def run_youtuber_pipeline(
 
                         n_vertical_ok = 0
                         n_done = 0
+                        n_finalized = 0
                         to_process = [c for c in clips_result if c.get("arquivo")]
+                        emit("finalize", "running",
+                             f"Aguardando renderização para finalizar {len(to_process)} clip(s)...")
                         # sequencial (max_workers=1), não paralelo: testado e
                         # ajustado em 30/07/2026 — no hardware de 8GB RAM do
                         # usuário, rodar ffmpeg em paralelo causava troca de
@@ -591,23 +604,39 @@ def run_youtuber_pipeline(
                                 n_done += 1
                                 if result.get("ok"):
                                     clip["arquivo_original"] = clip["arquivo"]
-                                    clip["arquivo"] = _colar_fechamento(out_rel)
                                     clip["legenda_queimada"] = bool(srt_path)
                                     n_vertical_ok += 1
+                                    emit("vertical", "running",
+                                         f"{n_done}/{total_to_process} render(s) 9:16 concluído(s)"
+                                         f" — '{clip.get('titulo','')[:40]}'")
+                                    # O fechamento é um segundo encode/concat e pode
+                                    # levar minutos. Mostra isso separado do render.
+                                    clip["arquivo"] = _colar_fechamento(out_rel)
+                                    n_finalized += 1
+                                    emit("finalize", "running",
+                                         f"{n_finalized}/{total_to_process} arquivo(s) finalizado(s)")
                                 else:
                                     clip["vertical_erro"] = result.get("erro")
-                                emit("vertical", "running",
-                                     f"{n_done}/{total_to_process} clip(s) processado(s)"
-                                     + (f" — '{clip.get('titulo','')[:40]}' pronto" if result.get("ok") else ""))
+                                    emit("vertical", "running",
+                                         f"{n_done}/{total_to_process} render(s) processado(s) — "
+                                         "um clip ficou no formato original")
+                                    # Mesmo quando o vertical falha, o clip original
+                                    # continua válido (fail-open) e pode receber fechamento.
+                                    clip["arquivo"] = _colar_fechamento(clip["arquivo"])
+                                    n_finalized += 1
+                                    emit("finalize", "running",
+                                         f"{n_finalized}/{total_to_process} arquivo(s) finalizado(s)")
 
                         emit("vertical", "done",
-                             f"{n_vertical_ok}/{total_to_process} clip(s) em 9:16 com legenda.")
+                             f"{n_vertical_ok}/{total_to_process} clip(s) renderizado(s) em 9:16.")
+                        emit("finalize", "done",
+                             f"{n_finalized}/{total_to_process} arquivo(s) finalizado(s).")
                     else:
                         emit("vertical", "done",
                              "ffmpeg indisponível — clips ficaram no formato original, sem vertical/legenda.")
+                        emit("finalize", "done", "Arquivos originais mantidos.")
 
                 jobs.set(job_id, "clips", clips_result)
-                emit("cut", "done", f"{len(clips_result)} clips criados!")
         else:
             emit("cut", "done", "Vídeo indisponível para corte.")
 
