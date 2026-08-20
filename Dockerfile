@@ -1,5 +1,12 @@
 FROM python:3.12-slim
 
+# Saída de print() sem buffer — sem isso, os logs de progresso do worker
+# (download, transcrição, corte etc) ficam TODOS retidos e só aparecem
+# de uma vez no fim do job, fazendo parecer que uma etapa travou quando
+# na verdade só está com a saída represada. Isso também é o que permite
+# medir com precisão onde o tempo de processamento está indo de verdade.
+ENV PYTHONUNBUFFERED=1
+
 # ffmpeg/ffprobe são exigidos por áudio/vídeo.
 # Deno é o runtime JS recomendado pelo yt-dlp para resolver os desafios
 # JavaScript atuais do YouTube (EJS). Mantemos uma versão mínima suportada
