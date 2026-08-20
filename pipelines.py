@@ -17,6 +17,7 @@ from __future__ import annotations
 import gc
 import json
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dotenv import load_dotenv
@@ -578,11 +579,17 @@ def run_youtuber_pipeline(
                                 except Exception:
                                     srt_path = None  # sem legenda só nesse clip — não trava o resto
 
-                            # preset "fast" (não "medium"): roda vários clips em
-                            # paralelo, então cada um precisa ser mais rápido —
-                            # a perda de qualidade é imperceptível pra Shorts/Reels
-                            result = export_vertical(src_abs, out_abs, mode="blur",
-                                                      subtitle_path=srt_path, preset="fast")
+                            # preset configurável via VIDEO_VERTICAL_PRESET (padrão
+                            # "veryfast") — a perda de qualidade é imperceptível
+                            # pra Shorts/Reels, que o Instagram/TikTok recomprime
+                            # de qualquer forma.
+                            _t0 = time.time()
+                            result = export_vertical(
+                                src_abs, out_abs, mode="blur", subtitle_path=srt_path,
+                                preset=os.getenv("VIDEO_VERTICAL_PRESET", "veryfast"),
+                            )
+                            print(f"[pipeline] vertical de '{clip.get('titulo', '?')}' "
+                                  f"levou {time.time() - _t0:.1f}s")
                             return clip, out_rel, srt_path, result
 
                         n_vertical_ok = 0
@@ -591,13 +598,35 @@ def run_youtuber_pipeline(
                         to_process = [c for c in clips_result if c.get("arquivo")]
                         emit("finalize", "running",
                              f"Aguardando renderização para finalizar {len(to_process)} clip(s)...")
-                        # sequencial (max_workers=1), não paralelo: testado e
-                        # ajustado em 30/07/2026 — no hardware de 8GB RAM do
-                        # usuário, rodar ffmpeg em paralelo causava troca de
-                        # memória pro disco (swap), deixando TUDO mais lento,
-                        # não só essa etapa. Se um dia rodar em máquina com mais
-                        # RAM de sobra, subir esse número acelera de verdade.
-                        with ThreadPoolExecutor(max_workers=1) as vx:
+                        # Paralelismo ELÁSTICO por padrão: metade dos vCPUs
+                        # disponíveis (arredondando pra baixo, mínimo 1, teto 4 —
+                        # não faz sentido rodar dezenas de ffmpeg ao mesmo tempo
+                        # só porque a máquina tem muitos núcleos). Usa metade, não
+                        # todos, pra sobrar CPU pro resto do pipeline (Whisper, a
+                        # própria fila) rodando em paralelo com isso.
+                        #
+                        # Isso se adapta sozinho: numa máquina de poucos núcleos
+                        # (ex: Mac local) fica baixo automaticamente; num servidor
+                        # com mais vCPUs, sobe sozinho.
+                        #
+                        # A trava anterior (sempre 1, sequencial) veio de um teste
+                        # em 30/07/2026 no Mac de 8GB RAM do usuário, onde rodar em
+                        # paralelo causava swap. Ficou fixa em 1 pra sempre depois
+                        # disso, mesmo em produção — o cálculo elástico resolve os
+                        # dois casos.
+                        #
+                        # VIDEO_RENDER_WORKERS no .env, se definido, TRAVA nesse
+                        # valor manual em vez do cálculo automático — útil se você
+                        # perceber troca de memória pro disco (swap) numa máquina
+                        # específica e quiser fixar em 1 só ali.
+                        _render_workers_override = os.getenv("VIDEO_RENDER_WORKERS", "").strip()
+                        if _render_workers_override:
+                            _render_workers = max(1, int(_render_workers_override))
+                        else:
+                            _render_workers = max(1, min(4, (os.cpu_count() or 1) // 2))
+                        print(f"[pipeline] renderização vertical: {_render_workers} "
+                              f"worker(s) em paralelo (vCPUs detectados: {os.cpu_count()})")
+                        with ThreadPoolExecutor(max_workers=_render_workers) as vx:
                             futures = [vx.submit(_process_one, c) for c in to_process]
                             for fut in futures:
                                 clip, out_rel, srt_path, result = fut.result()
