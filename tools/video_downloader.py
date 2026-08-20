@@ -58,11 +58,13 @@ class VideoDownloaderTool(BaseTool):
         use_auth: bool = False,
         cookies_browser: str = "",
         cookies_file: str = "",
+        use_proxy: bool = True,
     ) -> dict:
         opts = common_ydl_opts(
             cookies_browser=cookies_browser,
             cookies_file=cookies_file,
             use_auth=use_auth,
+            use_proxy=use_proxy,
             quiet=True,
         )
         opts.update({
@@ -115,9 +117,17 @@ class VideoDownloaderTool(BaseTool):
             progress_callback(f"{pct} a {speed} · ETA {eta}".strip(" ·"))
 
         # Ordem deliberada:
-        # 1) público sem cookie; 2) cookies.txt; 3) browser apenas em dev.
+        # 0) direto, sem proxy (rápido — o proxy residencial do Decodo é
+        #    MUITO mais lento, ~40-80KB/s vs. conexão direta do datacenter,
+        #    então só vale a pena usar quando o YouTube bloqueia mesmo);
+        # 1) público sem cookie, COM proxy (fallback se o direto for bloqueado);
+        # 2) cookies.txt; 3) browser apenas em dev.
         # O formato progressivo é usado em todas as variantes.
         auth_configs: list[tuple[str, dict]] = []
+        auth_configs.append((
+            "sem_proxy+progressive_first",
+            self._base_opts(out_template, use_auth=False, use_proxy=False),
+        ))
         auth_configs.append((
             "sem_cookies+progressive_first",
             self._base_opts(out_template, use_auth=False),
