@@ -28,6 +28,38 @@ const videoUrlEl        = $('#videoUrl');
 const nicheProducaoEl   = $('#nicheProducao');
 const gerarClipsBtn     = $('#gerarClipsBtn');
 const prodPipeline      = $('#prodPipeline');
+const prodTimer         = $('#prodTimer');
+
+let _prodTimerStart = null;
+let _prodTimerInterval = null;
+
+function _fmtElapsed(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+  const s = (totalSec % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function startProdTimer() {
+  stopProdTimer();
+  _prodTimerStart = Date.now();
+  if (prodTimer) prodTimer.textContent = '00:00';
+  _prodTimerInterval = setInterval(() => {
+    if (!prodTimer || !_prodTimerStart) return;
+    prodTimer.textContent = _fmtElapsed(Date.now() - _prodTimerStart);
+  }, 1000);
+}
+
+// freeze=true trava o cronômetro no valor atual (fim do processamento);
+// freeze=false só para e zera (ex: cancelamento).
+function stopProdTimer(freeze) {
+  if (_prodTimerInterval) clearInterval(_prodTimerInterval);
+  _prodTimerInterval = null;
+  if (freeze && prodTimer && _prodTimerStart) {
+    prodTimer.textContent = _fmtElapsed(Date.now() - _prodTimerStart);
+  }
+  _prodTimerStart = null;
+}
 const prodResult        = $('#prodResult');
 const prodErrorBox      = $('#prodErrorBox');
 const prodPipelineError = $('#prodPipelineError');
@@ -125,6 +157,8 @@ async function startClipsGeneration() {
     document.querySelectorAll('#prodPipeline .step-detail')
       .forEach((d) => { d.textContent = ''; });
 
+    startProdTimer();
+
     listenProdStream(body.job_id);
 
   } catch (e) {
@@ -152,11 +186,13 @@ function listenProdStream(jobId) {
 
   prodEventSource.addEventListener('complete', (e) => {
     const { clips } = JSON.parse(e.data);
+    stopProdTimer(true);
     renderProdClips(clips);
     setClipsLoading(false);
   });
 
   prodEventSource.addEventListener('pipeline_error', (e) => {
+    stopProdTimer(true);
     try {
       if (prodPipelineError) {
         prodPipelineError.textContent = '⚠ ' + JSON.parse(e.data).message;
@@ -403,6 +439,7 @@ async function publishClipToInstagram(i, btn) {
 
 $('#prodCancelBtn')?.addEventListener('click', () => {
   if (prodEventSource) prodEventSource.close();
+  stopProdTimer(false);
   if (prodPipeline) prodPipeline.hidden = true;
   setClipsLoading(false);
 });
