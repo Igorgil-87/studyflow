@@ -1879,8 +1879,13 @@ def curso2_tutor_perguntar(course_id, lesson_id):
         )
         save_tutor_message(lesson_id, user_key, "aluno", pergunta)
         save_tutor_message(lesson_id, user_key, "tutor", resposta)
-    except (TutorAgentError, CursoStoreError) as e:
-        return jsonify({"error": str(e)}), 422
+    except (TutorAgentError, CursoStoreError):
+        app.logger.exception("Falha ao processar pergunta do tutor", extra={
+            "course_id": course_id,
+            "lesson_id": lesson_id,
+            "user_key": user_key,
+        })
+        return jsonify({"error": "Não foi possível processar a pergunta no momento."}), 422
 
     return jsonify({"resposta": resposta})
 
