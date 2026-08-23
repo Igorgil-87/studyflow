@@ -1682,8 +1682,8 @@ def curso2_mapa_mental(course_id):
         return jsonify({"error": "curso não encontrado"}), 404
     try:
         lessons_reais = list_lessons(course_id)
-    except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 500
+    except CursoStoreError:
+        return jsonify({"error": "erro interno ao carregar lições"}), 500
     return jsonify(build_mind_map(curso["manifest_json"], lessons_reais))
 
 
