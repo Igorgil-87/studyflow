@@ -1945,8 +1945,9 @@ def curso2_exercicio_gerar(course_id, lesson_id):
     try:
         exercicio = gerar_exercicio(lesson["titulo"], conteudo["explicacao"])
         exercise_id = save_exercise(lesson_id, exercicio)
-    except (ExerciseAgentError, CursoStoreError) as e:
-        return jsonify({"error": str(e)}), 422
+    except (ExerciseAgentError, CursoStoreError):
+        app.logger.exception("Falha ao gerar exercício para lesson_id=%s", lesson_id)
+        return jsonify({"error": "não foi possível gerar o exercício"}), 422
 
     exercicio["id"] = exercise_id
     return jsonify({"ok": True, "exercicio": exercicio})
