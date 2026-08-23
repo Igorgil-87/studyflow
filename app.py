@@ -1387,7 +1387,8 @@ def curso2_criar():
     try:
         text = extract_text(file.filename, content)
     except DocumentExtractionError as e:
-        return jsonify({"error": str(e)}), 400
+        app.logger.warning("Falha ao extrair texto do documento '%s': %s", file.filename, e)
+        return jsonify({"error": "Não foi possível processar o documento enviado."}), 400
 
     form = request.form
     try:
