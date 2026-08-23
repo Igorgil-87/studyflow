@@ -2036,8 +2036,8 @@ def analytics_atualizar_instagram():
         from analytics.instagram_fetcher import atualizar_metricas_pendentes
         resultado = atualizar_metricas_pendentes()
         return jsonify(resultado)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "Erro interno ao processar a solicitação."}), 500
 
 
 @app.route("/api/growth/sincronizar_perfil", methods=["POST"])
@@ -2047,8 +2047,8 @@ def growth_sincronizar_perfil():
         from analytics.instagram_profile import sincronizar_perfil_completo
         resultado = sincronizar_perfil_completo()
         return jsonify(resultado)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "Erro interno ao processar a solicitação."}), 500
 
 
 @app.route("/api/growth/pendentes_metrica_browser")
@@ -2057,8 +2057,8 @@ def growth_pendentes_metrica_browser():
     try:
         from analytics.instagram_browser_fetcher import listar_pendentes
         return jsonify({"pendentes": listar_pendentes()})
-    except Exception as e:
-        return jsonify({"error": str(e), "pendentes": []}), 200
+    except Exception:
+        return jsonify({"error": "Erro interno ao processar a solicitação.", "pendentes": []}), 200
 
 
 @app.route("/api/growth/importar_metricas_browser", methods=["POST"])
@@ -2069,8 +2069,8 @@ def growth_importar_metricas_browser():
         dados = (request.get_json(silent=True) or {}).get("dados", [])
         resultado = importar_metricas(dados)
         return jsonify(resultado)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "Erro interno ao processar a solicitação."}), 500
 
 
 @app.route("/api/growth/analisar_padroes", methods=["POST"])
@@ -2080,8 +2080,8 @@ def growth_analisar_padroes():
         from analytics.growth_analyzer import analisar_pendentes
         resultado = analisar_pendentes(plataforma="instagram")
         return jsonify(resultado)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "Erro interno ao processar a solicitação."}), 500
 
 
 @app.route("/api/growth/resumo")
@@ -2090,8 +2090,8 @@ def growth_resumo():
     from analytics.store import resumo_por_gancho
     try:
         return jsonify({"por_gancho": resumo_por_gancho(plataforma="instagram")})
-    except Exception as e:
-        return jsonify({"error": str(e), "por_gancho": []}), 200
+    except Exception:
+        return jsonify({"error": "Erro interno ao processar a solicitação.", "por_gancho": []}), 200
 
 
 @app.route("/api/growth/recomendacoes", methods=["POST"])
