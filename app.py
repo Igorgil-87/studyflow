@@ -1579,7 +1579,8 @@ def curso2_gerar_licao(course_id, lesson_id):
         set_lesson_status(lesson_id, "concluido")
     except (LessonAgentError, CursoStoreError) as e:
         set_lesson_status(lesson_id, "erro")
-        return jsonify({"error": str(e)}), 422
+        app.logger.exception("Erro ao gerar lição (course_id=%s, lesson_id=%s): %s", course_id, lesson_id, e)
+        return jsonify({"error": "falha ao gerar conteúdo da aula"}), 422
 
     return jsonify({
         "ok": True, "conteudo": conteudo, "quiz": quiz_flashcards,
