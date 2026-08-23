@@ -53,6 +53,9 @@ certifi>=2024.2.2          # certificados SSL (resolve SSL no Mac)
 langchain-anthropic==0.1.23   # mesma geração do langchain 0.2.16 (0.2.4 exige langchain-core 0.3+, conflita)
 yfinance>=0.2.40    # cotações de ações sem chave (faixa de mercado)
 Pillow>=10.0.0
+edge-tts>=6.1.0                # Fase 3 do AI Course Generation Engine (curso/video_render.py) —
+                                # narração das cenas de vídeo por aula. Gratuito, sem chave de API,
+                                # mesmo motor que o MoneyPrinterTurbo (mpt-api) já usa internamente.
 pypdf==4.3.1                  # rag/document_extractor.py — FALLBACK de PDF (se markitdown faltar)
 python-pptx==1.0.2            # rag/document_extractor.py — FALLBACK de PPTX (se markitdown faltar)
 python-docx==1.1.2            # rag/document_extractor.py — FALLBACK de DOCX (se markitdown faltar)

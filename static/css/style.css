@@ -2781,6 +2781,18 @@ em { font-style: normal; }
 .plan-delete-btn:hover{border-color:#e5484d}
 
 /* material de apoio (Curso -> RAG) */
+.cx-mode-toggle{display:flex;gap:8px;margin-bottom:14px}
+.cx-mode-btn{background:var(--surface);border:1px solid var(--line);color:var(--text-3);
+  padding:9px 16px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .15s}
+.cx-mode-btn:hover{color:var(--text)}
+.cx-mode-btn.active{background:var(--surface-2);border-color:var(--accent);color:var(--accent)}
+.cx-criativo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;margin-top:16px}
+.cx-criativo-grid select.est-theme-input{background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 10px;cursor:pointer}
+.cx-criativo-grid input.est-theme-input{background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 10px}
 .cx-material{background:var(--surface);border-radius:14px;padding:18px 20px;margin-top:14px}
 .cx-material-head{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .cx-material-title{font-size:14px;font-weight:600;color:var(--text)}

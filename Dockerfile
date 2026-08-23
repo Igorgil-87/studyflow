@@ -8,12 +8,16 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1
 
 # ffmpeg/ffprobe são exigidos por áudio/vídeo.
+# fonts-dejavu-core é exigido por certificado.py (Pillow): sem NENHUM
+# pacote de fonte no python:3.12-slim, o fallback do Pillow (fonte
+# embutida) não cobre acentuação PT-BR — "conclusão", "êxito" etc saem
+# como caixa vazia (tofu box) em vez do acento.
 # Deno é o runtime JS recomendado pelo yt-dlp para resolver os desafios
 # JavaScript atuais do YouTube (EJS). Mantemos uma versão mínima suportada
 # fixa para builds reproduzíveis; yt-dlp[default] instala os scripts EJS.
 ARG DENO_VERSION=2.3.0
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg curl ca-certificates unzip \
+    && apt-get install -y --no-install-recommends ffmpeg curl ca-certificates unzip fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s v${DENO_VERSION} \
     && deno --version

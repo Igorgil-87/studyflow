@@ -113,6 +113,8 @@ services:
     volumes:
       - videos_data:/app/static/videos
       - images_data:/app/static/images
+      - audios_data:/app/static/audios
+      - obs_data:/app/output
       - youtube_cookies:/app/secrets
       # Veja a nota sobre OAuth no DEPLOY.md — o arquivo de token precisa
       # ser gerado na SUA máquina local primeiro (o fluxo de login do
@@ -144,6 +146,8 @@ services:
     volumes:
       - videos_data:/app/static/videos
       - images_data:/app/static/images
+      - audios_data:/app/static/audios
+      - obs_data:/app/output
       - youtube_cookies:/app/secrets
       - ./youtube_token.json:/app/youtube_token.json
       - ./client_secret.json:/app/client_secret.json:ro
@@ -161,6 +165,11 @@ services:
     environment:
       RUN_MODE: redis
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      # scheduler.py roda o check de drift (obs/drift.py), que lê o mesmo
+      # banco de observabilidade — sem este volume, ele checaria um banco
+      # vazio, isolado do que web/worker gravam.
+      - obs_data:/app/output
     depends_on:
       redis:
         condition: service_healthy
@@ -210,4 +219,6 @@ volumes:
   pgdata:
   videos_data:
   images_data:
+  audios_data:
+  obs_data:
   n8n_data:
