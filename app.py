@@ -1464,7 +1464,7 @@ def curso2_listar():
     try:
         return jsonify({"cursos": list_cursos(_trilhas_user_key())})
     except CursoStoreError as e:
-        return jsonify({"error": str(e), "cursos": []}), 200
+        return jsonify({"error": "Falha interna ao listar cursos.", "cursos": []}), 200
 
 
 @app.route("/api/curso2/<course_id>", methods=["GET"])
