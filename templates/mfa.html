@@ -66,6 +66,7 @@
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
     <form method="POST" action="/mfa">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
              placeholder="••••••" autocomplete="one-time-code" autofocus required>
       <button class="btn" type="submit">Verificar e entrar</button>
@@ -74,6 +75,7 @@
     <div class="links">
       <a href="/login">← Voltar</a>
       <form method="POST" action="/mfa/resend" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit">Reenviar código</button>
       </form>
     </div>

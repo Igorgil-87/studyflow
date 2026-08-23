@@ -32,6 +32,7 @@ from flask import (
     render_template, request, session, url_for,
 )
 from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 from auth import check_credentials, login_required
 from auth import users as auth_users
@@ -43,6 +44,7 @@ from obs import db as obs_db
 from obs import drift as obs_drift
 from obs import report as obs_report
 from tools import TrendFetcherTool, CATEGORIES as TREND_CATEGORIES
+from tools import cookies_config
 
 load_dotenv()
 
@@ -54,6 +56,12 @@ SECRET_KEY = os.getenv("SECRET_KEY", "studyflow-dev-secret-change-me")
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 CORS(app)
+
+# CSRF só nos formulários HTML reais (login/signup/MFA); rotas de
+# API/AJAX ficam de fora, protegidas por login_required + sessão.
+app.config["WTF_CSRF_CHECK_DEFAULT"] = False
+csrf = CSRFProtect(app)
+app.jinja_env.globals["csrf_token"] = generate_csrf
 
 # Banco de usuários + provedores OAuth (só os configurados ligam).
 auth_users.init()
@@ -94,6 +102,7 @@ def _start_mfa(user):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        csrf.protect()
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         # Admin do .env: atalho sem e-mail, sem MFA.
@@ -112,6 +121,7 @@ def login():
 
 @app.route("/signup", methods=["POST"])
 def signup():
+    csrf.protect()
     email = request.form.get("email", "").strip()
     password = request.form.get("password", "")
     name = request.form.get("name", "").strip() or None
@@ -139,6 +149,7 @@ def mfa_verify():
 
 @app.route("/mfa", methods=["POST"])
 def mfa_check():
+    csrf.protect()
     challenge = session.get("mfa")
     code = request.form.get("code", "")
     ok, reason = auth_mfa.verify(challenge, code)
@@ -161,6 +172,7 @@ def mfa_check():
 
 @app.route("/mfa/resend", methods=["POST"])
 def mfa_resend():
+    csrf.protect()
     challenge = session.get("mfa")
     if not challenge:
         return redirect(url_for("login"))
@@ -271,6 +283,36 @@ def configuracoes_trocar_senha():
         return jsonify({"ok": True})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+
+# ══════════ Cookies do YouTube (yt-dlp) — upload pela interface ══════════
+# Servidor na nuvem não tem navegador instalado, então COOKIES_BROWSER
+# (que exige um Chrome/Firefox de verdade na máquina) não funciona lá.
+# Essa rota permite subir um cookies.txt exportado de qualquer navegador
+# — resolve o "Sign in to confirm you're not a bot" do YouTube em produção.
+COOKIES_MAX_UPLOAD_BYTES = cookies_config.MAX_COOKIES_FILE_BYTES + 1024
+
+
+@app.route("/api/configuracoes/cookies", methods=["GET"])
+@login_required
+def api_cookies_status():
+    return jsonify(cookies_config.cookies_status())
+
+
+@app.route("/api/configuracoes/cookies", methods=["POST"])
+@login_required
+def api_cookies_upload():
+    file = request.files.get("cookies")
+    if not file or not file.filename:
+        return jsonify({"error": "Nenhum arquivo enviado."}), 400
+    content = file.read(COOKIES_MAX_UPLOAD_BYTES + 1)
+    if len(content) > COOKIES_MAX_UPLOAD_BYTES:
+        return jsonify({"error": "Arquivo grande demais pra ser um cookies.txt."}), 400
+    try:
+        cookies_config.save_uploaded_cookies(content)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(cookies_config.cookies_status())
 
 
 @app.route("/planejamento")
@@ -682,7 +724,8 @@ def youtuber_trends():
     if not niche:
         return jsonify({"error": "Nicho obrigatório"}), 400
 
-    fetcher = TrendFetcherTool(cookies_browser=COOKIES_BROWSER)
+    fetcher = TrendFetcherTool(cookies_browser=COOKIES_BROWSER,
+                              cookies_file=cookies_config.get_cookies_file())
     result = fetcher._run(niche=niche)
     if result.startswith("ERRO"):
         return jsonify({"error": result}), 500
@@ -741,12 +784,18 @@ def youtuber_vertical():
     if not arquivo:
         return jsonify({"ok": False, "erro": "arquivo não informado"}), 400
 
-    src = os.path.join("static", arquivo)
-    if not os.path.exists(src):
-        return jsonify({"ok": False, "erro": "clip não encontrado"}), 404
-    base, _ = os.path.splitext(arquivo)
-    out_rel = f"{base}_9x16.mp4"
-    out_abs = os.path.join("static", out_rel)
+    # Valida o caminho de entrada: precisa ficar dentro de static/
+    # (evita path traversal via "../../..." no campo arquivo).
+    static_base = os.path.normpath("static")
+    src = os.path.normpath(os.path.join(static_base, arquivo))
+    if not src.startswith(static_base + os.sep) or not os.path.isfile(src):
+        return jsonify({"ok": False, "erro": "clip inválido ou não encontrado"}), 400
+
+    nome_base, _ = os.path.splitext(arquivo)
+    out_rel = f"{nome_base}_9x16.mp4"
+    out_abs = os.path.normpath(os.path.join(static_base, out_rel))
+    if not out_abs.startswith(static_base + os.sep):
+        return jsonify({"ok": False, "erro": "caminho de saída inválido"}), 400
     os.makedirs(os.path.dirname(out_abs), exist_ok=True)
 
     result = export_vertical(src, out_abs, mode=mode)

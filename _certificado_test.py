@@ -18,7 +18,10 @@ print("PNG com curso longo (quebra) OK")
 
 # 2) persistência de concluídos
 s=u.spec_from_file_location("prefs","auth/prefs.py"); prefs=u.module_from_spec(s)
-tmpdb=tempfile.mktemp(suffix=".db"); os.environ["USERS_DB"]=tmpdb; s.loader.exec_module(prefs)
+tmp_fd, tmpdb = tempfile.mkstemp(suffix=".db")
+os.close(tmp_fd)
+os.environ["USERS_DB"] = tmpdb
+s.loader.exec_module(prefs)
 user="aluno@sf"
 assert (prefs.get_pref(user,"concluidos",default=[]) or [])==[]
 prefs.set_pref(user,"concluidos",[{"id":"c1","curso":"RNN","nota":"90%","data":"07/07/2026"}])

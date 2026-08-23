@@ -22,8 +22,8 @@ def classify_download_error(raw_error: str) -> str:
             "ERRO: esse vídeo está PRIVADO no YouTube — só quem tem acesso "
             "concedido à conta consegue baixar. Atualizar o yt-dlp não "
             "resolve isso (o vídeo não é público pra ninguém de fora). "
-            "Se você TEM acesso, configure COOKIES_BROWSER no .env com uma "
-            "conta logada que tenha esse acesso. Confirma também se o link "
+            "Se você TEM acesso, configure COOKIES_FILE no .env com um "
+            "cookies.txt válido da conta que tenha esse acesso. Confirma também se o link "
             "está certo. "
             f"Detalhe: {raw_error}"
         )
@@ -31,9 +31,9 @@ def classify_download_error(raw_error: str) -> str:
     if "sign in to confirm your age" in erro_lower or ("age" in erro_lower and "restrict" in erro_lower):
         return (
             "ERRO: esse vídeo tem restrição de idade no YouTube. Configure "
-            "COOKIES_BROWSER no .env (ex: chrome) com uma conta logada e "
-            "maior de idade — sem isso, vídeo com restrição de idade não "
-            "baixa de jeito nenhum, mesmo atualizando o yt-dlp. "
+            "COOKIES_FILE no .env com um cookies.txt de uma conta logada e "
+            "maior de idade — sem isso, vídeo com restrição de idade pode não "
+            "baixar de jeito nenhum, mesmo atualizando o yt-dlp. "
             f"Detalhe: {raw_error}"
         )
 
@@ -47,11 +47,22 @@ def classify_download_error(raw_error: str) -> str:
         )
 
     if "sign in to confirm you" in erro_lower and "bot" in erro_lower:
+        try:
+            from tools.youtube_runtime import runtime_status
+            st = runtime_status()
+            diag = (
+                f"yt-dlp={st['yt_dlp']}; js_runtime={'ok' if st['js_runtime_ok'] else 'ausente'}; "
+                f"cookies_file={'ok' if st['cookies_file_exists'] else 'ausente'}; "
+                f"proxy={'on' if st['proxy_configured'] else 'off'}"
+            )
+        except Exception:
+            diag = "diagnóstico local indisponível"
         return (
-            "ERRO ao baixar vídeo: o YouTube bloqueou o download (detecção "
-            "de bot). Atualize o yt-dlp (pip install -U yt-dlp) ou "
-            "configure COOKIES_BROWSER no .env (ex: chrome). "
-            f"Detalhe: {raw_error}"
+            "ERRO ao baixar vídeo: o YouTube recusou a sessão por verificação anti-bot. "
+            "Em servidor headless, confirme primeiro o Deno/EJS com "
+            "`python -m tools.youtube_doctor`; depois teste COOKIES_FILE. "
+            "Se o IP de datacenter continuar bloqueado, configure PROXY_URL como fallback. "
+            f"Diagnóstico: {diag}. Detalhe: {raw_error}"
         )
 
     # fallback — não sabemos classificar, mantém a orientação genérica
@@ -60,7 +71,7 @@ def classify_download_error(raw_error: str) -> str:
         "ERRO ao baixar vídeo. Pode ser bloqueio do YouTube, vídeo "
         "indisponível, ou outro problema — o detalhe abaixo tem a causa "
         "exata reportada pelo yt-dlp. Se não for óbvio, tente atualizar o "
-        "yt-dlp (pip install -U yt-dlp) ou configurar COOKIES_BROWSER no "
-        ".env (ex: chrome). "
+        "diagnóstico `python -m tools.youtube_doctor`; em servidor headless, "
+        "prefira COOKIES_FILE e use PROXY_URL apenas quando necessário. "
         f"Detalhe: {raw_error}"
     )

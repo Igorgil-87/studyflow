@@ -1,4 +1,5 @@
 import importlib.util as u
+from urllib.parse import urlparse
 def load(n,p): s=u.spec_from_file_location(n,p); m=u.module_from_spec(s); s.loader.exec_module(m); return m
 px = load("perplexity_source", "tools/perplexity_source.py")
 news = load("news_source", "tools/news_source.py")
@@ -39,7 +40,8 @@ fake_gnews = {"articles": [
   {"title": "", "url": "https://news.com/c"},   # sem título → descartado
 ]}
 def fake_fetch_news(url, timeout):
-    assert "gnews.io" in url and "lang=pt" in url
+    _netloc = urlparse(url).netloc
+    assert (_netloc == "gnews.io" or _netloc.endswith(".gnews.io")) and "lang=pt" in url
     return fake_gnews
 n = news.fetch_news("ciência", api_key="TEST", provider="gnews", fetch=fake_fetch_news)
 assert len(n["headlines"]) == 2

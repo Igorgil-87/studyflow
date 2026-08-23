@@ -25,7 +25,8 @@ assert thumb_v.size == (1080, 1920)
 print("compose vertical 1080x1920 OK (texto longo quebrado em linhas)")
 
 # ── 3) salva em disco e confere arquivo não-vazio ──
-out = tempfile.mktemp(suffix=".jpg")
+out_fd, out = tempfile.mkstemp(suffix=".jpg")
+os.close(out_fd)
 thumb.convert("RGB").save(out, "JPEG", quality=88)
 assert os.path.getsize(out) > 5000, os.path.getsize(out)
 print(f"thumbnail salva OK ({os.path.getsize(out)//1024} KB)")

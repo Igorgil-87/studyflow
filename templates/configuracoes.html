@@ -85,40 +85,98 @@
       <button type="button" id="cfgSalvarBtn" class="est-generate-btn">Salvar nova senha</button>
       <div id="cfgMsg" class="cfg-msg"></div>
     </section>
+
+    <section class="cfg-card">
+      <h2>Cookies do YouTube</h2>
+      <div class="cfg-sub">
+        Em produção (servidor na nuvem, sem navegador instalado), o YouTube às
+        vezes bloqueia downloads com "Sign in to confirm you're not a bot".
+        Subindo um <code>cookies.txt</code> aqui, o sistema passa a usar ele
+        automaticamente — sem precisar mexer no servidor.
+      </div>
+
+      <div class="cfg-row">
+        <span class="cfg-row-label">Status</span>
+        <span id="cookiesBadge" class="cfg-badge off">Verificando...</span>
+      </div>
+      <div class="cfg-row" id="cookiesUpdatedRow" style="display:none">
+        <span class="cfg-row-label">Última atualização</span>
+        <span class="cfg-row-value" id="cookiesUpdatedEm">—</span>
+      </div>
+
+      <details style="margin:16px 0;font-size:12.5px;color:var(--text-2)">
+        <summary style="cursor:pointer;color:var(--text);font-weight:500">
+          Como exportar o cookies.txt (leva 1 minuto)
+        </summary>
+        <ol style="margin:10px 0 0 18px;line-height:1.7">
+          <li>No Chrome, instala a extensão
+            <b>"Get cookies.txt LOCALLY"</b> (Chrome Web Store).</li>
+          <li>Faz login em youtube.com com sua conta.</li>
+          <li>Com a aba do YouTube aberta, clica no ícone da extensão e
+            exporta os cookies — salva um arquivo <code>.txt</code>.</li>
+          <li>Sobe esse arquivo aqui embaixo.</li>
+        </ol>
+      </details>
+
+      <div class="cfg-field">
+        <label for="cookiesFile">Arquivo cookies.txt</label>
+        <input id="cookiesFile" type="file" accept=".txt">
+      </div>
+      <button type="button" id="cookiesSalvarBtn" class="est-generate-btn">Enviar cookies.txt</button>
+      <div id="cookiesMsg" class="cfg-msg"></div>
+    </section>
   </main>
 
   <script>
-    document.getElementById('cfgSalvarBtn').addEventListener('click', async () => {
-      const atual = document.getElementById('cfgSenhaAtual').value;
-      const nova = document.getElementById('cfgSenhaNova').value;
-      const confirma = document.getElementById('cfgSenhaConfirma').value;
-      const msg = document.getElementById('cfgMsg');
+    async function carregarStatusCookies() {
+      const badge = document.getElementById('cookiesBadge');
+      const updatedRow = document.getElementById('cookiesUpdatedRow');
+      const updatedEm = document.getElementById('cookiesUpdatedEm');
+      try {
+        const res = await fetch('/api/configuracoes/cookies');
+        const data = await res.json();
+        if (data.configured) {
+          badge.textContent = 'Configurado';
+          badge.className = 'cfg-badge on';
+          updatedRow.style.display = 'flex';
+          updatedEm.textContent = data.updated_em;
+        } else {
+          badge.textContent = 'Não configurado';
+          badge.className = 'cfg-badge off';
+          updatedRow.style.display = 'none';
+        }
+      } catch (e) {
+        badge.textContent = 'Erro ao verificar';
+        badge.className = 'cfg-badge off';
+      }
+    }
+    carregarStatusCookies();
+
+    document.getElementById('cookiesSalvarBtn').addEventListener('click', async () => {
+      const input = document.getElementById('cookiesFile');
+      const msg = document.getElementById('cookiesMsg');
       msg.className = 'cfg-msg';
 
-      if (!atual || !nova) {
-        msg.textContent = 'Preenche a senha atual e a nova.';
-        msg.classList.add('err');
-        return;
-      }
-      if (nova !== confirma) {
-        msg.textContent = 'A confirmação não bate com a senha nova.';
+      if (!input.files.length) {
+        msg.textContent = 'Escolhe um arquivo primeiro.';
         msg.classList.add('err');
         return;
       }
 
+      const formData = new FormData();
+      formData.append('cookies', input.files[0]);
+
       try {
-        const res = await fetch('/api/configuracoes/senha', {
+        const res = await fetch('/api/configuracoes/cookies', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ senha_atual: atual, senha_nova: nova }),
+          body: formData,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Falha ao trocar a senha.');
-        msg.textContent = '✓ Senha trocada com sucesso.';
+        if (!res.ok) throw new Error(data.error || 'Falha ao enviar o arquivo.');
+        msg.textContent = '✓ cookies.txt salvo. Já vale pro próximo download.';
         msg.classList.add('ok');
-        document.getElementById('cfgSenhaAtual').value = '';
-        document.getElementById('cfgSenhaNova').value = '';
-        document.getElementById('cfgSenhaConfirma').value = '';
+        input.value = '';
+        carregarStatusCookies();
       } catch (e) {
         msg.textContent = e.message;
         msg.classList.add('err');

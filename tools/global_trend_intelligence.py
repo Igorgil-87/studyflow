@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 import yt_dlp
+from tools.youtube_runtime import common_ydl_opts
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
@@ -40,42 +41,42 @@ CATEGORIES: dict[str, dict] = {
         "icon": "⚽",
         "subreddits": ["soccer", "formula1", "nba", "mma", "sports"],
         "hn_keywords": ["sports", "football", "championship", "olympic", "league"],
-        "yt_query": "esportes viral trending 2025",
+        "yt_query": "esportes viral trending 2026",
     },
     "games": {
         "label": "Games",
         "icon": "🎮",
         "subreddits": ["gaming", "pcgaming", "PS5", "gamedev", "nintendo"],
         "hn_keywords": ["game", "gaming", "playstation", "xbox", "nintendo", "steam"],
-        "yt_query": "games viral trending 2025",
+        "yt_query": "games viral trending 2026",
     },
     "politica": {
         "label": "Política",
         "icon": "🏛",
         "subreddits": ["worldnews", "geopolitics", "europe", "brasil", "politics"],
         "hn_keywords": ["politics", "government", "election", "policy", "president"],
-        "yt_query": "política mundial tendência 2025",
+        "yt_query": "política mundial tendência 2026",
     },
     "ciencia": {
         "label": "Ciência",
         "icon": "🔬",
         "subreddits": ["science", "technology", "space", "MachineLearning", "futurology"],
         "hn_keywords": ["AI", "research", "science", "study", "discovery", "model"],
-        "yt_query": "ciência tecnologia viral 2025",
+        "yt_query": "ciência tecnologia viral 2026",
     },
     "cultura": {
         "label": "Cultura",
         "icon": "🎭",
         "subreddits": ["movies", "Music", "television", "books", "Art"],
         "hn_keywords": ["music", "film", "art", "culture", "entertainment", "show"],
-        "yt_query": "cultura entretenimento viral 2025",
+        "yt_query": "cultura entretenimento viral 2026",
     },
     "historia": {
         "label": "História",
         "icon": "📜",
         "subreddits": ["history", "AskHistorians", "todayilearned", "worldhistory"],
         "hn_keywords": ["history", "historical", "anniversary", "ancient", "discovery"],
-        "yt_query": "história fatos virais curiosidades 2025",
+        "yt_query": "história fatos virais curiosidades 2026",
     },
     "beleza": {
         "label": "Beleza",
@@ -185,10 +186,12 @@ class GlobalTrendIntelligence:
         self,
         openai_model: str = "gpt-4o-mini",
         claude_model: str = "claude-sonnet-4-6",
-        claude_fast_model: str = "claude-haiku-4-5-20251001",
+        claude_fast_model: str = "claude-haiku-4-5-20261001",
         cookies_browser: str = "",
+        cookies_file: str = "",
     ):
         self.cookies_browser = cookies_browser
+        self.cookies_file = cookies_file
 
         from tools.llm_fallback import build_llm_with_fallback
 
@@ -535,9 +538,12 @@ class GlobalTrendIntelligence:
         return []
 
     def _fetch_youtube(self, query: str) -> list[dict]:
-        opts: dict = {"quiet": True, "no_warnings": True, "extract_flat": True}
-        if self.cookies_browser:
-            opts["cookiesfrombrowser"] = (self.cookies_browser,)
+        opts: dict = common_ydl_opts(
+            cookies_browser=self.cookies_browser,
+            cookies_file=self.cookies_file,
+            quiet=True,
+        )
+        opts["extract_flat"] = True
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(f"ytsearch8:{query}", download=False)

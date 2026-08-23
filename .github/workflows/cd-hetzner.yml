@@ -7,15 +7,26 @@ name: Deploy Hetzner
 on:
   workflow_dispatch:
 
+# Impede que dois deploys rodem ao mesmo tempo (ex: se você clicar
+# "Run workflow" duas vezes por engano) — o segundo espera o primeiro
+# terminar em vez de disputar o mesmo servidor.
+concurrency:
+  group: deploy-hetzner
+  cancel-in-progress: false
+
 jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    needs: test  # só roda se o CI (testes + auditoria de segurança) passar
+    needs: test # só roda se o CI (testes + auditoria de segurança) passar
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://studyflow.vip
     steps:
-      - name: Deploy via SSH no servidor Hetzner
+      - name: Deploy via SSH no servidor Hetzner (com backup e rollback automático)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HETZNER_HOST }}
@@ -23,7 +34,58 @@ jobs:
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
             set -e
-            cd ~/youtube-study-agent
+            cd /opt/studyflow/studyflow
+
+            echo "== Salvando estado anterior para possível rollback =="
+            PREV_COMMIT=$(git rev-parse HEAD)
+            docker tag studyflow-web:latest studyflow-web:rollback 2>/dev/null || true
+            docker tag studyflow-worker:latest studyflow-worker:rollback 2>/dev/null || true
+            docker tag studyflow-scheduler:latest studyflow-scheduler:rollback 2>/dev/null || true
+
+            echo "== Atualizando código e subindo nova versão =="
             git pull origin main
             docker compose -f docker-compose.prod.yml up -d --build
             docker compose -f docker-compose.prod.yml ps
+
+            echo "== Health check (até 6 tentativas, 5s entre elas) =="
+            sleep 10
+            HEALTHY=false
+            for i in 1 2 3 4 5 6; do
+              if curl -sf http://localhost:5001/login > /dev/null; then
+                HEALTHY=true
+                break
+              fi
+              echo "Tentativa $i/6 falhou, aguardando..."
+              sleep 5
+            done
+
+            if [ "$HEALTHY" = false ]; then
+              echo "Health check falhou! Revertendo para a versão anterior..."
+              git reset --hard "$PREV_COMMIT"
+              docker tag studyflow-web:rollback studyflow-web:latest 2>/dev/null || true
+              docker tag studyflow-worker:rollback studyflow-worker:latest 2>/dev/null || true
+              docker tag studyflow-scheduler:rollback studyflow-scheduler:latest 2>/dev/null || true
+              docker compose -f docker-compose.prod.yml up -d
+              echo "Rollback concluído. Deploy abortado."
+              exit 1
+            fi
+
+            echo "Deploy concluído com sucesso e aplicação saudável."
+
+      - name: Notificar por e-mail (sucesso ou falha)
+        if: always()
+        uses: dawidd6/action-send-mail@v18
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "StudyFlow Deploy #${{ github.run_number }} — ${{ job.status }}"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: StudyFlow CI/CD <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            Deploy #${{ github.run_number }} em ${{ github.repository }}
+            Status: ${{ job.status }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Detalhes: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
