@@ -1648,7 +1648,8 @@ def curso2_glossario_get(course_id):
     try:
         return jsonify({"termos": get_glossario(course_id)})
     except CursoStoreError as e:
-        return jsonify({"error": str(e), "termos": []}), 200
+        app.logger.exception("Falha ao carregar glossário para o curso %s", course_id)
+        return jsonify({"error": "não foi possível carregar o glossário no momento.", "termos": []}), 200
 
 
 @app.route("/api/curso2/<course_id>/glossario/gerar", methods=["POST"])
