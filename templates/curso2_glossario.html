@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Glossário</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .gl-wrap{max-width:760px;margin:0 auto;padding:32px 24px 80px}
+    .gl-eyebrow{font-size:12px;letter-spacing:.06em;color:var(--accent);font-weight:600;margin-bottom:8px}
+    .gl-title{font-family:'Instrument Serif',serif;font-size:34px;color:var(--text);margin:0}
+    .gl-actions{margin-top:18px}
+    .gl-empty{color:var(--text-3);font-size:14px;margin-top:16px}
+    .gl-term{background:var(--surface);border-radius:12px;padding:16px 20px;margin-top:12px}
+    .gl-term-nome{font-size:16px;font-weight:600;color:var(--accent)}
+    .gl-term-def{font-size:14px;color:var(--text-2);margin-top:6px;line-height:1.5}
+    .gl-term-def.vazio{color:var(--text-3);font-style:italic}
+    .gl-term-licoes{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+    .gl-licao-pill{font-size:11px;background:var(--surface-2);color:var(--text-3);
+      padding:3px 10px;border-radius:12px}
+    .gl-loading{color:var(--text-3);font-size:14px;padding:40px 0;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>
+    {% set active = 'curso' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage gl-wrap">
+    <div class="gl-eyebrow">GLOSSÁRIO · AI COURSE GENERATION ENGINE</div>
+    <h1 class="gl-title">Termos do curso</h1>
+    <div class="gl-actions">
+      <button class="generate-btn cx-generate" id="glGerarBtn">
+        <span class="btn-label">Gerar/atualizar definições</span><span class="btn-ico">→</span>
+      </button>
+    </div>
+    <div id="glLoading" class="gl-loading">Carregando...</div>
+    <div id="glLista"></div>
+    <div id="glError" class="error-box" hidden></div>
+  </main>
+
+  <script>
+    var COURSE_ID = {{ course_id | tojson }};
+
+    function renderLista(termos){
+      var wrap = document.getElementById('glLista');
+      wrap.innerHTML = '';
+      if(!termos.length){
+        wrap.innerHTML = '<div class="gl-empty">Nenhum conceito extraído ainda pra este curso.</div>';
+        return;
+      }
+      termos.forEach(function(t){
+        var box = document.createElement('div');
+        box.className = 'gl-term';
+        var def = t.definicao
+          ? '<div class="gl-term-def">' + t.definicao + '</div>'
+          : '<div class="gl-term-def vazio">Ainda sem definição — clique em "Gerar/atualizar definições".</div>';
+        var licoes = (t.licoes || []).map(function(l){ return '<span class="gl-licao-pill">' + l.titulo + '</span>'; }).join('');
+        box.innerHTML = '<div class="gl-term-nome">' + t.nome + '</div>' + def +
+          '<div class="gl-term-licoes">' + licoes + '</div>';
+        wrap.appendChild(box);
+      });
+    }
+
+    function carregar(){
+      fetch('/api/curso2/' + COURSE_ID + '/glossario')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          document.getElementById('glLoading').hidden = true;
+          renderLista(d.termos || []);
+        });
+    }
+
+    document.getElementById('glGerarBtn').addEventListener('click', function(){
+      var btn = this;
+      btn.disabled = true;
+      btn.querySelector('.btn-label').textContent = 'Gerando...';
+      fetch('/api/curso2/' + COURSE_ID + '/glossario/gerar', {method: 'POST'})
+        .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+        .then(function(res){
+          btn.disabled = false;
+          btn.querySelector('.btn-label').textContent = 'Gerar/atualizar definições';
+          if(!res.ok){
+            var box = document.getElementById('glError');
+            box.textContent = res.data.error;
+            box.hidden = false;
+            return;
+          }
+          renderLista(res.data.termos || []);
+        });
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

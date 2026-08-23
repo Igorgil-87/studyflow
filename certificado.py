@@ -113,7 +113,13 @@ def gerar_certificado_png(nome: str, curso: str, data: str,
     seal_font = _font(15, bold=True)
     _center_text(d, sy - 22, "STUDY", seal_font, LIME, cx=sx)
     _center_text(d, sy - 2, "FLOW", seal_font, LIME, cx=sx)
-    _center_text(d, sy + 20, "✓", _font(20, bold=True), LIME, cx=sx)
+    # checkmark DESENHADO (2 linhas), não texto — o glyph "✓" (U+2713) não
+    # existe em várias fontes (ex: Times New Roman), vira um quadrado vazio
+    # "tofu box" em vez do check. Desenhando como linha, funciona sempre,
+    # em qualquer fonte disponível no container.
+    cx, cy = sx, sy + 22
+    d.line([(cx - 9, cy), (cx - 3, cy + 6), (cx + 10, cy - 8)],
+           fill=LIME, width=3, joint="curve")
 
     out = io.BytesIO()
     img.save(out, format="PNG")

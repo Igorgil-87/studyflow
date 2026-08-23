@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Mapa Mental</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .mm-wrap{max-width:1100px;margin:0 auto;padding:32px 24px 80px}
+    .mm-eyebrow{font-size:12px;letter-spacing:.06em;color:var(--accent);font-weight:600;margin-bottom:8px}
+    .mm-title{font-family:'Instrument Serif',serif;font-size:34px;color:var(--text);margin:0 0 18px}
+    .mm-canvas-wrap{background:var(--surface);border-radius:16px;padding:20px;overflow-x:auto}
+    .mm-legend{display:flex;gap:16px;margin-bottom:14px;font-size:12px;color:var(--text-3)}
+    .mm-legend span{display:inline-flex;align-items:center;gap:6px}
+    .mm-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+    .mm-loading{color:var(--text-3);font-size:14px;padding:40px 0;text-align:center}
+    .mm-node-lesson{cursor:pointer}
+    .mm-node-lesson:hover rect{stroke:var(--accent)}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>
+    {% set active = 'curso' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage mm-wrap">
+    <div class="mm-eyebrow">MAPA MENTAL · AI COURSE GENERATION ENGINE</div>
+    <h1 class="mm-title">Estrutura do curso</h1>
+    <div class="mm-legend">
+      <span><span class="mm-dot" style="background:#d4ff4f"></span> Curso</span>
+      <span><span class="mm-dot" style="background:#7dd3fc"></span> Módulo</span>
+      <span><span class="mm-dot" style="background:#f4f3f0"></span> Aula (clicável)</span>
+      <span><span class="mm-dot" style="background:#9b9a96"></span> Conceito</span>
+    </div>
+    <div id="mmLoading" class="mm-loading">Carregando estrutura...</div>
+    <div class="mm-canvas-wrap"><svg id="mmSvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="mmError" class="error-box" hidden></div>
+  </main>
+
+  <script>
+    var COURSE_ID = {{ course_id | tojson }};
+    var COR = {course: '#d4ff4f', module: '#7dd3fc', lesson: '#f4f3f0', concept: '#9b9a96'};
+    var LARGURA_NO = {course: 200, module: 160, lesson: 150, concept: 120};
+    var ALTURA_NIVEL = 110;
+
+    function montarNiveis(nodes, edges){
+      // BFS a partir de 'course' pra atribuir nível (profundidade) a cada nó
+      var byId = {};
+      nodes.forEach(function(n){ byId[n.id] = n; });
+      var filhos = {};
+      edges.forEach(function(e){
+        filhos[e.from] = filhos[e.from] || [];
+        filhos[e.from].push(e.to);
+      });
+
+      var nivel = {course: 0};
+      var fila = ['course'];
+      while(fila.length){
+        var atual = fila.shift();
+        (filhos[atual] || []).forEach(function(filhoId){
+          if(!(filhoId in nivel)){
+            nivel[filhoId] = nivel[atual] + 1;
+            fila.push(filhoId);
+          }
+        });
+      }
+
+      var porNivel = {};
+      nodes.forEach(function(n){
+        var lvl = nivel[n.id] || 0;
+        porNivel[lvl] = porNivel[lvl] || [];
+        porNivel[lvl].push(n);
+      });
+      return porNivel;
+    }
+
+    function desenhar(nodes, edges){
+      var porNivel = montarNiveis(nodes, edges);
+      var numNiveis = Object.keys(porNivel).length;
+      var maxPorNivel = Math.max.apply(null, Object.values(porNivel).map(function(l){ return l.length; }));
+      var largura = Math.max(900, maxPorNivel * 180);
+      var altura = numNiveis * ALTURA_NIVEL + 60;
+
+      var coords = {};
+      Object.keys(porNivel).forEach(function(lvl){
+        var lista = porNivel[lvl];
+        var passo = largura / (lista.length + 1);
+        lista.forEach(function(n, i){
+          coords[n.id] = {x: passo * (i + 1), y: parseInt(lvl) * ALTURA_NIVEL + 40};
+        });
+      });
+
+      var svg = document.getElementById('mmSvg');
+      svg.setAttribute('viewBox', '0 0 ' + largura + ' ' + altura);
+      svg.setAttribute('width', largura);
+      svg.setAttribute('height', altura);
+      svg.innerHTML = '';
+
+      var ns = 'http://www.w3.org/2000/svg';
+      edges.forEach(function(e){
+        var a = coords[e.from], b = coords[e.to];
+        if(!a || !b) return;
+        var line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+        line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+        line.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+        line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+      });
+
+      nodes.forEach(function(n){
+        var c = coords[n.id];
+        if(!c) return;
+        var w = LARGURA_NO[n.type] || 120;
+        var g = document.createElementNS(ns, 'g');
+        if(n.type === 'lesson' && n.lesson_id){
+          g.setAttribute('class', 'mm-node-lesson');
+          g.addEventListener('click', function(){ window.location.href = '/curso2/' + COURSE_ID + '/revisar'; });
+        }
+        var rect = document.createElementNS(ns, 'rect');
+        rect.setAttribute('x', c.x - w/2); rect.setAttribute('y', c.y - 16);
+        rect.setAttribute('width', w); rect.setAttribute('height', 32);
+        rect.setAttribute('rx', 8);
+        rect.setAttribute('fill', 'rgba(255,255,255,0.04)');
+        rect.setAttribute('stroke', COR[n.type] || '#888');
+        rect.setAttribute('stroke-width', n.type === 'course' ? 2 : 1);
+        g.appendChild(rect);
+
+        var text = document.createElementNS(ns, 'text');
+        text.setAttribute('x', c.x); text.setAttribute('y', c.y + 4);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', n.type === 'course' ? '13' : '11');
+        text.setAttribute('font-family', 'Geist, sans-serif');
+        text.setAttribute('fill', n.type === 'concept' ? 'var(--text-3)' : 'var(--text)');
+        var label = n.label.length > 22 ? n.label.slice(0, 20) + '…' : n.label;
+        text.textContent = label;
+        g.appendChild(text);
+
+        svg.appendChild(g);
+      });
+    }
+
+    fetch('/api/curso2/' + COURSE_ID + '/mapa-mental')
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+      .then(function(res){
+        document.getElementById('mmLoading').hidden = true;
+        if(!res.ok){
+          var box = document.getElementById('mmError');
+          box.textContent = res.data.error || 'Falha ao carregar o mapa.';
+          box.hidden = false;
+          return;
+        }
+        desenhar(res.data.nodes, res.data.edges);
+      });
+  </script>
+</body>
+</html>

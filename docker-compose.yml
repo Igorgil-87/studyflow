@@ -31,6 +31,11 @@ services:
       # pelo worker (cortes do Youtuber, etc) não aparecem pro web.
       - videos_data:/app/static/videos
       - images_data:/app/static/images
+      - audios_data:/app/static/audios
+      # mesma lógica pro banco de observabilidade (custo/tokens) — sem
+      # isto, o worker grava o custo no disco dele e a tela /obs (servida
+      # pelo web) lê um banco vazio, sempre em outro container.
+      - obs_data:/app/output
     depends_on:
       redis:
         condition: service_healthy
@@ -46,6 +51,8 @@ services:
     volumes:
       - videos_data:/app/static/videos
       - images_data:/app/static/images
+      - audios_data:/app/static/audios
+      - obs_data:/app/output
     depends_on:
       redis:
         condition: service_healthy
@@ -58,6 +65,8 @@ services:
     environment:
       RUN_MODE: redis
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      - obs_data:/app/output
     depends_on:
       redis:
         condition: service_healthy
@@ -84,3 +93,5 @@ volumes:
   pgdata:
   videos_data:
   images_data:
+  audios_data:
+  obs_data:
