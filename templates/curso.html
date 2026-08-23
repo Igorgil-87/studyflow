@@ -48,7 +48,13 @@
       </div>
     </header>
 
-    <!-- ░ COMPOSER ░ -->
+    <!-- ░ ESCOLHA DO MODO DE CRIAÇÃO (AI Course Generation Engine) ░ -->
+    <div class="cx-mode-toggle" id="cxModeToggle">
+      <button type="button" class="cx-mode-btn active" data-mode="youtube">📺 Curso pelo YouTube</button>
+      <button type="button" class="cx-mode-btn" data-mode="criativo">📄 Modo Criativo</button>
+    </div>
+
+    <!-- ░ COMPOSER (Opção 1 · YouTube — fluxo INTOCADO) ░ -->
     <section class="composer cx-composer" id="composer">
       <div class="composer-glow"></div>
       <label class="cx-composer-label">Tema do curso</label>
@@ -74,6 +80,79 @@
           <span class="btn-ico">→</span>
         </button>
       </div>
+    </section>
+
+    <!-- ░ MODO CRIATIVO (Opção 2 · documento é a fonte de verdade) ░ -->
+    <section class="cx-material" id="cxCriativo" hidden>
+      <div class="cx-material-head">
+        <span class="cx-material-title">📄 Modo Criativo — transforme seu material em curso</span>
+        <span class="cx-material-hint">Upload obrigatório: PDF, DOCX, PPTX, TXT ou Markdown. O documento é a fonte
+          de verdade — a IA estrutura um curso pedagógico a partir dele, não só resume.</span>
+      </div>
+
+      <label class="cx-material-upload" for="cxCriativoInput">
+        <span id="cxCriativoLabel">Escolher documento (até 20MB) — obrigatório</span>
+      </label>
+      <input id="cxCriativoInput" type="file" accept=".pdf,.docx,.pptx,.txt,.md,.markdown" hidden>
+
+      <div class="cx-criativo-grid">
+        <label class="ctrl cx-ctrl">
+          <span>Nome do curso (opcional — a IA sugere)</span>
+          <input id="cxCriativoNome" type="text" class="est-theme-input" placeholder="deixe em branco pra IA sugerir">
+        </label>
+        <label class="ctrl cx-ctrl">
+          <span>Objetivo (opcional)</span>
+          <input id="cxCriativoObjetivo" type="text" class="est-theme-input" placeholder="ex: aprender arquitetura de agentes de IA">
+        </label>
+        <label class="ctrl cx-ctrl">
+          <span>Público</span>
+          <select id="cxCriativoPublico" class="est-theme-input">
+            <option value="iniciante">Iniciante</option>
+            <option value="estudante" selected>Estudante</option>
+            <option value="desenvolvedor">Desenvolvedor</option>
+            <option value="arquiteto">Arquiteto</option>
+            <option value="executivo">Executivo</option>
+            <option value="especialista">Especialista</option>
+          </select>
+        </label>
+        <label class="ctrl cx-ctrl">
+          <span>Nível</span>
+          <select id="cxCriativoNivel" class="est-theme-input">
+            <option value="introducao">Introdução</option>
+            <option value="fundamentos" selected>Fundamentos</option>
+            <option value="intermediario">Intermediário</option>
+            <option value="avancado">Avançado</option>
+            <option value="deep_dive">Deep Dive</option>
+          </select>
+        </label>
+        <label class="ctrl cx-ctrl">
+          <span>Duração desejada</span>
+          <select id="cxCriativoDuracao" class="est-theme-input">
+            <option value="30">30 minutos</option>
+            <option value="60" selected>1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="240">4 horas</option>
+          </select>
+        </label>
+        <label class="ctrl cx-ctrl">
+          <span>Estilo</span>
+          <select id="cxCriativoEstilo" class="est-theme-input">
+            <option value="academico">Acadêmico</option>
+            <option value="executivo">Executivo</option>
+            <option value="professor">Professor</option>
+            <option value="tecnico">Técnico</option>
+            <option value="pratico" selected>Prático</option>
+            <option value="storytelling">Storytelling</option>
+          </select>
+        </label>
+      </div>
+
+      <button class="generate-btn cx-generate" id="cxCriativoBtn" style="margin-top:16px">
+        <span class="btn-label">Analisar material e gerar estrutura</span>
+        <span class="btn-ico">→</span>
+      </button>
+
+      <div id="cxCriativoError" class="error-box" hidden></div>
     </section>
 
     <!-- ░ MATERIAL DE APOIO (PDF/PPTX/DOCX ou URL → RAG do curso) ░ -->
@@ -178,6 +257,76 @@
         <button class="cx-conclude-btn" id="concludeBtn">🎓 Concluir e emitir certificado</button>
       </div>
     </section>
+
+    <script>
+      // Modo Criativo (Opção 2) — isolado, não mexe na lógica de geração
+      // da Opção 1 (YouTube), que continua 100% intacta abaixo.
+      (function(){
+        var toggle = document.getElementById('cxModeToggle');
+        var composerYoutube = document.getElementById('composer');
+        var materialYoutube = document.getElementById('cxMaterial');
+        var pipelineYoutube = document.getElementById('pipeline');
+        var criativo = document.getElementById('cxCriativo');
+        if(!toggle) return;
+
+        toggle.querySelectorAll('.cx-mode-btn').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            toggle.querySelectorAll('.cx-mode-btn').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            var modo = btn.dataset.mode;
+            var ehCriativo = modo === 'criativo';
+            criativo.hidden = !ehCriativo;
+            composerYoutube.hidden = ehCriativo;
+            if(materialYoutube) materialYoutube.hidden = ehCriativo;
+            if(pipelineYoutube) pipelineYoutube.hidden = true; // sempre reseta ao trocar de modo
+          });
+        });
+
+        var fileInput = document.getElementById('cxCriativoInput');
+        var fileLabel = document.getElementById('cxCriativoLabel');
+        fileInput.addEventListener('change', function(){
+          fileLabel.textContent = fileInput.files[0] ? fileInput.files[0].name : 'Escolher documento (até 20MB) — obrigatório';
+        });
+
+        var btn = document.getElementById('cxCriativoBtn');
+        var errBox = document.getElementById('cxCriativoError');
+
+        function mostrarErro(msg){
+          errBox.textContent = msg;
+          errBox.hidden = false;
+        }
+
+        btn.addEventListener('click', function(){
+          errBox.hidden = true;
+          var arquivo = fileInput.files[0];
+          if(!arquivo){ mostrarErro('Escolha um documento — é obrigatório no Modo Criativo.'); return; }
+
+          var fd = new FormData();
+          fd.append('arquivo', arquivo);
+          fd.append('nome', document.getElementById('cxCriativoNome').value);
+          fd.append('objetivo', document.getElementById('cxCriativoObjetivo').value);
+          fd.append('publico', document.getElementById('cxCriativoPublico').value);
+          fd.append('nivel', document.getElementById('cxCriativoNivel').value);
+          fd.append('duracao_min', document.getElementById('cxCriativoDuracao').value);
+          fd.append('estilo', document.getElementById('cxCriativoEstilo').value);
+
+          btn.disabled = true;
+          btn.querySelector('.btn-label').textContent = 'Analisando material (pode levar um minuto)...';
+
+          fetch('/api/curso2/criar', {method:'POST', body: fd})
+            .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+            .then(function(res){
+              if(!res.ok){ throw new Error(res.data.error || 'Falha ao gerar estrutura do curso.'); }
+              window.location.href = '/curso2/' + res.data.curso.course_id + '/revisar';
+            })
+            .catch(function(e){
+              mostrarErro(e.message);
+              btn.disabled = false;
+              btn.querySelector('.btn-label').textContent = 'Analisar material e gerar estrutura';
+            });
+        });
+      })();
+    </script>
 
     <script>
       // botão de concluir curso — isolado, não mexe na lógica de geração

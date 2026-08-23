@@ -79,6 +79,8 @@ services:
       # web, que serve o player/galeria. Volume = "disco compartilhado".
       - videos_data:/app/static/videos
       - images_data:/app/static/images
+      - audios_data:/app/static/audios
+      - obs_data:/app/output
       # token/credenciais do YouTube: monta o arquivo do HOST direto no
       # container (bind mount, não named volume) — sem isso, reautorizar
       # (python -m publish.auth) só valeria depois de um rebuild da
@@ -108,6 +110,8 @@ services:
     volumes:
       - videos_data:/app/static/videos
       - images_data:/app/static/images
+      - audios_data:/app/static/audios
+      - obs_data:/app/output
       - ./youtube_token.json:/app/youtube_token.json
       - ./client_secret.json:/app/client_secret.json:ro
     depends_on:
@@ -121,6 +125,8 @@ services:
     environment:
       RUN_MODE: redis
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      - obs_data:/app/output
     depends_on:
       redis:
         condition: service_healthy
@@ -202,4 +208,6 @@ volumes:
   pgdata:
   videos_data:
   images_data:
+  audios_data:
+  obs_data:
   n8n_data:

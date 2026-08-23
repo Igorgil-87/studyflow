@@ -216,6 +216,14 @@ def curso():
     return render_template("curso.html")
 
 
+@app.route("/curso2/<course_id>/revisar")
+@login_required
+def curso2_revisar_page(course_id):
+    # a página só passa o course_id pro JS — os dados de verdade vêm de
+    # GET /api/curso2/<course_id>, com o mesmo check de dono de sempre
+    return render_template("curso2_revisar.html", course_id=course_id)
+
+
 # ══════════ Catálogo de cursos (enterprise) ══════════
 @app.route("/catalogo")
 @login_required
@@ -1290,6 +1298,637 @@ def observability_drift():
     return jsonify(obs_drift.compute())
 
 
+# ══════════ AI Course Generation Engine (Fase 1) ══════════
+# Ver ai-course-engine-diagnostico.md. Isto é ADITIVO: run_curso_pipeline()
+# (Opção 1 · YouTube) continua funcionando exatamente como hoje — as rotas
+# abaixo só acrescentam persistência real (curso/store.py) e o Modo
+# Criativo (Opção 2 · documento), sem tocar no pipeline existente.
+CURRICULUM_MATERIAL_MAX_CHARS = 60_000  # ~orçamento de contexto seguro p/ o LLM
+
+
+@app.route("/api/curso2/criar", methods=["POST"])
+@login_required
+def curso2_criar():
+    """Modo Criativo (Opção 2): documento é OBRIGATÓRIO e é a fonte
+    primária — extrai texto, indexa no RAG (pra provenance/tutor depois)
+    E manda o texto inteiro (até o orçamento de contexto) pro
+    CurriculumAgent, que monta o Course Manifest. Retorna o manifest já
+    persistido, status 'aguardando_aprovacao' — a geração pesada
+    (vídeo/áudio) só acontece depois de aprovar (Fase 3/4, ainda não
+    implementada)."""
+    from rag.document_extractor import extract_text, DocumentExtractionError, SUPPORTED_EXTENSIONS
+    from rag.store import get_store
+    from rag.index import index_document
+    from curso.curriculum_agent import gerar_manifesto, CurriculumAgentError
+    from curso.store import criar_curso, CursoStoreError
+
+    file = request.files.get("arquivo")
+    if not file or not file.filename:
+        return jsonify({"error": "Modo Criativo exige pelo menos um documento."}), 400
+
+    ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in SUPPORTED_EXTENSIONS:
+        formatos = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+        return jsonify({"error": f"Formato '{ext}' não suportado. Formatos aceitos: {formatos}"}), 400
+
+    content = file.read()
+    if len(content) > MATERIAL_MAX_BYTES:
+        return jsonify({"error": "Arquivo maior que 20MB — reduz o tamanho e tenta de novo."}), 400
+
+    try:
+        text = extract_text(file.filename, content)
+    except DocumentExtractionError as e:
+        return jsonify({"error": str(e)}), 400
+
+    form = request.form
+    try:
+        duracao_min = int(form.get("duracao_min", 60))
+    except ValueError:
+        duracao_min = 60
+
+    try:
+        manifest = gerar_manifesto(
+            text[:CURRICULUM_MATERIAL_MAX_CHARS],
+            nome_sugerido=(form.get("nome") or "").strip(),
+            objetivo=(form.get("objetivo") or "").strip(),
+            publico=(form.get("publico") or "estudante").strip(),
+            nivel=(form.get("nivel") or "fundamentos").strip(),
+            duracao_min=duracao_min,
+            estilo=(form.get("estilo") or "pratico").strip(),
+        )
+    except CurriculumAgentError as e:
+        return jsonify({"error": str(e)}), 422
+
+    # indexa no RAG em paralelo à criação do curso — não bloqueia o
+    # manifest se o Postgres/pgvector estiver fora (fail-open, mesmo
+    # padrão de /api/curso/material)
+    doc_id = f"material:{uuid.uuid4().hex[:10]}_{file.filename}"
+    try:
+        store = get_store()
+        if store is not None:
+            from cache.embeddings import embed
+            index_document(doc_id, text, embed, store)
+    except Exception as e:
+        print(f"[curso2] indexação RAG falhou (curso segue sem provenance): {e}")
+
+    manifest["source_doc_id"] = doc_id
+    manifest["source_filename"] = file.filename
+
+    try:
+        manifest = criar_curso(_trilhas_user_key(), "documento", manifest)
+    except CursoStoreError as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"ok": True, "curso": manifest})
+
+
+@app.route("/api/curso2/from-youtube/<job_id>", methods=["POST"])
+@login_required
+def curso2_from_youtube(job_id):
+    """Dá persistência real (curso/store.py) a um curso já gerado pela
+    Opção 1 (YouTube) — reformata o roadmap que run_curso_pipeline() já
+    calculou, SEM chamar o LLM de novo (zero custo extra)."""
+    from curso.curriculum_agent import manifest_from_roadmap
+    from curso.store import criar_curso, CursoStoreError
+
+    job = jobs.get(job_id)
+    if not job or not job.get("roadmap"):
+        return jsonify({"error": "Job não encontrado ou ainda sem roadmap gerado."}), 404
+
+    video = job.get("video") or {}
+    manifest = manifest_from_roadmap(job["roadmap"], video.get("titulo", "Curso"))
+    try:
+        manifest = criar_curso(_trilhas_user_key(), "youtube", manifest)
+    except CursoStoreError as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"ok": True, "curso": manifest})
+
+
+@app.route("/api/curso2", methods=["GET"])
+@login_required
+def curso2_listar():
+    from curso.store import list_cursos, CursoStoreError
+    try:
+        return jsonify({"cursos": list_cursos(_trilhas_user_key())})
+    except CursoStoreError as e:
+        return jsonify({"error": str(e), "cursos": []}), 200
+
+
+@app.route("/api/curso2/<course_id>", methods=["GET"])
+@login_required
+def curso2_detalhe(course_id):
+    from curso.store import get_curso, CursoStoreError
+    try:
+        curso = get_curso(course_id, _trilhas_user_key())
+    except CursoStoreError as e:
+        return jsonify({"error": str(e)}), 500
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+    return jsonify({"curso": curso})
+
+
+@app.route("/api/curso2/<course_id>/manifesto", methods=["PUT"])
+@login_required
+def curso2_editar_manifesto(course_id):
+    """Tela de Revisar Estrutura: usuário edita módulos/aulas antes da
+    geração pesada. Bloqueado se o curso já passou de 'aprovado'."""
+    from curso.store import atualizar_manifesto, CursoStoreError
+    body = request.get_json(silent=True) or {}
+    manifest = body.get("manifesto")
+    if not manifest:
+        return jsonify({"error": "Envie o manifesto em 'manifesto'."}), 400
+    try:
+        atualizado = atualizar_manifesto(course_id, _trilhas_user_key(), manifest)
+    except CursoStoreError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True, "curso": atualizado})
+
+
+@app.route("/api/curso2/<course_id>/aprovar", methods=["POST"])
+@login_required
+def curso2_aprovar(course_id):
+    """Checkpoint de aprovação — a partir daqui o manifest não pode mais
+    ser editado. Geração pesada (vídeo/áudio) é Fase 3/4, ainda não
+    implementada; por ora isto só trava a estrutura como definitiva."""
+    from curso.store import aprovar_curso, CursoStoreError
+    try:
+        curso = aprovar_curso(course_id, _trilhas_user_key())
+    except CursoStoreError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify({"ok": True, "curso": curso})
+
+
+@app.route("/api/curso2/<course_id>/licoes_pendentes", methods=["GET"])
+@login_required
+def curso2_licoes_pendentes(course_id):
+    from curso.store import get_curso, list_lessons_pendentes, CursoStoreError
+    curso = get_curso(course_id, _trilhas_user_key())
+    if not curso:
+        return jsonify({"error": "curso não encontrado", "licoes": []}), 404
+    try:
+        return jsonify({"licoes": list_lessons_pendentes(course_id)})
+    except CursoStoreError as e:
+        return jsonify({"error": str(e), "licoes": []}), 200
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/gerar", methods=["POST"])
+@login_required
+def curso2_gerar_licao(course_id, lesson_id):
+    """Dispara o LessonContentAgent + quiz/flashcards para UMA aula —
+    só depois do curso aprovado (checkpoint de custo). Cada aula é
+    independente: se esta falhar, não afeta as outras (requisito de
+    retomada sem reiniciar o curso inteiro)."""
+    from curso.store import (get_curso, get_lesson, save_lesson_content,
+                              save_lesson_quiz, save_provenance, set_lesson_status,
+                              CursoStoreError)
+    from curso.lesson_agent import gerar_conteudo_aula, gerar_quiz_aula, LessonAgentError
+    from curso.provenance import montar_material_e_claims
+
+    curso = get_curso(course_id, _trilhas_user_key())
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+    if curso["status"] not in ("aprovado", "gerando", "concluido"):
+        return jsonify({"error": "aprove o curso antes de gerar o conteúdo das aulas"}), 400
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+
+    manifest = curso["manifest_json"]
+    conceitos = _conceitos_da_licao(manifest, lesson["titulo"])
+    material, claims = montar_material_e_claims(
+        manifest.get("source_doc_id"), lesson["titulo"], lesson["objetivo"], conceitos,
+        contexto_fallback=_material_para_licao(manifest, lesson["titulo"]),
+    )
+
+    set_lesson_status(lesson_id, "gerando")
+    try:
+        conteudo = gerar_conteudo_aula(
+            lesson["titulo"], lesson["objetivo"], conceitos,
+            material, estilo=manifest.get("style", "pratico"),
+        )
+        save_lesson_content(lesson_id, **conteudo)
+        save_provenance(lesson_id, claims)
+
+        quiz_flashcards = {"flashcards": [], "questoes": []}
+        if lesson["quiz_required"]:
+            quiz_flashcards = gerar_quiz_aula(lesson["titulo"], conteudo["explicacao"])
+            save_lesson_quiz(lesson_id, quiz_flashcards.get("questoes", []),
+                              quiz_flashcards.get("flashcards", []))
+
+        set_lesson_status(lesson_id, "concluido")
+    except (LessonAgentError, CursoStoreError) as e:
+        set_lesson_status(lesson_id, "erro")
+        return jsonify({"error": str(e)}), 422
+
+    return jsonify({
+        "ok": True, "conteudo": conteudo, "quiz": quiz_flashcards,
+        "fontes": {"tipo": claims[0]["tipo"] if claims else "complementar", "quantidade": len(claims)},
+    })
+
+
+def _conceitos_da_licao(manifest: dict, titulo_licao: str) -> list[str]:
+    for modulo in manifest.get("modules", []):
+        for aula in modulo.get("lessons", []):
+            if aula.get("title") == titulo_licao:
+                return aula.get("concepts", [])
+    return []
+
+
+def _material_para_licao(manifest: dict, titulo_licao: str) -> str:
+    """Material de referência pra esta aula: descrição do curso + objetivo
+    da aula + conceitos — funciona como contexto mínimo sempre disponível.
+    Quando o curso vem de documento (Modo Criativo), source_doc_id aponta
+    pro RAG indexado; buscar os chunks mais relevantes por conceito fica
+    pro refinamento de provenance (Fase 2) — por ora usa o que já está no
+    manifest, que o CurriculumAgent já extraiu do material original."""
+    partes = [manifest.get("description", "")]
+    for modulo in manifest.get("modules", []):
+        for aula in modulo.get("lessons", []):
+            if aula.get("title") == titulo_licao:
+                partes.append(f"Objetivo da aula: {aula.get('objective', '')}")
+                partes.append(f"Conceitos: {', '.join(aula.get('concepts', []))}")
+    return "\n".join(p for p in partes if p)
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>", methods=["GET"])
+@login_required
+def curso2_detalhe_licao(course_id, lesson_id):
+    from curso.store import get_lesson, get_lesson_content
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    conteudo = get_lesson_content(lesson_id)
+    return jsonify({"aula": lesson, "conteudo": conteudo})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/fontes", methods=["GET"])
+@login_required
+def curso2_fontes_licao(course_id, lesson_id):
+    """'Ver fonte' — trechos que fundamentaram a explicação gerada desta
+    aula, ou o aviso de que o conteúdo é complementar (não veio do
+    documento original), conforme regra de provenance do pedido."""
+    from curso.store import get_lesson, get_provenance
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    return jsonify({"fontes": get_provenance(lesson_id)})
+
+
+@app.route("/api/curso2/<course_id>/glossario", methods=["GET"])
+@login_required
+def curso2_glossario_get(course_id):
+    from curso.store import get_curso, get_glossario, CursoStoreError
+    curso = get_curso(course_id, _trilhas_user_key())
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+    try:
+        return jsonify({"termos": get_glossario(course_id)})
+    except CursoStoreError as e:
+        return jsonify({"error": str(e), "termos": []}), 200
+
+
+@app.route("/api/curso2/<course_id>/glossario/gerar", methods=["POST"])
+@login_required
+def curso2_glossario_gerar(course_id):
+    """Gera as definições — UMA chamada de LLM pra todos os conceitos do
+    curso de uma vez (não uma por termo). Pode rodar de novo sem duplicar
+    (UPDATE por nome, não INSERT)."""
+    from curso.store import get_curso, get_glossario, save_concept_definitions, CursoStoreError
+    from curso.glossary_agent import gerar_glossario, GlossaryAgentError
+
+    curso = get_curso(course_id, _trilhas_user_key())
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+
+    termos_atuais = get_glossario(course_id)
+    nomes = [t["nome"] for t in termos_atuais]
+    if not nomes:
+        return jsonify({"error": "este curso não tem conceitos extraídos ainda."}), 400
+
+    manifest = curso["manifest_json"]
+    try:
+        definicoes = gerar_glossario(manifest.get("title", ""), manifest.get("description", ""), nomes)
+        atualizados = save_concept_definitions(course_id, definicoes)
+    except (GlossaryAgentError, CursoStoreError) as e:
+        return jsonify({"error": str(e)}), 422
+
+    return jsonify({"ok": True, "atualizados": atualizados, "termos": get_glossario(course_id)})
+
+
+@app.route("/api/curso2/<course_id>/mapa-mental", methods=["GET"])
+@login_required
+def curso2_mapa_mental(course_id):
+    from curso.store import get_curso, list_lessons, CursoStoreError
+    from curso.mindmap import build_mind_map
+
+    curso = get_curso(course_id, _trilhas_user_key())
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+    try:
+        lessons_reais = list_lessons(course_id)
+    except CursoStoreError as e:
+        return jsonify({"error": str(e)}), 500
+    return jsonify(build_mind_map(curso["manifest_json"], lessons_reais))
+
+
+@app.route("/curso2/<course_id>/glossario")
+@login_required
+def curso2_glossario_page(course_id):
+    return render_template("curso2_glossario.html", course_id=course_id)
+
+
+@app.route("/curso2/<course_id>/mapa-mental")
+@login_required
+def curso2_mapa_page(course_id):
+    return render_template("curso2_mapa.html", course_id=course_id)
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/gerar_video", methods=["POST"])
+@login_required
+def curso2_gerar_video_licao(course_id, lesson_id):
+    """Dispara o vídeo da aula como job ASSÍNCRONO (Fase 3) — storyboard +
+    render são lentos (TTS + ffmpeg por cena), por isso vão pra fila em
+    vez de rodar dentro do request, igual todo pipeline pesado do
+    projeto. Progresso via GET /api/stream/<job_id> (SSE, já existe)."""
+    from curso.store import get_curso, get_lesson, get_lesson_content, CursoStoreError
+
+    user_key = _trilhas_user_key()
+    curso = get_curso(course_id, user_key)
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+    if curso["status"] not in ("aprovado", "gerando", "concluido"):
+        return jsonify({"error": "aprove o curso antes de gerar vídeo"}), 400
+
+    lesson = get_lesson(lesson_id, user_key)
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    if not lesson["video_required"]:
+        return jsonify({"error": "esta aula não está marcada como precisando de vídeo"}), 400
+
+    conteudo = get_lesson_content(lesson_id)
+    if not conteudo or not conteudo.get("explicacao"):
+        return jsonify({
+            "error": "gere o conteúdo textual desta aula primeiro (botão "
+                     "'Gerar conteúdo desta aula')"
+        }), 400
+
+    job_id = uuid.uuid4().hex
+    jobs.create(job_id, kind="curso2_video")
+    dispatch("curso.video_pipeline.run_video_licao_pipeline", job_id, course_id, lesson_id, user_key,
+             job_timeout=config.VIDEO_JOB_TIMEOUT_SECONDS)
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/storyboard", methods=["GET"])
+@login_required
+def curso2_storyboard_licao(course_id, lesson_id):
+    from curso.store import get_lesson, get_lesson_content
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    conteudo = get_lesson_content(lesson_id)
+    storyboard = (conteudo or {}).get("storyboard_json")
+    if not storyboard:
+        return jsonify({"error": "ainda não há storyboard gerado pra esta aula"}), 404
+    return jsonify({"storyboard": storyboard, "video_url": lesson.get("video_url")})
+
+
+def _validar_licao_pronta_pra_audio(course_id, lesson_id, user_key):
+    """Checks comuns a gerar_audio e gerar_podcast: curso aprovado, aula
+    existe, e já tem conteúdo textual (Fase 1) — sem isso não tem o que
+    narrar. Retorna (curso, lesson, conteudo) ou (None, None, resposta_erro)."""
+    from curso.store import get_curso, get_lesson, get_lesson_content
+
+    curso = get_curso(course_id, user_key)
+    if not curso:
+        return None, None, None, (jsonify({"error": "curso não encontrado"}), 404)
+    if curso["status"] not in ("aprovado", "gerando", "concluido"):
+        return None, None, None, (jsonify({"error": "aprove o curso antes de gerar áudio"}), 400)
+
+    lesson = get_lesson(lesson_id, user_key)
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return None, None, None, (jsonify({"error": "aula não encontrada"}), 404)
+
+    conteudo = get_lesson_content(lesson_id)
+    if not conteudo or not conteudo.get("explicacao"):
+        return None, None, None, (jsonify({
+            "error": "gere o conteúdo textual desta aula primeiro (botão "
+                     "'Gerar conteúdo desta aula')"
+        }), 400)
+
+    return curso, lesson, conteudo, None
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/gerar_audio", methods=["POST"])
+@login_required
+def curso2_gerar_audio_licao(course_id, lesson_id):
+    """'Ouvir aula' (Fase 4) — narração única (1 voz) do texto já gerado.
+    Assíncrono pelo mesmo motivo do vídeo: TTS é chamada de rede, não
+    trava o request."""
+    user_key = _trilhas_user_key()
+    curso, lesson, conteudo, erro = _validar_licao_pronta_pra_audio(course_id, lesson_id, user_key)
+    if erro:
+        return erro
+    if not lesson["audio_required"]:
+        return jsonify({"error": "esta aula não está marcada como precisando de áudio"}), 400
+
+    job_id = uuid.uuid4().hex
+    jobs.create(job_id, kind="curso2_audio")
+    dispatch("curso.audio_pipeline.run_audio_licao_pipeline", job_id, course_id, lesson_id, user_key)
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/gerar_podcast", methods=["POST"])
+@login_required
+def curso2_gerar_podcast_licao(course_id, lesson_id):
+    """Podcast Mode (Fase 4) — roteiro de diálogo (2 apresentadores) +
+    narração com 2 vozes. Não depende de audio_required (é um formato
+    opcional/extra, diferente de 'Ouvir aula')."""
+    user_key = _trilhas_user_key()
+    curso, lesson, conteudo, erro = _validar_licao_pronta_pra_audio(course_id, lesson_id, user_key)
+    if erro:
+        return erro
+
+    job_id = uuid.uuid4().hex
+    jobs.create(job_id, kind="curso2_podcast")
+    dispatch("curso.audio_pipeline.run_podcast_licao_pipeline", job_id, course_id, lesson_id, user_key)
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/podcast", methods=["GET"])
+@login_required
+def curso2_detalhe_podcast(course_id, lesson_id):
+    from curso.store import get_lesson, get_lesson_content
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    conteudo = get_lesson_content(lesson_id) or {}
+    if not conteudo.get("podcast_url"):
+        return jsonify({"error": "ainda não há podcast gerado pra esta aula"}), 404
+    return jsonify({
+        "podcast_url": conteudo["podcast_url"],
+        "script": conteudo.get("podcast_script_json"),
+    })
+
+
+def _licao_com_conteudo(course_id, lesson_id, user_key):
+    """Checks comuns a Tutor/Exercícios/Checkpoint: aula existe e já tem
+    conteúdo textual (Fase 1) gerado. Retorna (lesson, conteudo, curso) ou
+    (None, None, None, resposta_erro)."""
+    from curso.store import get_curso, get_lesson, get_lesson_content
+
+    curso = get_curso(course_id, user_key)
+    if not curso:
+        return None, None, None, (jsonify({"error": "curso não encontrado"}), 404)
+    lesson = get_lesson(lesson_id, user_key)
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return None, None, None, (jsonify({"error": "aula não encontrada"}), 404)
+    conteudo = get_lesson_content(lesson_id)
+    if not conteudo or not conteudo.get("explicacao"):
+        return None, None, None, (jsonify({
+            "error": "gere o conteúdo textual desta aula primeiro"
+        }), 400)
+    return lesson, conteudo, curso, None
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/perguntar", methods=["POST"])
+@login_required
+def curso2_tutor_perguntar(course_id, lesson_id):
+    """Pergunte ao Professor (Fase 5) — síncrono (é uma conversa, não faz
+    sentido enfileirar como job; a resposta do LLM é rápida o bastante
+    pra um request normal, diferente de vídeo/áudio)."""
+    from curso.provenance import buscar_chunks_relevantes
+    from curso.store import get_tutor_history, save_tutor_message, CursoStoreError
+    from curso.tutor_agent import perguntar, TutorAgentError
+
+    user_key = _trilhas_user_key()
+    lesson, conteudo, curso, erro = _licao_com_conteudo(course_id, lesson_id, user_key)
+    if erro:
+        return erro
+
+    body = request.get_json(silent=True) or {}
+    pergunta = (body.get("pergunta") or "").strip()
+    if not pergunta:
+        return jsonify({"error": "Envie a pergunta em 'pergunta'."}), 400
+
+    try:
+        historico = get_tutor_history(lesson_id, user_key)
+        source_doc_id = curso["manifest_json"].get("source_doc_id")
+        chunks_rag = buscar_chunks_relevantes(source_doc_id, pergunta, top_k=3) if source_doc_id else []
+
+        resposta = perguntar(
+            pergunta, lesson["titulo"], conteudo["explicacao"], chunks_rag, historico,
+        )
+        save_tutor_message(lesson_id, user_key, "aluno", pergunta)
+        save_tutor_message(lesson_id, user_key, "tutor", resposta)
+    except (TutorAgentError, CursoStoreError) as e:
+        return jsonify({"error": str(e)}), 422
+
+    return jsonify({"resposta": resposta})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/tutor_historico", methods=["GET"])
+@login_required
+def curso2_tutor_historico(course_id, lesson_id):
+    from curso.store import get_lesson, get_tutor_history
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    return jsonify({"historico": get_tutor_history(lesson_id, _trilhas_user_key())})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/checkpoint", methods=["GET"])
+@login_required
+def curso2_checkpoint(course_id, lesson_id):
+    """'Antes de continuar...' (Fase 5, item 10 do pedido) — reaproveita a
+    PRIMEIRA questão do quiz já gerado (Fase 1), sem chamar LLM de novo.
+    Se a aula ainda não tem quiz, não tem checkpoint (fail-open silencioso,
+    não é erro — nem toda aula tem quiz_required=true)."""
+    from curso.store import get_lesson, get_lesson_content
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    conteudo = get_lesson_content(lesson_id) or {}
+    quiz = conteudo.get("quiz_json") or []
+    if not quiz:
+        return jsonify({"checkpoint": None})
+    return jsonify({"checkpoint": quiz[0]})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/exercicios", methods=["GET"])
+@login_required
+def curso2_exercicios_listar(course_id, lesson_id):
+    from curso.store import get_lesson, get_exercises
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    return jsonify({"exercicios": get_exercises(lesson_id)})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/exercicios/gerar", methods=["POST"])
+@login_required
+def curso2_exercicio_gerar(course_id, lesson_id):
+    from curso.exercise_agent import ExerciseAgentError, gerar_exercicio
+    from curso.store import save_exercise, CursoStoreError
+
+    user_key = _trilhas_user_key()
+    lesson, conteudo, curso, erro = _licao_com_conteudo(course_id, lesson_id, user_key)
+    if erro:
+        return erro
+
+    try:
+        exercicio = gerar_exercicio(lesson["titulo"], conteudo["explicacao"])
+        exercise_id = save_exercise(lesson_id, exercicio)
+    except (ExerciseAgentError, CursoStoreError) as e:
+        return jsonify({"error": str(e)}), 422
+
+    exercicio["id"] = exercise_id
+    return jsonify({"ok": True, "exercicio": exercicio})
+
+
+@app.route("/api/curso2/<course_id>/exercicios/<exercise_id>/responder", methods=["POST"])
+@login_required
+def curso2_exercicio_responder(course_id, exercise_id):
+    from curso.exercise_agent import ExerciseAgentError, avaliar_resposta
+    from curso.store import (get_exercise, get_lesson, get_lesson_content,
+                              save_exercise_attempt, CursoStoreError)
+
+    user_key = _trilhas_user_key()
+    exercicio = get_exercise(exercise_id)
+    if not exercicio:
+        return jsonify({"error": "exercício não encontrado"}), 404
+
+    lesson = get_lesson(str(exercicio["lesson_id"]), user_key)
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "exercício não pertence a este curso/usuário"}), 404
+
+    body = request.get_json(silent=True) or {}
+    resposta_aluno = (body.get("resposta") or "").strip()
+    if not resposta_aluno:
+        return jsonify({"error": "Envie a resposta em 'resposta'."}), 400
+
+    conteudo = get_lesson_content(str(exercicio["lesson_id"])) or {}
+    try:
+        avaliacao = avaliar_resposta(
+            conteudo.get("explicacao", ""), exercicio["enunciado"],
+            exercicio["avaliacao_criteria"], resposta_aluno,
+        )
+        save_exercise_attempt(exercise_id, user_key, resposta_aluno, avaliacao)
+    except (ExerciseAgentError, CursoStoreError) as e:
+        return jsonify({"error": str(e)}), 422
+
+    return jsonify({"ok": True, "avaliacao": avaliacao})
+
+
 @app.route("/api/observability/drift/check", methods=["POST"])
 @login_required
 def observability_drift_check():
@@ -1356,6 +1995,28 @@ def growth_sincronizar_perfil():
     try:
         from analytics.instagram_profile import sincronizar_perfil_completo
         resultado = sincronizar_perfil_completo()
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/growth/pendentes_metrica_browser")
+@login_required
+def growth_pendentes_metrica_browser():
+    try:
+        from analytics.instagram_browser_fetcher import listar_pendentes
+        return jsonify({"pendentes": listar_pendentes()})
+    except Exception as e:
+        return jsonify({"error": str(e), "pendentes": []}), 200
+
+
+@app.route("/api/growth/importar_metricas_browser", methods=["POST"])
+@login_required
+def growth_importar_metricas_browser():
+    try:
+        from analytics.instagram_browser_fetcher import importar_metricas
+        dados = (request.get_json(silent=True) or {}).get("dados", [])
+        resultado = importar_metricas(dados)
         return jsonify(resultado)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

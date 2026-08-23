@@ -42,6 +42,12 @@ _MARKITDOWN_EXTENSIONS = {
 _FALLBACK_EXTENSIONS = {".pdf", ".pptx", ".docx"}
 
 
+# Texto puro — decodifica direto, sem depender de MarkItDown nem de
+# nenhuma lib de conversão. Sempre suportado, com ou sem MarkItDown
+# instalado (por isso fica fora de _MARKITDOWN_EXTENSIONS/_FALLBACK_EXTENSIONS).
+_PLAINTEXT_EXTENSIONS = {".txt", ".md", ".markdown"}
+
+
 class DocumentExtractionError(RuntimeError):
     """Erro ao extrair texto de um documento."""
 
@@ -55,7 +61,8 @@ def _markitdown_available() -> bool:
 
 
 def _supported_extensions() -> set[str]:
-    return _MARKITDOWN_EXTENSIONS if _markitdown_available() else _FALLBACK_EXTENSIONS
+    base = _MARKITDOWN_EXTENSIONS if _markitdown_available() else _FALLBACK_EXTENSIONS
+    return base | _PLAINTEXT_EXTENSIONS
 
 
 # Mantido como atributo de módulo (não função) porque a rota do Curso
@@ -69,6 +76,9 @@ def extract_text(filename: str, content: bytes) -> str:
     Markdown, quando via MarkItDown). Levanta DocumentExtractionError se
     o formato não for suportado ou a extração falhar."""
     ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    if ext in _PLAINTEXT_EXTENSIONS:
+        return _extract_plaintext(content)
 
     if _markitdown_available() and ext in _MARKITDOWN_EXTENSIONS:
         try:
@@ -98,6 +108,22 @@ def extract_text(filename: str, content: bytes) -> str:
         f"Formato '{ext}' não suportado. Formatos aceitos: "
         f"{', '.join(sorted(_supported_extensions()))}"
     )
+
+
+def _extract_plaintext(content: bytes) -> str:
+    for encoding in ("utf-8", "utf-8-sig", "latin-1"):
+        try:
+            text = content.decode(encoding).strip()
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        raise DocumentExtractionError(
+            "Não consegui decodificar esse arquivo de texto (encoding não reconhecido)."
+        )
+    if not text:
+        raise DocumentExtractionError("Arquivo de texto vazio.")
+    return text
 
 
 def _extract_fallback(ext: str, content: bytes) -> str:

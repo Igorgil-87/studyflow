@@ -51,6 +51,11 @@ class QuizGeneratorTool(BaseTool):
     args_schema: type[BaseModel] = QuizGeneratorInput
     llm_model: str = "gpt-4o-mini"
     output_dir: str = "output/quizzes"
+    # "openai" é o default de SEMPRE (preserva 100% o comportamento atual
+    # de run_curso_pipeline/Opção 1). curso/lesson_agent.py (Fase 1 do
+    # AI Course Generation Engine) instancia com provider="anthropic" pra
+    # usar o tier de qualidade pedido, sem tocar em quem já usa esta tool.
+    provider: str = "openai"
 
     def _run(
         self,
@@ -60,8 +65,14 @@ class QuizGeneratorTool(BaseTool):
         num_questions: int = 5,
     ) -> str:
         from tools.llm_fallback import build_llm_with_fallback
+        # fallback precisa ser o provedor COMPLEMENTAR — se self.provider
+        # já for "anthropic", o default de build_llm_with_fallback
+        # (fallback_provider="anthropic") cairia no MESMO provedor, o que
+        # anula a resiliência real (nenhum ganho se a Anthropic cair).
+        fallback_provider = "openai" if self.provider == "anthropic" else "anthropic"
         llm = build_llm_with_fallback(
-            temperature=0.3, primary_provider="openai", primary_model=self.llm_model,
+            temperature=0.3, primary_provider=self.provider, primary_model=self.llm_model,
+            fallback_provider=fallback_provider,
         )
         parser = PydanticOutputParser(pydantic_object=QuizOutput)
 

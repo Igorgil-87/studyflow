@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Flow · Revisar Curso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* Só o necessário pra esta tela — reaproveita as variáveis de tema e
+       as classes (est-theme-input, ghost-btn, generate-btn, error-box)
+       já usadas no resto do app. */
+    .rv-wrap{max-width:880px;margin:0 auto;padding:32px 24px 80px}
+    .rv-head{margin-bottom:28px}
+    .rv-eyebrow{font-size:12px;letter-spacing:.06em;color:var(--accent);font-weight:600;margin-bottom:8px}
+    .rv-title-input{background:none;border:none;outline:none;color:var(--text);
+      font-family:'Instrument Serif',serif;font-size:34px;width:100%;border-bottom:1px solid transparent}
+    .rv-title-input:focus{border-bottom-color:var(--line-2)}
+    .rv-desc-input{background:none;border:none;outline:none;color:var(--text-2);width:100%;
+      font-size:14px;margin-top:6px;resize:vertical}
+    .rv-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+      padding:5px 12px;border-radius:20px;margin-top:10px}
+    .rv-status.aguardando_aprovacao{background:var(--accent-dim);color:var(--accent)}
+    .rv-status.aprovado{background:rgba(80,200,255,0.12);color:#7dd3fc}
+    .rv-meta-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:20px}
+    .rv-meta-field label{display:block;font-size:11px;color:var(--text-3);margin-bottom:5px}
+    .rv-gaps{background:var(--surface);border-radius:12px;padding:14px 18px;margin-top:20px}
+    .rv-gaps-title{font-size:13px;font-weight:600;color:var(--text)}
+    .rv-gaps-item{font-size:13px;color:var(--text-2);margin-top:6px}
+    .rv-module{background:var(--surface);border-radius:14px;padding:18px 20px;margin-top:16px}
+    .rv-module-title{background:none;border:none;outline:none;color:var(--text);font-size:17px;
+      font-weight:600;width:100%}
+    .rv-module-obj{background:none;border:none;outline:none;color:var(--text-3);font-size:13px;
+      width:100%;margin-top:4px}
+    .rv-lesson{background:var(--surface-2);border-radius:10px;padding:14px 16px;margin-top:10px}
+    .rv-lesson-row{display:flex;gap:10px;align-items:flex-start}
+    .rv-lesson-title{background:none;border:none;outline:none;color:var(--text);font-size:14px;
+      font-weight:500;flex:1}
+    .rv-lesson-dur{width:70px;background:none;border:1px solid var(--line);border-radius:6px;
+      color:var(--text-2);font-size:12px;padding:4px 6px;text-align:center}
+    .rv-lesson-obj{background:none;border:none;outline:none;color:var(--text-3);font-size:12px;
+      width:100%;margin-top:6px}
+    .rv-lesson-concepts{font-size:11px;color:var(--accent);margin-top:6px}
+    .rv-lesson-flags{display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--text-3)}
+    .rv-lesson-flags label{display:flex;align-items:center;gap:4px;cursor:pointer}
+    .rv-actions{display:flex;gap:10px;margin-top:28px}
+    .rv-lesson-content{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+    .rv-lesson-content .expl{font-size:13px;color:var(--text-2);line-height:1.6;white-space:pre-wrap}
+    .rv-lesson-content .takeaways{margin-top:8px;font-size:12px;color:var(--text-3)}
+    .rv-lesson-content .fonte-badge{display:inline-block;margin-top:8px;font-size:10px;
+      padding:2px 8px;border-radius:10px}
+    .rv-lesson-content .fonte-badge.fonte{background:rgba(120,220,120,0.12);color:#78dc78}
+    .rv-lesson-content .fonte-badge.complementar{background:rgba(255,200,80,0.12);color:#ffc850}
+    .rv-nav-links{display:flex;gap:14px;margin-bottom:18px}
+    .rv-nav-links a{font-size:12px;color:var(--text-3);text-decoration:none}
+    .rv-nav-links a:hover{color:var(--accent)}
+    .rv-video-wrap{margin-top:6px}
+    .rv-audio-wrap{margin-top:6px}
+    .rv-gen-btn{font-size:12px;padding:6px 12px}
+    .rv-checkpoint{background:var(--surface-2);border-radius:8px;padding:12px 14px;margin-top:10px}
+    .rv-checkpoint-titulo{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px}
+    .rv-checkpoint-opcao{display:block;width:100%;text-align:left;background:var(--surface);
+      border:1px solid var(--line);border-radius:6px;padding:7px 10px;margin-top:5px;
+      color:var(--text-2);font-size:12px;cursor:pointer}
+    .rv-checkpoint-opcao:hover{border-color:var(--accent)}
+    .rv-checkpoint-feedback{margin-top:8px;font-size:12px}
+    .rv-checkpoint-feedback.certo{color:#78dc78}
+    .rv-checkpoint-feedback.errado{color:#ff5a5a}
+    .rv-tutor{margin-top:14px}
+    .rv-tutor-msgs{max-height:220px;overflow-y:auto;margin-bottom:8px}
+    .rv-tutor-msg{font-size:12px;padding:6px 10px;border-radius:8px;margin-top:5px;max-width:85%}
+    .rv-tutor-msg.aluno{background:var(--accent-dim);color:var(--text);margin-left:auto}
+    .rv-tutor-msg.tutor{background:var(--surface-2);color:var(--text-2)}
+    .rv-tutor-input-row{display:flex;gap:6px}
+    .rv-tutor-input{flex:1;background:var(--surface-2);border:1px solid var(--line);
+      border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px}
+    .rv-exercicio{background:var(--surface-2);border-radius:8px;padding:12px 14px;margin-top:10px}
+    .rv-exercicio-enunciado{font-size:13px;color:var(--text);margin-bottom:8px}
+    .rv-exercicio-resposta{width:100%;min-height:70px;background:var(--surface);
+      border:1px solid var(--line);border-radius:6px;padding:8px;color:var(--text);
+      font-size:12px;margin-bottom:8px}
+    .rv-exercicio-avaliacao{margin-top:8px;font-size:12px;color:var(--text-2)}
+    .rv-exercicio-nota{font-weight:600;color:var(--accent)}
+    .rv-loading{color:var(--text-3);font-size:14px;padding:40px 0;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◐</div>
+      <span class="brand-name">Study<em>Flow</em></span>
+    </div>
+    {% set active = 'curso' %}
+    {% set modulo_group = 'curso' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+
+  <main class="stage rv-wrap">
+    <div class="rv-nav-links">
+      <a href="/curso2/{{ course_id }}/glossario">📖 Glossário</a>
+      <a href="/curso2/{{ course_id }}/mapa-mental">🗺 Mapa Mental</a>
+    </div>
+    <div id="rvLoading" class="rv-loading">Carregando estrutura do curso...</div>
+    <div id="rvError" class="error-box" hidden></div>
+    <div id="rvContent" hidden></div>
+  </main>
+
+  <script>
+    var COURSE_ID = {{ course_id | tojson }};
+    var manifestAtual = null;
+
+    function el(tag, cls, html){
+      var e = document.createElement(tag);
+      if(cls) e.className = cls;
+      if(html !== undefined) e.innerHTML = html;
+      return e;
+    }
+
+    function carregar(){
+      fetch('/api/curso2/' + COURSE_ID)
+        .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+        .then(function(res){
+          document.getElementById('rvLoading').hidden = true;
+          if(!res.ok){ mostrarErro(res.data.error || 'Curso não encontrado.'); return; }
+          renderizar(res.data.curso);
+        })
+        .catch(function(e){ document.getElementById('rvLoading').hidden = true; mostrarErro(e.message); });
+    }
+
+    function mostrarErro(msg){
+      var box = document.getElementById('rvError');
+      box.textContent = msg;
+      box.hidden = false;
+    }
+
+    function renderizar(curso){
+      manifestAtual = curso.manifest_json;
+      var status = curso.status;
+      var podeEditar = status === 'aguardando_aprovacao';
+      var content = document.getElementById('rvContent');
+      content.innerHTML = '';
+      content.hidden = false;
+
+      var head = el('div', 'rv-head');
+      head.appendChild(el('div', 'rv-eyebrow', 'REVISAR ESTRUTURA · AI COURSE GENERATION ENGINE'));
+
+      var titleInput = el('input', 'rv-title-input');
+      titleInput.value = manifestAtual.title || '';
+      titleInput.disabled = !podeEditar;
+      titleInput.addEventListener('input', function(){ manifestAtual.title = titleInput.value; });
+      head.appendChild(titleInput);
+
+      var descInput = el('textarea', 'rv-desc-input');
+      descInput.rows = 2;
+      descInput.value = manifestAtual.description || '';
+      descInput.disabled = !podeEditar;
+      descInput.addEventListener('input', function(){ manifestAtual.description = descInput.value; });
+      head.appendChild(descInput);
+
+      var statusBadge = el('span', 'rv-status ' + status,
+        status === 'aprovado' ? '✓ Aprovado' : status === 'aguardando_aprovacao' ? '● Aguardando aprovação' : status);
+      head.appendChild(statusBadge);
+      content.appendChild(head);
+
+      var meta = el('div', 'rv-meta-row');
+      meta.appendChild(campoMeta('Público', manifestAtual.audience, podeEditar, function(v){ manifestAtual.audience = v; }));
+      meta.appendChild(campoMeta('Nível', manifestAtual.difficulty, podeEditar, function(v){ manifestAtual.difficulty = v; }));
+      meta.appendChild(campoMeta('Duração (min)', manifestAtual.estimated_duration_min, podeEditar, function(v){ manifestAtual.estimated_duration_min = parseInt(v)||0; }));
+      meta.appendChild(campoMeta('Estilo', manifestAtual.style, podeEditar, function(v){ manifestAtual.style = v; }));
+      content.appendChild(meta);
+
+      if((manifestAtual.knowledge_gaps || []).length){
+        var gaps = el('div', 'rv-gaps');
+        gaps.appendChild(el('div', 'rv-gaps-title', '⚠ Lacunas identificadas no material (complemento da IA, não do material original)'));
+        manifestAtual.knowledge_gaps.forEach(function(g){
+          gaps.appendChild(el('div', 'rv-gaps-item', '• ' + g.descricao + ' <em>(' + g.conceito_faltante + ')</em>'));
+        });
+        content.appendChild(gaps);
+      }
+
+      (manifestAtual.modules || []).forEach(function(modulo, mi){
+        content.appendChild(renderModulo(modulo, mi, podeEditar, status, curso.id));
+      });
+
+      var actions = el('div', 'rv-actions');
+      if(podeEditar){
+        var btnSalvar = el('button', 'ghost-btn', 'Salvar alterações');
+        btnSalvar.addEventListener('click', salvarManifesto);
+        actions.appendChild(btnSalvar);
+
+        var btnAprovar = el('button', 'generate-btn cx-generate', '<span class="btn-label">Aprovar e continuar</span><span class="btn-ico">→</span>');
+        btnAprovar.addEventListener('click', aprovar);
+        actions.appendChild(btnAprovar);
+      } else {
+        actions.appendChild(el('div', '', '<span style="color:var(--text-3);font-size:13px">Estrutura aprovada — gere o conteúdo de cada aula abaixo.</span>'));
+      }
+      content.appendChild(actions);
+    }
+
+    function campoMeta(label, valor, editavel, onChange){
+      var wrap = el('div', 'rv-meta-field');
+      wrap.appendChild(el('label', '', label));
+      var input = el('input', 'est-theme-input');
+      input.value = valor;
+      input.disabled = !editavel;
+      input.addEventListener('input', function(){ onChange(input.value); });
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    function renderModulo(modulo, mi, podeEditar, statusCurso, courseId){
+      var box = el('div', 'rv-module');
+      var titleInput = el('input', 'rv-module-title');
+      titleInput.value = modulo.title || '';
+      titleInput.disabled = !podeEditar;
+      titleInput.addEventListener('input', function(){ modulo.title = titleInput.value; });
+      box.appendChild(titleInput);
+
+      var objInput = el('input', 'rv-module-obj');
+      objInput.value = modulo.objective || '';
+      objInput.disabled = !podeEditar;
+      objInput.addEventListener('input', function(){ modulo.objective = objInput.value; });
+      box.appendChild(objInput);
+
+      (modulo.lessons || []).forEach(function(aula, li){
+        box.appendChild(renderAula(aula, mi, li, podeEditar, statusCurso, courseId));
+      });
+      return box;
+    }
+
+    function renderAula(aula, mi, li, podeEditar, statusCurso, courseId){
+      var box = el('div', 'rv-lesson');
+      box.id = 'rv-lesson-' + mi + '-' + li;
+
+      var row = el('div', 'rv-lesson-row');
+      var titleInput = el('input', 'rv-lesson-title');
+      titleInput.value = aula.title || '';
+      titleInput.disabled = !podeEditar;
+      titleInput.addEventListener('input', function(){ aula.title = titleInput.value; });
+      row.appendChild(titleInput);
+
+      var durInput = el('input', 'rv-lesson-dur');
+      durInput.type = 'number';
+      durInput.value = aula.duration_min || 0;
+      durInput.disabled = !podeEditar;
+      durInput.addEventListener('input', function(){ aula.duration_min = parseInt(durInput.value)||0; });
+      row.appendChild(durInput);
+      box.appendChild(row);
+
+      var objInput = el('input', 'rv-lesson-obj');
+      objInput.value = aula.objective || '';
+      objInput.disabled = !podeEditar;
+      objInput.addEventListener('input', function(){ aula.objective = objInput.value; });
+      box.appendChild(objInput);
+
+      box.appendChild(el('div', 'rv-lesson-concepts', (aula.concepts || []).join(' · ')));
+
+      var flags = el('div', 'rv-lesson-flags');
+      [['video_required','Vídeo'], ['audio_required','Áudio'], ['quiz_required','Quiz'], ['exercise_required','Exercício']].forEach(function(f){
+        var lbl = el('label');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!aula[f[0]];
+        cb.disabled = !podeEditar;
+        cb.addEventListener('change', function(){ aula[f[0]] = cb.checked; });
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(f[1]));
+        flags.appendChild(lbl);
+      });
+      box.appendChild(flags);
+
+      // pós-aprovação: botão de gerar conteúdo desta aula específica
+      if(statusCurso === 'aprovado' || statusCurso === 'gerando' || statusCurso === 'concluido'){
+        var genRow = el('div', 'rv-lesson-row', '');
+        genRow.style.marginTop = '10px';
+        var genBtn = el('button', 'ghost-btn rv-gen-btn', 'Gerar conteúdo desta aula');
+        genBtn.addEventListener('click', function(){ gerarConteudoAula(courseId, aula.title, genBtn, box); });
+        genRow.appendChild(genBtn);
+
+        if(aula.video_required){
+          var videoBtn = el('button', 'ghost-btn rv-gen-btn', '🎬 Gerar vídeo desta aula');
+          videoBtn.addEventListener('click', function(){ gerarVideoAula(courseId, aula.title, videoBtn, box); });
+          genRow.appendChild(videoBtn);
+        }
+        if(aula.audio_required){
+          var audioBtn = el('button', 'ghost-btn rv-gen-btn', '🎧 Ouvir aula');
+          audioBtn.addEventListener('click', function(){ gerarAudioAula(courseId, aula.title, audioBtn, box); });
+          genRow.appendChild(audioBtn);
+        }
+        var podcastBtn = el('button', 'ghost-btn rv-gen-btn', '🎙 Gerar podcast (2 vozes)');
+        podcastBtn.addEventListener('click', function(){ gerarPodcastAula(courseId, aula.title, podcastBtn, box); });
+        genRow.appendChild(podcastBtn);
+
+        var exercicioBtn = el('button', 'ghost-btn rv-gen-btn', '📝 Gerar exercício');
+        var exercicioWrap = el('div', 'rv-exercicio-wrap');
+        exercicioBtn.addEventListener('click', function(){ gerarExercicio(courseId, aula.title, exercicioBtn, exercicioWrap); });
+        genRow.appendChild(exercicioBtn);
+        box.appendChild(genRow);
+
+        var videoWrap = el('div', 'rv-video-wrap');
+        videoWrap.id = 'rv-video-' + mi + '-' + li;
+        box.appendChild(videoWrap);
+
+        var audioWrap = el('div', 'rv-audio-wrap');
+        box.appendChild(audioWrap);
+
+        box.appendChild(exercicioWrap);
+
+        var checkpointWrap = el('div', 'rv-checkpoint-wrap');
+        box.appendChild(checkpointWrap);
+        carregarCheckpoint(courseId, aula.title, checkpointWrap);
+
+        box.appendChild(montarTutorChat(courseId, aula.title));
+      }
+
+      return box;
+    }
+
+    function salvarManifesto(){
+      return fetch('/api/curso2/' + COURSE_ID + '/manifesto', {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({manifesto: manifestAtual}),
+      })
+        .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+        .then(function(res){
+          if(!res.ok){ mostrarErro(res.data.error); throw new Error(res.data.error); }
+          renderizar(res.data.curso);
+        });
+    }
+
+    function aprovar(){
+      salvarManifesto().then(function(){
+        return fetch('/api/curso2/' + COURSE_ID + '/aprovar', {method: 'POST'});
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+        .then(function(res){
+          if(!res.ok){ mostrarErro(res.data.error); return; }
+          renderizar(res.data.curso);
+        })
+        .catch(function(){ /* erro já mostrado por salvarManifesto */ });
+    }
+
+    function gerarConteudoAula(courseId, tituloAula, btn, box){
+      btn.disabled = true;
+      btn.textContent = 'Gerando...';
+      fetch('/api/curso2/' + courseId + '/licoes_pendentes')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var aula = (d.licoes || []).find(function(l){ return l.titulo === tituloAula; });
+          if(!aula){ btn.textContent = 'Aula já gerada ou não encontrada'; return; }
+          return fetch('/api/curso2/' + courseId + '/licoes/' + aula.id + '/gerar', {method: 'POST'})
+            .then(function(r){ return r.json().then(function(dd){ return {ok:r.ok, data:dd}; }); })
+            .then(function(res){
+              if(!res.ok){ btn.textContent = 'Erro: ' + res.data.error; return; }
+              btn.textContent = '✓ Gerado';
+              var content = el('div', 'rv-lesson-content');
+              content.appendChild(el('div', 'expl', res.data.conteudo.explicacao));
+              content.appendChild(el('div', 'takeaways', '📌 ' + res.data.conteudo.key_takeaways.join(' · ')));
+              var tipoFonte = (res.data.fontes || {}).tipo || 'complementar';
+              var badgeTexto = tipoFonte === 'fonte'
+                ? '✓ Fundamentado no documento original'
+                : '⚠ Conteúdo complementar da IA (sem trecho direto do documento)';
+              content.appendChild(el('span', 'fonte-badge ' + tipoFonte, badgeTexto));
+              box.appendChild(content);
+            });
+        })
+        .catch(function(e){ btn.textContent = 'Erro: ' + e.message; });
+    }
+
+    function _resolverLessonId(courseId, tituloAula){
+      return fetch('/api/curso2/' + courseId + '/mapa-mental')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var no = (d.nodes || []).find(function(n){ return n.type === 'lesson' && n.label === tituloAula; });
+          return no ? no.lesson_id : null;
+        });
+    }
+
+    function _dispararJobComProgresso(courseId, tituloAula, btn, endpointSufixo, aoCompletar){
+      btn.disabled = true;
+      btn.textContent = 'Enfileirando...';
+
+      _resolverLessonId(courseId, tituloAula)
+        .then(function(lessonId){
+          if(!lessonId){ btn.textContent = 'Erro: aula não encontrada'; btn.disabled = false; return; }
+
+          fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + endpointSufixo, {method: 'POST'})
+            .then(function(r){ return r.json().then(function(dd){ return {ok:r.ok, data:dd}; }); })
+            .then(function(res){
+              if(!res.ok){ btn.textContent = 'Erro: ' + res.data.error; btn.disabled = false; return; }
+              btn.textContent = 'Gerando...';
+              var es = new EventSource('/api/stream/' + res.data.job_id);
+              es.addEventListener('progress', function(ev){
+                var p = JSON.parse(ev.data);
+                btn.textContent = p.detail || 'Gerando...';
+              });
+              es.addEventListener('complete', function(ev){
+                btn.textContent = '✓ Pronto';
+                aoCompletar(JSON.parse(ev.data));
+              });
+              es.addEventListener('pipeline_error', function(ev){
+                var p = JSON.parse(ev.data);
+                btn.textContent = 'Erro: ' + p.message;
+                btn.disabled = false;
+              });
+              es.addEventListener('end', function(){ es.close(); btn.disabled = false; });
+            });
+        });
+    }
+
+    function gerarVideoAula(courseId, tituloAula, btn, box){
+      var videoWrap = box.querySelector('.rv-video-wrap');
+      videoWrap.innerHTML = '';
+      _dispararJobComProgresso(courseId, tituloAula, btn, '/gerar_video', function(payload){
+        var video = document.createElement('video');
+        video.controls = true;
+        video.style.width = '100%'; video.style.marginTop = '10px'; video.style.borderRadius = '8px';
+        video.src = '/static/' + payload.video_url;
+        videoWrap.appendChild(video);
+      });
+    }
+
+    function gerarAudioAula(courseId, tituloAula, btn, box){
+      var audioWrap = box.querySelector('.rv-audio-wrap');
+      audioWrap.innerHTML = '';
+      _dispararJobComProgresso(courseId, tituloAula, btn, '/gerar_audio', function(payload){
+        var audio = document.createElement('audio');
+        audio.controls = true;
+        audio.style.width = '100%'; audio.style.marginTop = '10px';
+        audio.src = '/static/' + payload.audio_url;
+        audioWrap.appendChild(audio);
+      });
+    }
+
+    function gerarPodcastAula(courseId, tituloAula, btn, box){
+      var audioWrap = box.querySelector('.rv-audio-wrap');
+      _dispararJobComProgresso(courseId, tituloAula, btn, '/gerar_podcast', function(payload){
+        var label = el('div', '', '🎙 Podcast (2 vozes):');
+        label.style.fontSize = '11px'; label.style.color = 'var(--text-3)'; label.style.marginTop = '10px';
+        var audio = document.createElement('audio');
+        audio.controls = true;
+        audio.style.width = '100%'; audio.style.marginTop = '4px';
+        audio.src = '/static/' + payload.podcast_url;
+        audioWrap.appendChild(label);
+        audioWrap.appendChild(audio);
+      });
+    }
+
+    // ── Checkpoint ("Antes de continuar...") ──────────────────────────
+    function carregarCheckpoint(courseId, tituloAula, wrap){
+      _resolverLessonId(courseId, tituloAula).then(function(lessonId){
+        if(!lessonId) return;
+        fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/checkpoint')
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if(!d.checkpoint) return;
+            renderCheckpoint(d.checkpoint, wrap, courseId, tituloAula, lessonId);
+          });
+      });
+    }
+
+    function renderCheckpoint(checkpoint, wrap, courseId, tituloAula, lessonId){
+      wrap.innerHTML = '';
+      var box = el('div', 'rv-checkpoint');
+      box.appendChild(el('div', 'rv-checkpoint-titulo', '⏸ Antes de continuar...'));
+      box.appendChild(el('div', '', checkpoint.enunciado));
+      var feedback = el('div', 'rv-checkpoint-feedback');
+
+      (checkpoint.alternativas || []).forEach(function(alt){
+        var opcao = el('button', 'rv-checkpoint-opcao', alt);
+        opcao.addEventListener('click', function(){
+          box.querySelectorAll('.rv-checkpoint-opcao').forEach(function(o){ o.disabled = true; });
+          var acertou = alt === checkpoint.resposta_correta;
+          if(acertou){
+            feedback.className = 'rv-checkpoint-feedback certo';
+            feedback.textContent = '✓ Certo! Pode continuar.';
+          } else {
+            feedback.className = 'rv-checkpoint-feedback errado';
+            feedback.textContent = 'Não foi essa — pedindo uma explicação diferente pro tutor...';
+            _pedirExplicacaoAlternativa(courseId, lessonId, checkpoint.enunciado, feedback);
+          }
+        });
+        box.appendChild(opcao);
+      });
+      box.appendChild(feedback);
+      wrap.appendChild(box);
+    }
+
+    function _pedirExplicacaoAlternativa(courseId, lessonId, enunciado, feedbackEl){
+      var pergunta = 'Errei esta pergunta de verificação: "' + enunciado + '". ' +
+        'Pode explicar o conceito de novo, de um jeito diferente?';
+      fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/perguntar', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pergunta: pergunta}),
+      })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var explicacao = el('div', '', d.resposta || d.error || '');
+          explicacao.style.marginTop = '6px';
+          explicacao.style.color = 'var(--text-2)';
+          feedbackEl.parentNode.appendChild(explicacao);
+        });
+    }
+
+    // ── Exercício aberto ────────────────────────────────────────────────
+    function gerarExercicio(courseId, tituloAula, btn, wrap){
+      btn.disabled = true;
+      btn.textContent = 'Gerando exercício...';
+      _resolverLessonId(courseId, tituloAula).then(function(lessonId){
+        if(!lessonId){ btn.textContent = 'Erro: aula não encontrada'; btn.disabled = false; return; }
+        fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/exercicios/gerar', {method: 'POST'})
+          .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+          .then(function(res){
+            btn.disabled = false;
+            btn.textContent = '📝 Gerar exercício';
+            if(!res.ok){ wrap.textContent = 'Erro: ' + res.data.error; return; }
+            renderExercicio(res.data.exercicio, wrap, courseId);
+          });
+      });
+    }
+
+    function renderExercicio(exercicio, wrap, courseId){
+      wrap.innerHTML = '';
+      var box = el('div', 'rv-exercicio');
+      box.appendChild(el('div', 'rv-exercicio-enunciado', '📝 ' + exercicio.enunciado));
+      var textarea = document.createElement('textarea');
+      textarea.className = 'rv-exercicio-resposta';
+      textarea.placeholder = 'Escreva sua resposta...';
+      box.appendChild(textarea);
+
+      var enviarBtn = el('button', 'ghost-btn rv-gen-btn', 'Enviar resposta');
+      var avaliacaoWrap = el('div', 'rv-exercicio-avaliacao');
+      enviarBtn.addEventListener('click', function(){
+        var resposta = textarea.value.trim();
+        if(!resposta) return;
+        enviarBtn.disabled = true;
+        enviarBtn.textContent = 'Avaliando...';
+        fetch('/api/curso2/' + courseId + '/exercicios/' + exercicio.id + '/responder', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({resposta: resposta}),
+        })
+          .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+          .then(function(res){
+            enviarBtn.disabled = false;
+            enviarBtn.textContent = 'Enviar resposta';
+            if(!res.ok){ avaliacaoWrap.textContent = 'Erro: ' + res.data.error; return; }
+            var av = res.data.avaliacao;
+            avaliacaoWrap.innerHTML = '<span class="rv-exercicio-nota">' + av.nota_pct + '%</span> — ' + av.feedback;
+          });
+      });
+      box.appendChild(enviarBtn);
+      box.appendChild(avaliacaoWrap);
+      wrap.appendChild(box);
+    }
+
+    // ── Pergunte ao Professor ────────────────────────────────────────────
+    function montarTutorChat(courseId, tituloAula){
+      var wrap = el('div', 'rv-tutor');
+      wrap.appendChild(el('div', 'rv-checkpoint-titulo', '💬 Pergunte ao Professor'));
+      var msgs = el('div', 'rv-tutor-msgs');
+      wrap.appendChild(msgs);
+
+      var inputRow = el('div', 'rv-tutor-input-row');
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'rv-tutor-input';
+      input.placeholder = 'Ex: explique de forma mais simples, dê um exemplo...';
+      var sendBtn = el('button', 'ghost-btn rv-gen-btn', 'Enviar');
+
+      function enviar(){
+        var pergunta = input.value.trim();
+        if(!pergunta) return;
+        input.value = '';
+        msgs.appendChild(el('div', 'rv-tutor-msg aluno', pergunta));
+        msgs.scrollTop = msgs.scrollHeight;
+        sendBtn.disabled = true;
+
+        _resolverLessonId(courseId, tituloAula).then(function(lessonId){
+          if(!lessonId) return;
+          return fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/perguntar', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({pergunta: pergunta}),
+          })
+            .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+            .then(function(res){
+              sendBtn.disabled = false;
+              msgs.appendChild(el('div', 'rv-tutor-msg tutor', res.ok ? res.data.resposta : ('Erro: ' + res.data.error)));
+              msgs.scrollTop = msgs.scrollHeight;
+            });
+        });
+      }
+      sendBtn.addEventListener('click', enviar);
+      input.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') enviar(); });
+
+      inputRow.appendChild(input);
+      inputRow.appendChild(sendBtn);
+      wrap.appendChild(inputRow);
+      return wrap;
+    }
+
+    carregar();
+  </script>
+</body>
+</html>
