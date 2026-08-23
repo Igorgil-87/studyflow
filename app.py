@@ -1427,8 +1427,9 @@ def curso2_criar():
 
     try:
         manifest = criar_curso(_trilhas_user_key(), "documento", manifest)
-    except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 500
+    except CursoStoreError:
+        app.logger.exception("Falha ao persistir curso em /api/curso2/criar")
+        return jsonify({"error": "Erro interno ao salvar o curso."}), 500
 
     return jsonify({"ok": True, "curso": manifest})
 
