@@ -1981,8 +1981,8 @@ def curso2_exercicio_responder(course_id, exercise_id):
             exercicio["avaliacao_criteria"], resposta_aluno,
         )
         save_exercise_attempt(exercise_id, user_key, resposta_aluno, avaliacao)
-    except (ExerciseAgentError, CursoStoreError) as e:
-        return jsonify({"error": str(e)}), 422
+    except (ExerciseAgentError, CursoStoreError):
+        return jsonify({"error": "Não foi possível avaliar a resposta."}), 422
 
     return jsonify({"ok": True, "avaliacao": avaliacao})
 
