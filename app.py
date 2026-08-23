@@ -1494,7 +1494,8 @@ def curso2_editar_manifesto(course_id):
     try:
         atualizado = atualizar_manifesto(course_id, _trilhas_user_key(), manifest)
     except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 400
+        app.logger.exception("Erro ao atualizar manifesto do curso '%s'.", course_id)
+        return jsonify({"error": "Não foi possível atualizar o manifesto."}), 400
     return jsonify({"ok": True, "curso": atualizado})
 
 
