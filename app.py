@@ -1674,8 +1674,9 @@ def curso2_glossario_gerar(course_id):
     try:
         definicoes = gerar_glossario(manifest.get("title", ""), manifest.get("description", ""), nomes)
         atualizados = save_concept_definitions(course_id, definicoes)
-    except (GlossaryAgentError, CursoStoreError) as e:
-        return jsonify({"error": str(e)}), 422
+    except (GlossaryAgentError, CursoStoreError):
+        app.logger.exception("Erro ao gerar glossário para o curso %s", course_id)
+        return jsonify({"error": "não foi possível gerar o glossário no momento."}), 422
 
     return jsonify({"ok": True, "atualizados": atualizados, "termos": get_glossario(course_id)})
 
