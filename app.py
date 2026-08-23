@@ -1407,7 +1407,8 @@ def curso2_criar():
             estilo=(form.get("estilo") or "pratico").strip(),
         )
     except CurriculumAgentError as e:
-        return jsonify({"error": str(e)}), 422
+        app.logger.exception("Falha ao gerar manifesto do curso.")
+        return jsonify({"error": "Não foi possível gerar o manifesto no momento."}), 422
 
     # indexa no RAG em paralelo à criação do curso — não bloqueia o
     # manifest se o Postgres/pgvector estiver fora (fail-open, mesmo
