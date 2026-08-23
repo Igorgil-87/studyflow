@@ -1509,7 +1509,8 @@ def curso2_aprovar(course_id):
     try:
         curso = aprovar_curso(course_id, _trilhas_user_key())
     except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 400
+        app.logger.exception("Erro ao aprovar curso '%s'.", course_id)
+        return jsonify({"error": "Não foi possível aprovar o curso."}), 400
     return jsonify({"ok": True, "curso": curso})
 
 
