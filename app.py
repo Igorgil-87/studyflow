@@ -1474,7 +1474,8 @@ def curso2_detalhe(course_id):
     try:
         curso = get_curso(course_id, _trilhas_user_key())
     except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Falha ao obter curso '%s' para o usuário atual.", course_id)
+        return jsonify({"error": "Erro interno ao obter curso."}), 500
     if not curso:
         return jsonify({"error": "curso não encontrado"}), 404
     return jsonify({"curso": curso})
