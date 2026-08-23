@@ -1524,7 +1524,11 @@ def curso2_licoes_pendentes(course_id):
     try:
         return jsonify({"licoes": list_lessons_pendentes(course_id)})
     except CursoStoreError as e:
-        return jsonify({"error": str(e), "licoes": []}), 200
+        app.logger.exception(
+            "Falha ao listar lições pendentes do curso '%s' para o usuário atual.",
+            course_id,
+        )
+        return jsonify({"error": "Falha ao listar lições pendentes.", "licoes": []}), 200
 
 
 @app.route("/api/curso2/<course_id>/licoes/<lesson_id>/gerar", methods=["POST"])
