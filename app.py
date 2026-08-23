@@ -950,7 +950,8 @@ def youtuber_generate():
     jobs.create(job_id, kind="youtuber")
     dispatch("pipelines.run_youtuber_pipeline",
              job_id, niche, video_url, content_type, num_clips,
-             gerar_legenda, idioma_legenda, adicionar_fechamento)
+             gerar_legenda, idioma_legenda, adicionar_fechamento,
+             job_timeout=config.VIDEO_JOB_TIMEOUT_SECONDS)
     return jsonify({"job_id": job_id})
 
 

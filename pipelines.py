@@ -17,6 +17,7 @@ from __future__ import annotations
 import gc
 import json
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dotenv import load_dotenv
@@ -150,7 +151,7 @@ def run_curso_pipeline(
         emit("search", "done", f"Vídeo: {chosen['titulo']}")
         bus.publish(job_id, "video", chosen)
 
-        emit("download", "running", "Baixando áudio e vídeo em paralelo...")
+        emit("download", "running", "Baixando vídeo (progressive-first)...")
         audio_tool = AudioExtractorTool(
             output_dir="output", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
@@ -159,22 +160,28 @@ def run_curso_pipeline(
             output_dir="static/videos", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
         )
-        with ThreadPoolExecutor(max_workers=2) as dl_ex:
-            audio_fut = dl_ex.submit(audio_tool._run, url=chosen["url"], max_minutes=10, job_id=job_id)
-            video_fut = dl_ex.submit(video_tool._run, url=chosen["url"], job_id=job_id)
-            audio_path = audio_fut.result()
-            video_rel = video_fut.result()
-
-        if audio_path.startswith("ERRO"):
-            raise RuntimeError(audio_path)
-        emit("download", "done", "Áudio extraído.")
+        video_rel = video_tool._run(url=chosen["url"], job_id=job_id)
 
         if video_rel.startswith("ERRO"):
+            # Curso ainda pode funcionar apenas com áudio; usamos o downloader
+            # direto como fallback se o vídeo local não estiver disponível.
+            emit("video_dl", "done", "Vídeo indisponível; tentando áudio direto...")
             video_rel = None
-            emit("video_dl", "done", "Vídeo indisponível.")
+            audio_path = audio_tool._run(
+                url=chosen["url"], max_minutes=10, job_id=job_id
+            )
         else:
             jobs.set(job_id, "video_file", video_rel)
             emit("video_dl", "done", "Vídeo pronto.")
+            local_video = f"static/{video_rel}"
+            emit("download", "running", "Extraindo áudio do vídeo local...")
+            audio_path = audio_tool.extract_from_video(
+                local_video, max_minutes=10, job_id=job_id
+            )
+
+        if audio_path.startswith("ERRO"):
+            raise RuntimeError(audio_path)
+        emit("download", "done", "Áudio extraído do vídeo local.")
 
         emit("transcribe", "running",
              f"Transcrevendo com Whisper '{WHISPER_MODEL}'...")
@@ -285,7 +292,7 @@ def run_youtuber_pipeline(
                     {"step": step, "status": status, "detail": detail})
 
     try:
-        emit("download", "running", "Baixando áudio e vídeo em paralelo...")
+        emit("download", "running", "Baixando vídeo (progressive-first)...")
         audio_tool = AudioExtractorTool(
             output_dir="output", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
@@ -294,26 +301,27 @@ def run_youtuber_pipeline(
             output_dir="static/videos", cookies_browser=COOKIES_BROWSER,
             cookies_file=get_cookies_file(),
         )
-        with ThreadPoolExecutor(max_workers=2) as dl_ex:
-            audio_fut = dl_ex.submit(
-                audio_tool._run, url=video_url, max_minutes=20, job_id=job_id,
-                progress_callback=lambda msg: emit("download", "running", f"Áudio: {msg}"))
-            video_fut = dl_ex.submit(
-                video_tool._run, url=video_url, job_id=job_id,
-                progress_callback=lambda msg: emit("download", "running", f"Vídeo: {msg}"))
-            audio_path = audio_fut.result()
-            video_rel = video_fut.result()
-
-        if audio_path.startswith("ERRO"):
-            raise RuntimeError(audio_path)
-        emit("download", "done", "Áudio extraído.")
+        video_rel = video_tool._run(
+            url=video_url, job_id=job_id,
+            progress_callback=lambda msg: emit("download", "running", f"Vídeo: {msg}"),
+        )
 
         if video_rel.startswith("ERRO"):
-            video_rel = None
-            emit("video_dl", "done", "Vídeo indisponível.")
-        else:
-            jobs.set(job_id, "video_file", video_rel)
-            emit("video_dl", "done", "Vídeo pronto.")
+            # O módulo Youtuber precisa do vídeo para gerar cortes; não vale
+            # continuar só com transcrição quando o arquivo de vídeo falha.
+            raise RuntimeError(video_rel)
+
+        jobs.set(job_id, "video_file", video_rel)
+        emit("video_dl", "done", "Vídeo pronto.")
+
+        local_video = f"static/{video_rel}"
+        emit("download", "running", "Extraindo áudio do vídeo local...")
+        audio_path = audio_tool.extract_from_video(
+            local_video, max_minutes=20, job_id=job_id
+        )
+        if audio_path.startswith("ERRO"):
+            raise RuntimeError(audio_path)
+        emit("download", "done", "Áudio extraído do vídeo local.")
 
         emit("transcribe", "running",
              f"Transcrevendo com Whisper '{WHISPER_MODEL}'...")
@@ -468,6 +476,11 @@ def run_youtuber_pipeline(
                             or clip.get("hook_otimizado") \
                             or clip.get("thumb_texto") or "Corte viral"
                 _make_thumbnails(clips_result, content_type, emit)
+                # Os cortes-base já existem neste ponto. As etapas pesadas de
+                # reenquadre, legenda e fechamento têm progresso próprio; não
+                # deixe a UI parecer parada em "Corte 5/5" enquanto o ffmpeg
+                # ainda está renderizando.
+                emit("cut", "done", f"{len(clips_result)} cortes-base criados.")
 
                 # Libera qualquer memória do moviepy/corte que ainda esteja
                 # solta antes de começar o ffmpeg (etapa mais pesada em RAM
@@ -518,14 +531,19 @@ def run_youtuber_pipeline(
                     return clip_rel_path
 
                 if is_corte_longo:
-                    for clip in clips_result:
-                        if clip.get("arquivo"):
-                            clip["arquivo"] = _colar_fechamento(clip["arquivo"])
                     emit("vertical", "done",
-                         "Corte longo (formato paisagem, YouTube) — pulando reenquadre "
-                         "vertical/legenda, que é só pra Shorts. Isso é o que deixa o "
-                         "processamento rápido pra cortes longos."
-                         + (" Fechamento adicionado." if adicionar_fechamento else ""))
+                         "Corte longo em paisagem — reenquadre vertical/legenda não se aplica.")
+                    longos = [c for c in clips_result if c.get("arquivo")]
+                    if longos:
+                        emit("finalize", "running",
+                             f"Finalizando {len(longos)} corte(s)...")
+                        for idx, clip in enumerate(longos, start=1):
+                            clip["arquivo"] = _colar_fechamento(clip["arquivo"])
+                            emit("finalize", "running",
+                                 f"{idx}/{len(longos)} corte(s) finalizado(s)")
+                    emit("finalize", "done",
+                         ("Fechamento/finalização concluídos." if adicionar_fechamento
+                          else "Arquivos finais prontos — fechamento desativado."))
                 elif not clips_result:
                     pass
                 else:
@@ -561,46 +579,93 @@ def run_youtuber_pipeline(
                                 except Exception:
                                     srt_path = None  # sem legenda só nesse clip — não trava o resto
 
-                            # preset "fast" (não "medium"): roda vários clips em
-                            # paralelo, então cada um precisa ser mais rápido —
-                            # a perda de qualidade é imperceptível pra Shorts/Reels
-                            result = export_vertical(src_abs, out_abs, mode="blur",
-                                                      subtitle_path=srt_path, preset="fast")
+                            # preset configurável via VIDEO_VERTICAL_PRESET (padrão
+                            # "veryfast") — a perda de qualidade é imperceptível
+                            # pra Shorts/Reels, que o Instagram/TikTok recomprime
+                            # de qualquer forma.
+                            _t0 = time.time()
+                            result = export_vertical(
+                                src_abs, out_abs, mode="blur", subtitle_path=srt_path,
+                                preset=os.getenv("VIDEO_VERTICAL_PRESET", "veryfast"),
+                            )
+                            print(f"[pipeline] vertical de '{clip.get('titulo', '?')}' "
+                                  f"levou {time.time() - _t0:.1f}s")
                             return clip, out_rel, srt_path, result
 
                         n_vertical_ok = 0
                         n_done = 0
+                        n_finalized = 0
                         to_process = [c for c in clips_result if c.get("arquivo")]
-                        # sequencial (max_workers=1), não paralelo: testado e
-                        # ajustado em 30/07/2026 — no hardware de 8GB RAM do
-                        # usuário, rodar ffmpeg em paralelo causava troca de
-                        # memória pro disco (swap), deixando TUDO mais lento,
-                        # não só essa etapa. Se um dia rodar em máquina com mais
-                        # RAM de sobra, subir esse número acelera de verdade.
-                        with ThreadPoolExecutor(max_workers=1) as vx:
+                        emit("finalize", "running",
+                             f"Aguardando renderização para finalizar {len(to_process)} clip(s)...")
+                        # Paralelismo ELÁSTICO por padrão: metade dos vCPUs
+                        # disponíveis (arredondando pra baixo, mínimo 1, teto 4 —
+                        # não faz sentido rodar dezenas de ffmpeg ao mesmo tempo
+                        # só porque a máquina tem muitos núcleos). Usa metade, não
+                        # todos, pra sobrar CPU pro resto do pipeline (Whisper, a
+                        # própria fila) rodando em paralelo com isso.
+                        #
+                        # Isso se adapta sozinho: numa máquina de poucos núcleos
+                        # (ex: Mac local) fica baixo automaticamente; num servidor
+                        # com mais vCPUs, sobe sozinho.
+                        #
+                        # A trava anterior (sempre 1, sequencial) veio de um teste
+                        # em 30/07/2026 no Mac de 8GB RAM do usuário, onde rodar em
+                        # paralelo causava swap. Ficou fixa em 1 pra sempre depois
+                        # disso, mesmo em produção — o cálculo elástico resolve os
+                        # dois casos.
+                        #
+                        # VIDEO_RENDER_WORKERS no .env, se definido, TRAVA nesse
+                        # valor manual em vez do cálculo automático — útil se você
+                        # perceber troca de memória pro disco (swap) numa máquina
+                        # específica e quiser fixar em 1 só ali.
+                        _render_workers_override = os.getenv("VIDEO_RENDER_WORKERS", "").strip()
+                        if _render_workers_override:
+                            _render_workers = max(1, int(_render_workers_override))
+                        else:
+                            _render_workers = max(1, min(4, (os.cpu_count() or 1) // 2))
+                        print(f"[pipeline] renderização vertical: {_render_workers} "
+                              f"worker(s) em paralelo (vCPUs detectados: {os.cpu_count()})")
+                        with ThreadPoolExecutor(max_workers=_render_workers) as vx:
                             futures = [vx.submit(_process_one, c) for c in to_process]
                             for fut in futures:
                                 clip, out_rel, srt_path, result = fut.result()
                                 n_done += 1
                                 if result.get("ok"):
                                     clip["arquivo_original"] = clip["arquivo"]
-                                    clip["arquivo"] = _colar_fechamento(out_rel)
                                     clip["legenda_queimada"] = bool(srt_path)
                                     n_vertical_ok += 1
+                                    emit("vertical", "running",
+                                         f"{n_done}/{total_to_process} render(s) 9:16 concluído(s)"
+                                         f" — '{clip.get('titulo','')[:40]}'")
+                                    # O fechamento é um segundo encode/concat e pode
+                                    # levar minutos. Mostra isso separado do render.
+                                    clip["arquivo"] = _colar_fechamento(out_rel)
+                                    n_finalized += 1
+                                    emit("finalize", "running",
+                                         f"{n_finalized}/{total_to_process} arquivo(s) finalizado(s)")
                                 else:
                                     clip["vertical_erro"] = result.get("erro")
-                                emit("vertical", "running",
-                                     f"{n_done}/{total_to_process} clip(s) processado(s)"
-                                     + (f" — '{clip.get('titulo','')[:40]}' pronto" if result.get("ok") else ""))
+                                    emit("vertical", "running",
+                                         f"{n_done}/{total_to_process} render(s) processado(s) — "
+                                         "um clip ficou no formato original")
+                                    # Mesmo quando o vertical falha, o clip original
+                                    # continua válido (fail-open) e pode receber fechamento.
+                                    clip["arquivo"] = _colar_fechamento(clip["arquivo"])
+                                    n_finalized += 1
+                                    emit("finalize", "running",
+                                         f"{n_finalized}/{total_to_process} arquivo(s) finalizado(s)")
 
                         emit("vertical", "done",
-                             f"{n_vertical_ok}/{total_to_process} clip(s) em 9:16 com legenda.")
+                             f"{n_vertical_ok}/{total_to_process} clip(s) renderizado(s) em 9:16.")
+                        emit("finalize", "done",
+                             f"{n_finalized}/{total_to_process} arquivo(s) finalizado(s).")
                     else:
                         emit("vertical", "done",
                              "ffmpeg indisponível — clips ficaram no formato original, sem vertical/legenda.")
+                        emit("finalize", "done", "Arquivos originais mantidos.")
 
                 jobs.set(job_id, "clips", clips_result)
-                emit("cut", "done", f"{len(clips_result)} clips criados!")
         else:
             emit("cut", "done", "Vídeo indisponível para corte.")
 

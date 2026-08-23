@@ -196,6 +196,7 @@
           <div class="est-pipeline-head" style="display:flex;align-items:center;justify-content:space-between">
             <div>
               <span class="est-pipeline-tag">Processando</span>
+              <span class="est-pipeline-timer" id="prodTimer">00:00</span>
               <div class="est-pipeline-video" id="prodVideoTitle">—</div>
             </div>
             <button class="ghost-btn" id="prodCancelBtn">Cancelar</button>
@@ -224,6 +225,16 @@
             <div class="ps-step-card" data-step="cut">
               <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></div>
               <div class="ps-step-name">Corte</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+            <div class="ps-step-card" data-step="vertical">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg></div>
+              <div class="ps-step-name">Renderização</div>
+              <div class="ps-step-detail step-detail"></div>
+            </div>
+            <div class="ps-step-card" data-step="finalize">
+              <div class="ps-step-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+              <div class="ps-step-name">Finalização</div>
               <div class="ps-step-detail step-detail"></div>
             </div>
           </div>

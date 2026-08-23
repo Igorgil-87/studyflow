@@ -1,36 +1,63 @@
-# StudyFlow — YouTube / Hetzner hardening
+# StudyFlow — YouTube / Hetzner hardening + PO Token
 
-Atualização preparada para o ambiente headless em VPS/Hetzner.
+Atualização para produção headless em VPS/Hetzner.
 
-## O que mudou
+## Arquitetura atual
 
-- `yt-dlp[default]>=2026.7.4` para instalar o companion `yt-dlp-ejs`.
-- Deno 2.3.0 instalado no Dockerfile como runtime JavaScript externo.
-- Configuração compartilhada do yt-dlp em `tools/youtube_runtime.py`.
-- Diagnóstico em `python -m tools.youtube_doctor`.
-- Busca, trends, áudio e vídeo passam a usar a mesma configuração de cookies, proxy, timeout e retries.
-- Ordem conservadora no download: sem cookies -> `cookies.txt` -> browser local.
-- `COOKIES_FILE` é o caminho recomendado em servidor headless.
-- `PROXY_URL` é fallback opcional, não requisito básico.
-- Em produção, `cookies.txt` fica em volume Docker compartilhado entre `web` e `worker`.
-- Upload de cookies pela UI grava atomicamente no caminho configurado por `COOKIES_FILE`.
-- `cookies.txt` foi adicionado ao `.gitignore`.
-- Mensagens de erro anti-bot agora incluem diagnóstico local.
-
-## Deploy na Hetzner
-
-```bash
-git pull
-docker compose -f docker-compose.prod.yml up -d --build
+```text
+StudyFlow worker
+  -> yt-dlp + Deno/EJS
+  -> cookies.txt (quando necessário)
+  -> proxy residencial (PROXY_URL)
+  -> BgUtils PO Token Provider
+  -> YouTube
 ```
 
-Depois valide o runtime:
+O proxy residencial e o PO Token resolvem problemas diferentes:
+
+- `PROXY_URL` evita o bloqueio anti-bot associado à reputação do IP de datacenter.
+- o PO Token Provider atende formatos GVS que podem retornar `HTTP 403` mesmo depois que metadata e anti-bot já funcionam.
+
+## O que mudou nesta versão
+
+- `bgutil-ytdlp-pot-provider==1.3.1` instalado junto do aplicativo.
+- serviço Docker interno `bgutil-pot` usando a imagem `brainicism/bgutil-ytdlp-pot-provider:1.3.1-deno`.
+- `YTDLP_POT_PROVIDER_URL=http://bgutil-pot:4416` em `web` e `worker`.
+- clientes preferidos `mweb,web_safari,default`.
+- fallback explícito `web_safari/HLS` para áudio e vídeo.
+- `youtube_doctor` mostra plugin, provider, conectividade e clients.
+- erros HTTP 403 agora são classificados separadamente do anti-bot.
+- cookies de browser não são tentados quando existe `cookies.txt` válido.
+
+## Deploy
+
+Depois do merge na `main`:
+
+```bash
+cd /opt/studyflow/studyflow
+git pull origin main
+docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+```
+
+Valide:
 
 ```bash
 docker compose -f docker-compose.prod.yml exec worker python -m tools.youtube_doctor
 ```
 
-Para testar metadata de um vídeo explicitamente:
+Esperado em produção:
+
+```text
+JS runtime ....... OK
+cookies.txt ...... OK
+cookies browser .. não configurado
+proxy ............ configurado
+POT plugin ....... OK 1.3.1
+POT provider ..... OK  alcançável pela rede Docker
+player clients ... mweb,web_safari,default
+```
+
+Para testar metadata com a mesma configuração do app:
 
 ```bash
 docker compose -f docker-compose.prod.yml exec \
@@ -38,39 +65,22 @@ docker compose -f docker-compose.prod.yml exec \
   python -m tools.youtube_doctor --url "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
-## Cookies
+## `.env`
 
-Em produção o compose define:
-
-```text
-COOKIES_FILE=/app/secrets/cookies.txt
-```
-
-O volume `youtube_cookies` é montado em `web` e `worker`, então um upload feito pela interface fica disponível para ambos os containers e persiste após recriações.
-
-Não coloque `cookies.txt` no Git.
-
-## Proxy residencial
-
-Deixe `PROXY_URL` vazio inicialmente. Se o `doctor` estiver saudável (Deno/EJS presentes) e o YouTube ainda recusar o IP da Hetzner por anti-bot, configure no `.env`:
+Em produção mantenha, por exemplo:
 
 ```text
-PROXY_URL=http://usuario:senha@host:porta
-```
-
-Depois recrie `web` e `worker`:
-
-```bash
-docker compose -f docker-compose.prod.yml up -d --build web worker
-```
-
-## Variáveis novas/relevantes
-
-```text
-COOKIES_FILE=
 COOKIES_BROWSER=
-PROXY_URL=
-YOUTUBE_DOCTOR_NETWORK=0
+COOKIES_FILE=/app/secrets/cookies.txt
+PROXY_URL=http://usuario:senha@host:porta
+YTDLP_POT_PROVIDER_URL=http://bgutil-pot:4416
+YTDLP_PLAYER_CLIENTS=mweb,web_safari,default
 YTDLP_SOCKET_TIMEOUT=30
 YTDLP_RETRIES=3
 ```
+
+Nunca versione `.env`, `cookies.txt` ou credenciais do proxy.
+
+## Observação
+
+PO Token não é garantia universal contra 403. O YouTube muda enforcement continuamente. A estratégia desta versão combina provider recomendado, proxy residencial e fallback HLS para reduzir dependência de um único caminho.

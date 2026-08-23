@@ -1,7 +1,4 @@
-"""tests/test_yt_error_classifier.py — testa tools/yt_error_classifier.py.
-Inclui o erro EXATO que apareceu em produção (vídeo privado), pra nunca
-regredir de volta pra mensagem genérica errada nesse caso."""
-
+"""Testes de classificação de erros reais do yt-dlp."""
 import importlib.util
 from pathlib import Path
 
@@ -22,10 +19,11 @@ classify_download_error = _mod.classify_download_error
 
 
 def test_video_privado_erro_real_reportado_pelo_usuario():
-    """Erro EXATO reportado em produção — vídeo WK7tr-eFAXY."""
-    erro = ("ERROR: [youtube] WK7tr-eFAXY: Private video. Sign in if "
-            "you've been granted access to this video. Use "
-            "--cookies-from-browser or --cookies for the authentication.")
+    erro = (
+        "ERROR: [youtube] WK7tr-eFAXY: Private video. Sign in if "
+        "you've been granted access to this video. Use "
+        "--cookies-from-browser or --cookies for the authentication."
+    )
     msg = classify_download_error(erro)
     assert "PRIVADO" in msg
     assert "Atualizar o yt-dlp não resolve" in msg
@@ -34,12 +32,21 @@ def test_video_privado_erro_real_reportado_pelo_usuario():
 def test_bloqueio_de_bot_sugere_diagnostico_headless():
     erro = "ERROR: [youtube] abc: Sign in to confirm you're not a bot."
     msg = classify_download_error(erro)
-
     assert "anti-bot" in msg
     assert "Deno/EJS" in msg
     assert "python -m tools.youtube_doctor" in msg
     assert "COOKIES_FILE" in msg
     assert "PROXY_URL" in msg
+    assert erro in msg
+
+
+def test_http_403_sugere_po_token_provider():
+    erro = "ERROR: unable to download video data: HTTP Error 403: Forbidden"
+    msg = classify_download_error(erro)
+    assert "HTTP 403" in msg
+    assert "PO Token" in msg
+    assert "POT plugin/provider" in msg
+    assert "web_safari/HLS" in msg
     assert erro in msg
 
 
@@ -52,7 +59,7 @@ def test_restricao_de_idade():
 def test_video_removido_ou_indisponivel():
     erro = "ERROR: [youtube] def: Video unavailable."
     msg = classify_download_error(erro)
-    assert "removido" in msg or "indisponível" in msg
+    assert "removido" in msg or "não está disponível" in msg
 
 
 def test_erro_desconhecido_nao_finge_certeza():
@@ -62,8 +69,6 @@ def test_erro_desconhecido_nao_finge_certeza():
 
 
 def test_sempre_inclui_o_detalhe_original():
-    """Não importa a classificação, o erro cru original sempre precisa
-    aparecer no final — pra debug, mesmo quando a classificação erra."""
     erro = "ERROR: qualquer coisa aqui 12345"
     msg = classify_download_error(erro)
     assert erro in msg

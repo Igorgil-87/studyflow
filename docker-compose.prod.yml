@@ -30,15 +30,15 @@
 #      (caro) ou aponte FOOOCUS_API_URL pra outro serviço de geração de
 #      imagem compatível. Vídeo/Shorts/Curso continuam funcionando 100%.
 #
-#   5. PROXY_URL: roteia o yt-dlp por um proxy RESIDENCIAL (não
-#      datacenter) — o YouTube sinaliza fortemente IPs de servidor/nuvem
-#      (Hetzner, AWS, GCP etc) mesmo com cookie válido. Testamos o plugin
-#      de PO Token (bgutil-pot) antes; o próprio mantenedor avisa que não
-#      contorna mais a checagem na maioria dos casos, então trocamos pela
-#      solução que ataca a causa raiz (o IP em si). Configure
-#      PROXY_URL no .env do servidor com a credencial do seu provedor de
-#      proxy residencial (ex: IPRoyal) — sem isso, essa variável fica
-#      vazia e o app funciona igual antes, sem proxy.
+#   5. PROXY_URL: roteia o yt-dlp por um proxy RESIDENCIAL para evitar
+#      o bloqueio anti-bot de IPs de datacenter (Hetzner/AWS/GCP etc).
+#      O proxy resolve a reputação/origem do IP; não substitui PO Token.
+#
+#   6. bgutil-pot: PO Token Provider recomendado pelo guia atual do yt-dlp.
+#      Ele resolve um problema diferente do proxy: formatos GVS podem
+#      retornar HTTP 403 mesmo depois que metadata/anti-bot funcionam.
+#      O serviço fica SOMENTE na rede interna Docker, sem porta pública.
+#      web/worker apontam para ele via YTDLP_POT_PROVIDER_URL.
 #
 # Comando pra subir:
 #     docker compose -f docker-compose.prod.yml up -d --build
@@ -65,6 +65,24 @@ services:
       retries: 10
       start_period: 30s
 
+
+  bgutil-pot:
+    build:
+      context: ./infra/bgutil-pot
+      args:
+        BGUTIL_COMMIT: 411d8d6d04a6bcb00108fd16165d2aae213d08a6
+    restart: unless-stopped
+    # Provider customizado baseado no upstream PR #247. O patch troca axios
+    # por node:https nos fetches do BotGuard, evitando socket hang up/503
+    # quando o yt-dlp encaminha o proxy residencial ao provider.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4416/').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    # Não publique 4416 no host: web/worker acessam pela rede interna.
+
   web:
     build: .
     ports:
@@ -78,6 +96,9 @@ services:
       # Proxy residencial pro yt-dlp (ver comentário no topo do arquivo).
       # Vazio no .env = sem proxy, funciona igual antes.
       PROXY_URL: ${PROXY_URL:-}
+      # PO Token Provider interno para formatos GVS que retornam HTTP 403.
+      YTDLP_POT_PROVIDER_URL: ${YTDLP_POT_PROVIDER_URL:-http://bgutil-pot:4416}
+      YTDLP_PLAYER_CLIENTS: ${YTDLP_PLAYER_CLIENTS:-mweb}
       # Cookie persistente e compartilhado com os workers. Uploads feitos
       # pela tela de Configurações são gravados neste volume.
       COOKIES_FILE: /app/secrets/cookies.txt
@@ -104,6 +125,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      bgutil-pot:
+        condition: service_healthy
 
   worker:
     build: .
@@ -115,6 +138,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       CRAWL4AI_URL: http://crawl4ai:11235
       PROXY_URL: ${PROXY_URL:-}
+      YTDLP_POT_PROVIDER_URL: ${YTDLP_POT_PROVIDER_URL:-http://bgutil-pot:4416}
+      YTDLP_PLAYER_CLIENTS: ${YTDLP_PLAYER_CLIENTS:-mweb}
       COOKIES_FILE: /app/secrets/cookies.txt
       FOOOCUS_API_URL: ${FOOOCUS_API_URL:-http://disabled:8888}
       MPT_API_URL: ${MPT_API_URL:-}
@@ -128,6 +153,8 @@ services:
       - ./client_secret.json:/app/client_secret.json:ro
     depends_on:
       redis:
+        condition: service_healthy
+      bgutil-pot:
         condition: service_healthy
 
   scheduler:
