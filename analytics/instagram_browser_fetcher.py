@@ -69,9 +69,9 @@ def importar_metricas(dados: list[dict]) -> dict:
             atualizar_metricas(publicacoes[url]["id"], **metricas)
             ok += 1
             detalhes.append({"url": url, "status": "ok", **metricas})
-        except AnalyticsError as e:
+        except AnalyticsError:
             falhas += 1
-            detalhes.append({"url": url, "status": "erro", "erro": str(e)})
+            detalhes.append({"url": url, "status": "erro", "erro": "falha ao atualizar métricas"})
 
     return {"processados": len(dados), "ok": ok, "falhas": falhas, "detalhes": detalhes}
 
