@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Configurações</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     .cfg-wrap{max-width:620px}
@@ -30,11 +28,13 @@
     .cfg-badge.off{background:var(--surface-2);color:var(--text-3)}
   </style>
 </head>
-<body>
+<body data-module="neutral">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -104,7 +104,7 @@
         <span class="cfg-row-value" id="cookiesUpdatedEm">—</span>
       </div>
 
-      <details style="margin:16px 0;font-size:12.5px;color:var(--text-2)">
+      <details class="cfg-details">
         <summary style="cursor:pointer;color:var(--text);font-weight:500">
           Como exportar o cookies.txt (leva 1 minuto)
         </summary>

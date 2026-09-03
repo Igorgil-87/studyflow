@@ -72,3 +72,8 @@ markitdown[pdf,pptx,docx,xlsx,xls]==0.1.6   # rag/document_extractor.py — moto
 # tools/crawler_client.py fala com ele via HTTP simples (requests), sem
 # importar o pacote crawl4ai em momento nenhum.
 cloudinary==1.41.0
+
+# Medição de pico de RAM por etapa do pipeline (auditoria de performance
+# dos Clips/Shorts) — psutil é padrão de mercado pra isso, puro C
+# compilado, sem overhead relevante.
+psutil==6.1.1

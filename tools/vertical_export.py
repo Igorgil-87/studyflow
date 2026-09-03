@@ -1,19 +1,12 @@
 """
 tools/vertical_export.py — exporta um clip em formato SHORT 9:16 (1080×1920).
 
-Usa ffmpeg para reenquadrar o corte (que sai no formato original, geralmente
-16:9) em vertical, com as specs de Short:
-  - 1080×1920, 9:16
-  - H.264 (libx264), pix_fmt yuv420p
-  - AAC 48kHz 320kbps
-  - bitrate alvo 10 Mbps / máx 16 Mbps, 30 fps
-
-Dois modos de reenquadre:
-  - "blur"  : vídeo centralizado com fundo desfocado preenchendo topo/baixo
-              (melhor p/ podcast/entrevista — não corta o rosto). PADRÃO.
-  - "crop"  : recorta o centro para preencher a tela toda (dá zoom).
-
-Requer ffmpeg instalado. check_ffmpeg() detecta.
+Performance Sprint 2:
+- o fundo desfocado é processado em resolução reduzida e só então ampliado;
+  como ele é propositalmente desfocado, isso reduz drasticamente pixels no
+  filtro sem alterar a resolução/qualidade do vídeo principal;
+- saída continua H.264 1080x1920/30fps + AAC, pronta para Shorts/Reels;
+- preset permanece configurável e o padrão continua ``fast``.
 """
 
 from __future__ import annotations
@@ -25,23 +18,13 @@ import subprocess
 
 
 def check_ffmpeg() -> bool:
-    """True se o ffmpeg está disponível no PATH."""
     return shutil.which("ffmpeg") is not None
 
 
-# Allowlist estrita: só letras, números, espaço e um punhado de símbolos de
-# caminho de arquivo comuns. Qualquer coisa fora disso (aspas, ';', '|', '$',
-# backtick etc — os caracteres usados em injeção de comando) é rejeitada.
-# Combinado com subprocess.run(lista) [sem shell=True], isso fecha os dois
-# vetores possíveis: injeção via shell E path/flag injection (arquivo
-# começando com "-" sendo lido como opção do ffmpeg em vez de caminho).
 _SAFE_CLI_PATH_RE = re.compile(r"^[A-Za-z0-9_./ -]+$")
 
 
 def _is_safe_cli_path(path: str) -> bool:
-    """Bloqueia os vetores de injeção de linha de comando: caracteres fora
-    da allowlist, começar com '-' (viraria flag do ffmpeg) e '..' (path
-    traversal)."""
     if not _SAFE_CLI_PATH_RE.fullmatch(path):
         return False
     normalized = os.path.normpath(path)
@@ -53,35 +36,28 @@ def _is_safe_cli_path(path: str) -> bool:
 
 
 def _escape_subtitle_path(path: str) -> str:
-    """Escapa o caminho do .srt pro filtro subtitles= do ffmpeg — ele usa
-    ':' como separador de opção dentro do filtro, então caminho com ':'
-    (ex: 'C:\\...' no Windows, ou só por precaução) precisa escapar."""
     return path.replace("\\", "\\\\").replace(":", "\\:")
+
+
+def _fast_blur_enabled() -> bool:
+    return os.getenv("VERTICAL_FAST_BLUR", "1").strip().lower() not in ("0", "false", "no", "off")
 
 
 def build_vertical_command(input_path: str, output_path: str, mode: str = "blur",
                            fps: int = 30, target_bitrate: str = "10M",
                            max_bitrate: str = "16M",
                            subtitle_path: str | None = None,
-                           preset: str = "medium") -> list[str]:
+                           preset: str = "fast",
+                           fast_blur: bool | None = None) -> list[str]:
     """Monta o comando ffmpeg (lista de args). Puro/testável.
 
-    preset: velocidade x compressão do x264 ("medium" = padrão/melhor
-    compressão; "fast"/"veryfast" = roda mais rápido, útil quando vários
-    clips são processados em paralelo — a perda de qualidade é mínima
-    pro tipo de vídeo comprimido de novo pelo Instagram/TikTok mesmo.
-
-    subtitle_path: caminho de um arquivo .srt já pronto (ver tools/captions.py)
-    — se informado, a legenda é queimada no vídeo (fica parte da imagem,
-    funciona em qualquer player/plataforma). Estilo: branco, negrito,
-    contorno preto, ancorada perto do centro-inferior (boa posição pra
-    Reels/Shorts sem cobrir os controles da UI do app)."""
+    ``fast_blur`` otimiza apenas a camada de FUNDO. O foreground continua
+    escalado diretamente para a resolução final. O ganho vem de não executar
+    boxblur em ~2 milhões de pixels por frame quando o resultado será borrado.
+    """
     sub_filter = ""
     if subtitle_path:
         esc = _escape_subtitle_path(subtitle_path)
-        # Fontsize/Outline calibrados pro canvas de saída (1080x1920).
-        # Alignment=2 = centralizado horizontal, ancorado embaixo.
-        # MarginV empurra pra cima da barra de ações do IG/TikTok.
         style = (
             "FontName=Arial,Fontsize=20,PrimaryColour=&H00FFFFFF,"
             "OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Shadow=0,"
@@ -90,17 +66,29 @@ def build_vertical_command(input_path: str, output_path: str, mode: str = "blur"
         sub_filter = f",subtitles='{esc}':force_style='{style}'"
 
     if mode == "crop":
-        # recorta o centro para 9:16 e escala para 1080x1920
         vf = ("scale=1080:1920:force_original_aspect_ratio=increase,"
               "crop=1080:1920" + sub_filter)
         filter_args = ["-vf", vf]
-    else:  # blur (padrão): fundo desfocado + vídeo centralizado
-        fc = (
-            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
-            "crop=1080:1920,boxblur=24:6[bg];"
-            "[0:v]scale=1080:-2:force_original_aspect_ratio=decrease[fg];"
-            "[bg][fg]overlay=(W-w)/2:(H-h)/2" + sub_filter
-        )
+    else:
+        if fast_blur is None:
+            fast_blur = _fast_blur_enabled()
+        if fast_blur:
+            # Background propositalmente desfocado: trabalha em 270x480
+            # (1/16 dos pixels do canvas final), aplica blur e só então sobe
+            # para 1080x1920. O foreground permanece em resolução cheia.
+            fc = (
+                "[0:v]scale=270:480:force_original_aspect_ratio=increase,"
+                "crop=270:480,boxblur=12:4,scale=1080:1920[bg];"
+                "[0:v]scale=1080:-2:force_original_aspect_ratio=decrease[fg];"
+                "[bg][fg]overlay=(W-w)/2:(H-h)/2" + sub_filter
+            )
+        else:
+            fc = (
+                "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
+                "crop=1080:1920,boxblur=24:6[bg];"
+                "[0:v]scale=1080:-2:force_original_aspect_ratio=decrease[fg];"
+                "[bg][fg]overlay=(W-w)/2:(H-h)/2" + sub_filter
+            )
         filter_args = ["-filter_complex", fc]
 
     bufsize = f"{int(max_bitrate.rstrip('M')) * 2}M"
@@ -119,7 +107,8 @@ def build_vertical_command(input_path: str, output_path: str, mode: str = "blur"
 
 def export_vertical(input_path: str, output_path: str, mode: str = "blur",
                     timeout: int = 600, subtitle_path: str | None = None,
-                    preset: str = "medium") -> dict:
+                    preset: str | None = None,
+                    fast_blur: bool | None = None) -> dict:
     """Executa o ffmpeg. Retorna {ok, output|erro}."""
     if not check_ffmpeg():
         return {"ok": False, "erro": "ffmpeg não encontrado. Instale o ffmpeg "
@@ -127,14 +116,18 @@ def export_vertical(input_path: str, output_path: str, mode: str = "blur",
     for _p in (input_path, output_path):
         if not _is_safe_cli_path(_p):
             return {"ok": False, "erro": "caminho de entrada/saída inválido."}
+    if preset is None:
+        preset = os.getenv("VERTICAL_PRESET", "fast").strip() or "fast"
     cmd = build_vertical_command(input_path, output_path, mode,
-                                  subtitle_path=subtitle_path, preset=preset)
+                                  subtitle_path=subtitle_path, preset=preset,
+                                  fast_blur=fast_blur)
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         if proc.returncode != 0:
             tail = (proc.stderr or "")[-400:]
             return {"ok": False, "erro": f"ffmpeg falhou: {tail}"}
-        return {"ok": True, "output": output_path}
+        return {"ok": True, "output": output_path, "preset": preset,
+                "fast_blur": _fast_blur_enabled() if fast_blur is None else bool(fast_blur)}
     except subprocess.TimeoutExpired:
         return {"ok": False, "erro": "ffmpeg demorou demais (timeout)."}
     except Exception as e:

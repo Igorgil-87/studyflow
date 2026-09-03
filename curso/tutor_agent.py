@@ -53,10 +53,52 @@ CONTEÚDO DA AULA:
 
 TRECHOS DO DOCUMENTO ORIGINAL (se disponíveis):
 {contexto_rag}
+
+Quando usar um trecho do documento original, cite [Fonte N] exatamente como
+identificado no contexto. Não invente páginas, slides ou fontes.
 """
 
 
+class _GatewayLLMAdapter:
+    """Adapter mínimo para preservar o contrato ``llm.invoke(messages)``.
+
+    O Tutor continua testável do mesmo jeito, mas a implementação real passa
+    pelo AI Gateway e ganha Gemini + fallback uniforme + tracing.
+    """
+
+    def invoke(self, messages):
+        import os
+        from types import SimpleNamespace
+        from ai_gateway import generate_messages
+
+        normalized = []
+        for msg in messages:
+            name = msg.__class__.__name__.lower()
+            if "system" in name:
+                role = "system"
+            elif "ai" in name or "assistant" in name:
+                role = "assistant"
+            else:
+                role = "user"
+            normalized.append({"role": role, "content": str(getattr(msg, "content", msg))})
+
+        result = generate_messages(
+            normalized,
+            preferred_provider=os.getenv("TUTOR_LLM_PROVIDER") or os.getenv("AI_PRIMARY_PROVIDER") or "anthropic",
+            temperature=0.4,
+            max_tokens=int(os.getenv("TUTOR_MAX_TOKENS", "2048")),
+            operation="tutor_answer",
+        )
+        return SimpleNamespace(content=result.text, provider=result.provider, model=result.model)
+
+
 def _montar_llm():
+    import os
+    if os.getenv("AI_GATEWAY_ENABLED", "1") != "0":
+        return _GatewayLLMAdapter()
+
+    # Compatibilidade de rollback: AI_GATEWAY_ENABLED=0 restaura o fallback
+    # LangChain anterior sem mexer no restante do TutorAgent.
     from tools.llm_fallback import build_llm_with_fallback
     return build_llm_with_fallback(
         temperature=0.4,
@@ -81,7 +123,16 @@ def perguntar(
             "Esta aula ainda não tem conteúdo gerado — gere o conteúdo primeiro."
         )
 
-    trechos_rag = "\n\n".join(c["text"] for c in contexto_rag) if contexto_rag else "(nenhum)"
+    if contexto_rag:
+        try:
+            from rag.query import _label_for_chunk
+            trechos_rag = "\n\n".join(
+                f"{_label_for_chunk(c, i)}\n{c['text']}" for i, c in enumerate(contexto_rag, start=1)
+            )
+        except Exception:
+            trechos_rag = "\n\n".join(c["text"] for c in contexto_rag)
+    else:
+        trechos_rag = "(nenhum)"
     system = _SYSTEM_PROMPT.format(
         titulo_aula=titulo_aula, explicacao=explicacao, contexto_rag=trechos_rag,
     )

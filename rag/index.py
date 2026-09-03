@@ -1,89 +1,91 @@
-"""rag/index.py — indexa uma transcrição na base vetorial."""
-
+"""rag/index.py — indexação vetorial com proveniência por chunk."""
 from __future__ import annotations
 
 from .chunker import chunk_segments, chunk_text
 from . import config
 
 
-def index_transcript(video_id, segments, embed_fn, store,
-                     max_chars=None, max_seconds=None) -> int:
-    """
-    Quebra os segmentos em chunks, gera embeddings e grava na store.
-    Retorna quantos chunks foram indexados. Fail-open: store=None → 0.
-    """
+def index_transcript(video_id, segments, embed_fn, store, max_chars=None, max_seconds=None) -> int:
     if store is None or not segments:
         return 0
-    chunks = chunk_segments(
-        segments,
-        max_chars or config.CHUNK_CHARS,
-        max_seconds or config.CHUNK_SECONDS,
-    )
+    chunks = chunk_segments(segments, max_chars or config.CHUNK_CHARS, max_seconds or config.CHUNK_SECONDS)
     items = []
-    for ch in chunks:
+    for i, ch in enumerate(chunks):
         emb = embed_fn(ch["text"])
         if not emb:
             continue
-        items.append({"video_id": video_id, "start": ch["start"],
-                      "end": ch["end"], "text": ch["text"], "embedding": emb})
+        items.append({
+            "video_id": video_id, "start": ch["start"], "end": ch["end"], "text": ch["text"],
+            "embedding": emb,
+            "metadata": {"source_type": "video", "chunk_id": i, "timestamp_start": ch["start"], "timestamp_end": ch["end"]},
+        })
     if items:
         store.add(items)
     return len(items)
 
 
-def index_document(doc_id: str, text: str, embed_fn, store,
-                    max_chars: int = None) -> int:
-    """Indexa um documento de material de apoio (PDF/PPTX/DOCX já
-    extraído em texto puro) — SÓ usado pelo módulo Curso.
+def index_document(doc_id: str, text: str, embed_fn, store, max_chars: int = None,
+                   source_name: str | None = None, source_type: str = "document",
+                   units: list[dict] | None = None) -> int:
+    """Indexa documento preservando nome da fonte, página/slide e chunk.
 
-    Reaproveita a MESMA tabela/store dos vídeos (rag_chunks) — nenhuma
-    migração de schema necessária. Convenção pra diferenciar na busca:
-    doc_id sempre começa com "material:" (ex: "material:<uuid>"), então
-    dá pra filtrar/och identificar depois sem mudar o schema. Os campos
-    start/end viram o ÍNDICE do chunk (0, 1, 2...) em vez de tempo em
-    segundos — só pra manter a ordem, sem timestamp real fazer sentido
-    pra texto de documento.
-
-    Fail-open: store=None ou texto vazio → 0."""
+    `units` é opcional e tem formato [{"text": ..., "page": 1}] ou
+    [{"text": ..., "slide": 2}]. Sem units, mantém o comportamento antigo.
+    """
     if store is None or not text or not text.strip():
         return 0
     if not doc_id.startswith("material:"):
         raise ValueError('doc_id precisa começar com "material:" (convenção do módulo Curso)')
 
-    chunks = chunk_text(text, max_chars or config.CHUNK_CHARS)
     items = []
-    for i, chunk in enumerate(chunks):
-        emb = embed_fn(chunk)
-        if not emb:
+    global_chunk = 0
+    source_name = source_name or doc_id.replace("material:", "", 1)
+    source_units = units or [{"text": text}]
+    for unit in source_units:
+        unit_text = (unit.get("text") or "").strip()
+        if not unit_text:
             continue
-        items.append({"video_id": doc_id, "start": float(i), "end": float(i),
-                      "text": chunk, "embedding": emb})
+        for local_chunk, chunk in enumerate(chunk_text(unit_text, max_chars or config.CHUNK_CHARS)):
+            emb = embed_fn(chunk)
+            if not emb:
+                continue
+            metadata = {
+                "source_type": source_type,
+                "source_name": source_name,
+                "chunk_id": global_chunk,
+                "unit_chunk": local_chunk,
+            }
+            for key in ("page", "slide", "section", "url"):
+                if unit.get(key) is not None:
+                    metadata[key] = unit.get(key)
+            items.append({
+                "video_id": doc_id, "start": float(global_chunk), "end": float(global_chunk),
+                "text": chunk, "embedding": emb, "metadata": metadata,
+            })
+            global_chunk += 1
     if items:
         store.add(items)
     return len(items)
 
 
 def index_trends(all_results: dict, embed_fn, store) -> int:
-    """
-    Indexa as tendências analisadas na base vetorial. Cada trend vira um
-    documento (título + insight + ângulo + hashtags), pesquisável depois no /rag.
-    Fail-open: store=None → 0.
-    """
     if store is None or not all_results:
         return 0
-    n = 0
-    for categoria, trends in all_results.items():
-        for t in (trends or []):
-            tags = " ".join(f"#{h}" for h in (t.get("hashtags") or []))
-            text = " ".join(filter(None, [
-                t.get("titulo"), t.get("insight"), t.get("angulo"), tags,
-            ])).strip()
+    items = []
+    idx = 0
+    for fonte, trends in all_results.items():
+        for t in trends or []:
+            if not isinstance(t, dict):
+                continue
+            text = "\n".join(str(t.get(k) or "") for k in ("title", "titulo", "insight", "angle", "angulo", "hashtags")).strip()
             if not text:
                 continue
             emb = embed_fn(text)
             if not emb:
                 continue
-            store.add([{"video_id": f"trend:{categoria}", "start": 0, "end": 0,
-                        "text": text, "embedding": emb}])
-            n += 1
-    return n
+            items.append({"video_id": f"trend:{fonte}", "start": float(idx), "end": float(idx), "text": text,
+                          "embedding": emb, "metadata": {"source_type": "trend", "source_name": fonte, "chunk_id": idx}})
+            idx += 1
+    if items:
+        store.add(items)
+    return len(items)

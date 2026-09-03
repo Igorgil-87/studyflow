@@ -228,3 +228,46 @@ def _extract_docx(content: bytes) -> str:
     if not text:
         raise DocumentExtractionError("Não encontrei texto nesse DOCX (documento vazio).")
     return text
+
+# ── Sprint 2: extração com unidades citáveis ─────────────────────────────
+def extract_document(filename: str, content: bytes) -> dict:
+    """Retorna texto + unidades de proveniência quando o formato permite.
+
+    PDF preserva página; PPTX preserva slide. Nos demais formatos a unidade
+    é o documento inteiro, mantendo compatibilidade com extract_text().
+    """
+    ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    text = extract_text(filename, content)
+
+    if ext == ".pdf":
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(content))
+            units = []
+            for i, page in enumerate(reader.pages, start=1):
+                page_text = (page.extract_text() or "").strip()
+                if page_text:
+                    units.append({"page": i, "text": page_text})
+            if units:
+                return {"text": text, "units": units, "source_type": "pdf"}
+        except Exception:
+            pass
+
+    if ext == ".pptx":
+        try:
+            from pptx import Presentation
+            prs = Presentation(io.BytesIO(content))
+            units = []
+            for i, slide in enumerate(prs.slides, start=1):
+                parts = []
+                for shape in slide.shapes:
+                    if getattr(shape, "has_text_frame", False) and shape.text_frame.text.strip():
+                        parts.append(shape.text_frame.text.strip())
+                if parts:
+                    units.append({"slide": i, "text": "\n".join(parts)})
+            if units:
+                return {"text": text, "units": units, "source_type": "pptx"}
+        except Exception:
+            pass
+
+    return {"text": text, "units": [{"text": text}], "source_type": ext.lstrip(".") or "document"}

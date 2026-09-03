@@ -53,6 +53,16 @@ class LessonSpec(BaseModel):
     objective: str
     duration_min: int = Field(description="Duração estimada da aula em minutos")
     concepts: list[str] = Field(description="Nomes dos conceitos cobertos nesta aula")
+    dificuldade_estimada: int = Field(
+        default=50, ge=0, le=100,
+        description=(
+            "Estimativa de dificuldade desta aula especificamente (não do curso "
+            "todo), 0-100. Considere quantidade de conceitos novos, se depende "
+            "de pré-requisito de aula anterior, e abstração do conteúdo. Usado "
+            "depois pra calibrar contra a taxa de acerto real dos alunos no "
+            "quiz — seja realista, não force todas as aulas pra 50."
+        ),
+    )
     video_required: bool = True
     audio_required: bool = True
     quiz_required: bool = True
@@ -192,6 +202,8 @@ def manifest_from_roadmap(roadmap_data: dict, topic: str) -> dict:
     LLM de novo — zero custo extra, é só reformatar o que o roadmap já
     calculou."""
     modulos = []
+    dificuldade_por_nivel = {"iniciante": 30, "intermediário": 55, "avançado": 80}
+    dificuldade_default = dificuldade_por_nivel.get(roadmap_data.get("nivel", ""), 50)
     for m in roadmap_data.get("modulos", []):
         modulos.append({
             "title": m.get("titulo", ""),
@@ -201,6 +213,7 @@ def manifest_from_roadmap(roadmap_data: dict, topic: str) -> dict:
                 "objective": m.get("objetivo", ""),
                 "duration_min": _parse_duracao(m.get("duracao_estimada", "")),
                 "concepts": m.get("topicos", []),
+                "dificuldade_estimada": dificuldade_default,
                 "video_required": True,
                 "audio_required": False,
                 "quiz_required": True,

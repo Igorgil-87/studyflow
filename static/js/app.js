@@ -13,6 +13,8 @@ const errorBox    = $('#errorBox');
 const videoCard   = $('#videoCard');
 
 let eventSource = null;
+let currentVideoMeta = null;
+let currentCoursePayload = null;
 
 /* ── Textarea auto-resize ─────────────────────────────────── */
 topicEl.addEventListener('input', () => {
@@ -39,7 +41,7 @@ function resetAll() {
   if (av) { av.innerHTML = ''; av.hidden = true; }
   composer.style.display = '';
   generateBtn.disabled = false;
-  generateBtn.querySelector('.btn-label').textContent = 'Gerar quiz';
+  generateBtn.querySelector('.btn-label').textContent = 'Gerar curso';
   document.querySelectorAll('.step').forEach(s => s.className = 'step');
   document.querySelectorAll('.step-detail').forEach(d => d.textContent = '');
   topicEl.focus();
@@ -53,7 +55,7 @@ async function start() {
   if (!topic) { topicEl.focus(); return; }
 
   generateBtn.disabled = true;
-  generateBtn.querySelector('.btn-label').textContent = 'Gerando...';
+  generateBtn.querySelector('.btn-label').textContent = 'Gerando curso...';
   errorBox.hidden = true;
 
   try {
@@ -79,7 +81,7 @@ async function start() {
   } catch (e) {
     showError(e.message);
     generateBtn.disabled = false;
-    generateBtn.querySelector('.btn-label').textContent = 'Gerar quiz';
+    generateBtn.querySelector('.btn-label').textContent = 'Gerar curso';
   }
 }
 
@@ -94,13 +96,21 @@ function listenStream(jobId, topic) {
 
   eventSource.addEventListener('video', (e) => {
     const v = JSON.parse(e.data);
+    currentVideoMeta = v;
     videoCard.hidden = false;
     $('#videoTitle').textContent = v.titulo;
     $('#videoSub').textContent = `${v.canal} · ${v.duracao_minutos} min`;
   });
 
   eventSource.addEventListener('complete', (e) => {
-    const { quiz, roadmap, video_file, clips } = JSON.parse(e.data);
+    const payload = JSON.parse(e.data);
+    const { quiz, roadmap, video_file, clips, video } = payload;
+    if (video) currentVideoMeta = video;
+    currentCoursePayload = { ...payload, topic, job_id: jobId };
+
+    // YouTube volta ao fluxo completo original: o harness termina toda a
+    // geração (vídeo, aulas/cortes, quiz, flashcards e roteiro) e entrega
+    // o curso pronto nesta mesma experiência, sem etapa de aprovação.
     renderQuiz(quiz, topic);
     renderRoadmap(roadmap);
     renderVideo(video_file);
@@ -146,18 +156,6 @@ function renderQuiz(quiz, topic) {
     result.hidden = false;
 
     $('#resultTitle').textContent = quiz.tema || topic;
-
-    // salva como "curso em andamento" (aparece na home) — isolado, não afeta a geração
-    fetch('/api/curso-atual', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo: quiz.tema || topic,
-        subtitulo: 'Curso gerado por IA · Whisper + LLM',
-        progresso: 0,
-        aula_atual: ''
-      })
-    }).catch(() => {});
 
     // Flashcards
     const fcView = $('#flashcardsView');
@@ -303,6 +301,106 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+/* ── Salvar curso no catálogo ─────────────────────────────── */
+const saveCourseBtn = document.getElementById('saveCourseBtn');
+const saveCourseDialog = document.getElementById('saveCourseDialog');
+const saveCourseConfirm = document.getElementById('saveCourseConfirm');
+const saveCourseTitleInput = document.getElementById('saveCourseTitleInput');
+const saveCourseAuthorInput = document.getElementById('saveCourseAuthorInput');
+const saveCourseImageInput = document.getElementById('saveCourseImageInput');
+const saveCourseImageFile = document.getElementById('saveCourseImageFile');
+const saveCourseImage = document.getElementById('saveCourseImage');
+const saveCourseFeedback = document.getElementById('saveCourseFeedback');
+
+function youtubeThumb(meta) {
+  if (meta?.thumbnail) return meta.thumbnail;
+  const raw = meta?.video_id || (meta?.url || '').match(/[?&]v=([^&]+)/)?.[1] || '';
+  return raw ? `https://i.ytimg.com/vi/${raw}/hqdefault.jpg` : '';
+}
+
+function syncSaveCoursePreview() {
+  if (!saveCourseImage) return;
+  const url = (saveCourseImageInput?.value || '').trim();
+  if (url) {
+    saveCourseImage.src = url;
+    saveCourseImage.hidden = false;
+  } else {
+    saveCourseImage.removeAttribute('src');
+    saveCourseImage.hidden = true;
+  }
+}
+
+if (saveCourseBtn && saveCourseDialog) {
+  saveCourseBtn.addEventListener('click', () => {
+    if (!currentCoursePayload) return;
+    const title = currentCoursePayload.quiz?.tema || currentCoursePayload.topic || currentVideoMeta?.titulo || 'Meu curso';
+    const image = youtubeThumb(currentVideoMeta);
+    saveCourseTitleInput.value = title;
+    saveCourseAuthorInput.value = currentVideoMeta?.canal || 'StudyFlow';
+    saveCourseImageInput.value = image;
+    saveCourseFeedback.textContent = '';
+    syncSaveCoursePreview();
+    saveCourseDialog.showModal();
+  });
+  saveCourseImageInput?.addEventListener('input', syncSaveCoursePreview);
+  saveCourseImageFile?.addEventListener('change', () => {
+    const f = saveCourseImageFile.files?.[0];
+    if (!f) return syncSaveCoursePreview();
+    saveCourseImage.src = URL.createObjectURL(f);
+    saveCourseImage.hidden = false;
+  });
+}
+
+if (saveCourseConfirm) {
+  saveCourseConfirm.addEventListener('click', async () => {
+    if (!currentCoursePayload) return;
+    const titulo = saveCourseTitleInput.value.trim();
+    if (!titulo) { saveCourseTitleInput.focus(); return; }
+
+    saveCourseConfirm.disabled = true;
+    saveCourseConfirm.textContent = 'Salvando...';
+    saveCourseFeedback.textContent = 'Copiando vídeos para sua biblioteca...';
+    try {
+      let imagem = saveCourseImageInput.value.trim();
+      const coverFile = saveCourseImageFile?.files?.[0];
+      if (coverFile) {
+        const fd = new FormData(); fd.append('file', coverFile);
+        const up = await fetch('/api/course-cover-upload', { method: 'POST', body: fd });
+        const ud = await up.json();
+        if (!up.ok) throw new Error(ud.error || 'Não foi possível enviar a capa.');
+        imagem = ud.url || imagem;
+      }
+      const res = await fetch('/api/cursos-salvos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo,
+          autor: saveCourseAuthorInput.value.trim(),
+          imagem,
+          descricao: currentVideoMeta?.descricao || `Curso sobre ${titulo}`,
+          source_url: currentVideoMeta?.url || '',
+          duracao_minutos: currentVideoMeta?.duracao_minutos || 0,
+          video_file: currentCoursePayload.video_file || '',
+          clips: currentCoursePayload.clips || [],
+          quiz: currentCoursePayload.quiz || {},
+          roadmap: currentCoursePayload.roadmap || {}
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Não foi possível salvar o curso.');
+      saveCourseFeedback.textContent = '✓ Curso salvo no Catálogo.';
+      saveCourseBtn.textContent = '✓ Salvo no catálogo';
+      saveCourseBtn.disabled = true;
+      setTimeout(() => { window.location.href = `/curso-salvo/${data.curso.id}`; }, 600);
+    } catch (err) {
+      saveCourseFeedback.textContent = `⚠ ${err.message}`;
+    } finally {
+      saveCourseConfirm.disabled = false;
+      saveCourseConfirm.textContent = 'Salvar no catálogo';
+    }
+  });
+}
+
 /* ── Material de apoio (PDF/PPTX/DOCX -> RAG do Curso) ───────
    Guardado com checagem de elemento porque este app.js também é usado
    em index.html, que não tem essa seção. */
@@ -318,7 +416,7 @@ if (cxMaterialInput) {
 
     if (cxMaterialError) cxMaterialError.hidden = true;
     const originalLabel = cxMaterialLabel.textContent;
-    cxMaterialLabel.textContent = `Processando ${file.name}...`;
+    cxMaterialLabel.textContent = `Adicionando ${file.name}...`;
 
     const formData = new FormData();
     formData.append('arquivo', file);
@@ -326,13 +424,13 @@ if (cxMaterialInput) {
     try {
       const res = await fetch('/api/curso/material', { method: 'POST', body: formData });
       const body = await res.json();
-      if (!res.ok || body.error) throw new Error(body.error || 'Falha ao processar o material');
+      if (!res.ok || body.error) throw new Error(body.error || 'Não foi possível adicionar este material. Tente novamente.');
 
       const item = document.createElement('div');
       item.className = 'cx-material-item';
       item.innerHTML = `
         <span class="cx-material-item-name">📄 ${escapeHtml(body.arquivo)}</span>
-        <span class="cx-material-item-meta">${body.chunks_indexados} trecho(s) indexado(s)</span>
+        <span class="cx-material-item-meta">${body.chunks_indexados} trecho(s) pronto(s) para consulta</span>
       `;
       cxMaterialList.appendChild(item);
     } catch (err) {
@@ -367,13 +465,13 @@ if (cxMaterialUrlBtn) {
         body: JSON.stringify({ url }),
       });
       const body = await res.json();
-      if (!res.ok || body.error) throw new Error(body.error || 'Falha ao indexar a URL');
+      if (!res.ok || body.error) throw new Error(body.error || 'Não foi possível adicionar este link. Tente novamente.');
 
       const item = document.createElement('div');
       item.className = 'cx-material-item';
       item.innerHTML = `
         <span class="cx-material-item-name">🔗 ${escapeHtml(body.url)}</span>
-        <span class="cx-material-item-meta">${body.chunks_indexados} trecho(s) indexado(s)</span>
+        <span class="cx-material-item-meta">${body.chunks_indexados} trecho(s) pronto(s) para consulta</span>
       `;
       cxMaterialList.appendChild(item);
       cxMaterialUrl.value = '';

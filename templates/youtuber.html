@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Módulo Youtuber</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-module="video">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -30,9 +30,9 @@
 
     <!-- ── HERO ── -->
     <header class="ytm-hero">
-      <div class="ytm-eyebrow"><span class="ytm-eyebrow-dot"></span> MÓDULO YOUTUBER · IA VIRAL</div>
-      <h1 class="ytm-title">Cortes que <em>viralizam</em>.</h1>
-      <p class="ytm-sub">Produção de conteúdo, inteligência de tendências e análise de concorrência — tudo com IA.</p>
+      <div class="ytm-eyebrow"><span class="ytm-eyebrow-dot"></span> YOUTUBER · CRIAÇÃO DE VÍDEO</div>
+      <h1 class="ytm-title">Sua ideia merece <em>ser vista</em>.</h1>
+      <p class="ytm-sub">Crie cortes, encontre tendências e entenda o que prende a atenção da sua audiência.</p>
     </header>
 
     <!-- ── ABAS ── -->
@@ -55,140 +55,163 @@
     <!-- PAINEL 1 — Produção de Conteúdo (Clips AI)               -->
     <!-- ══════════════════════════════════════════════════════════ -->
     <div class="ps-panel" id="paneProducao">
-      <div class="ytm-layout">
-
-        <!-- COLUNA PRINCIPAL: URL em destaque -->
-        <div class="ytm-main-col">
-          <div class="ytm-hero-card">
-            <div class="ytm-hero-glow"></div>
-            <label class="ytm-hero-label">Fonte do vídeo</label>
-            <div class="ps-toggle-group" style="margin-bottom:14px">
-              <button class="ps-toggle-btn active" data-source="url">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                URL
-              </button>
-              <button class="ps-toggle-btn" data-source="upload" disabled>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Upload
-              </button>
-            </div>
-            <div class="ytm-hero-field">
-              <svg class="ytm-hero-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 0-3.77-2.7C13.62 4 12 4 12 4s-1.62 0-3.82.04a4.83 4.83 0 0 0-3.77 2.7A26.18 26.18 0 0 0 4 12a26.18 26.18 0 0 0 .41 5.31 4.83 4.83 0 0 0 3.77 2.7C10.38 20 12 20 12 20s1.62 0 3.82-.04a4.83 4.83 0 0 0 3.77-2.7A26.18 26.18 0 0 0 20 12a26.18 26.18 0 0 0-.41-5.31zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
-              <input id="videoUrl" type="url" class="ytm-hero-input" placeholder="https://youtube.com/watch?v=...">
-            </div>
-            <p class="ytm-hero-hint">Cole o link — a IA identifica os melhores momentos para cortar.</p>
+      <section class="ytm-creator-shell" aria-labelledby="ytmCreatorTitle">
+        <div class="ytm-identity-card">
+          <div class="ytm-identity-copy">
+            <div class="ytm-eyebrow"><span class="ytm-eyebrow-dot"></span> YOUTUBER · VIDEO CREATOR</div>
+            <h2 id="ytmCreatorTitle" class="ytm-identity-title">Transforme uma ideia em <em>audiência</em>.</h2>
+            <p>Escolha um vídeo. A IA encontra os melhores momentos, prepara cortes e deixa o conteúdo pronto para publicar.</p>
           </div>
+          <picture class="ytm-identity-art" aria-hidden="true">
+            <source media="(max-width: 639px)" srcset="{{ url_for('static', filename='img/modules/youtuber-256.webp') }}">
+            <source media="(max-width: 1100px)" srcset="{{ url_for('static', filename='img/modules/youtuber-512.webp') }}">
+            <img src="{{ url_for('static', filename='img/modules/youtuber-512.webp') }}" width="512" height="512" alt="" decoding="async" fetchpriority="high">
+          </picture>
+        </div>
 
-          <!-- CONFIGURAÇÕES AVANÇADAS -->
-          <div class="ps-accordion ytm-accordion">
-            <button class="ps-accordion-toggle" id="advToggleBtn">
-              <span class="ps-accordion-toggle-left">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-                Contexto do nicho (opcional)
-              </span>
-              <svg class="ps-accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="ytm-create-card">
+          <div class="ytm-step-kicker">1 · VÍDEO</div>
+          <h3>Cole o vídeo que você quer transformar</h3>
+          <p class="ytm-step-copy">YouTube funciona agora. Upload local ficará disponível em breve.</p>
+
+          <div class="ps-toggle-group ytm-source-toggle" aria-label="Fonte do vídeo">
+            <button class="ps-toggle-btn active" data-source="url" aria-pressed="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              YouTube
             </button>
-            <div class="ps-accordion-body" id="advBody" hidden>
-              <div class="ps-field">
-                <span class="ps-field-icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                </span>
-                <input id="nicheProducao" type="text" class="ps-field-input" placeholder="ex: finanças pessoais, programação, fitness...">
-              </div>
-              <p class="ytm-hero-hint">Melhora a identificação de highlights virais pela IA.</p>
-            </div>
+            <button class="ps-toggle-btn" data-source="upload" disabled aria-disabled="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload
+            </button>
           </div>
 
-          <div class="error-box" id="prodErrorBox" hidden></div>
+          <label class="ytm-input-label" for="videoUrl">URL do vídeo</label>
+          <div class="ytm-hero-field">
+            <svg class="ytm-hero-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 0-3.77-2.7C13.62 4 12 4 12 4s-1.62 0-3.82.04a4.83 4.83 0 0 0-3.77 2.7A26.18 26.18 0 0 0 4 12a26.18 26.18 0 0 0 .41 5.31 4.83 4.83 0 0 0 3.77 2.7C10.38 20 12 20 12 20s1.62 0 3.82-.04a4.83 4.83 0 0 0 3.77-2.7A26.18 26.18 0 0 0 20 12a26.18 26.18 0 0 0-.41-5.31zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
+            <input id="videoUrl" type="url" class="ytm-hero-input" inputmode="url" autocomplete="url" placeholder="https://youtube.com/watch?v=...">
+          </div>
+          <p class="ytm-hero-hint">A IA identifica hooks, insights, emoção e os momentos com maior potencial de retenção.</p>
+        </div>
 
-          <button class="est-generate-btn" id="gerarClipsBtn">
+        <div class="ytm-create-card ytm-essentials-card">
+          <div class="ytm-step-kicker">2 · FORMATO</div>
+          <h3>Como você quer os cortes?</h3>
+          <div class="ytm-essential-grid">
+            <div class="ytm-setting-group">
+              <div class="est-param-label">Tipo de conteúdo</div>
+              <div class="ps-toggle-group" id="contentTypeGroup">
+                <button class="ps-toggle-btn active" data-ctype="shorts" aria-pressed="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                  Shorts
+                </button>
+                <button class="ps-toggle-btn" data-ctype="cortes" aria-pressed="false">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  Cortes
+                </button>
+              </div>
+            </div>
+
+            <div class="ytm-setting-group">
+              <div id="shortsInfo" class="ytm-ctype-info">
+                <div class="est-param-label">Duração</div>
+                <div class="ps-toggle-group est-toggle-sm" id="shortsDurGroup">
+                  <button class="ps-toggle-btn" data-dur="shorts_30" aria-pressed="false">30s</button>
+                  <button class="ps-toggle-btn active" data-dur="shorts_45" aria-pressed="true">45s</button>
+                  <button class="ps-toggle-btn" data-dur="shorts_90" aria-pressed="false">1:30</button>
+                </div>
+                <div class="est-param-desc">Vertical e autocontido — Shorts, Reels e TikTok.</div>
+              </div>
+              <div id="cortesInfo" class="ytm-ctype-info" hidden>
+                <div class="est-param-label">Duração</div>
+                <div class="ps-toggle-group est-toggle-sm" id="cortesDurGroup">
+                  <button class="ps-toggle-btn active" data-dur="corte_120" aria-pressed="true">2 min</button>
+                  <button class="ps-toggle-btn" data-dur="corte_300" aria-pressed="false">5 min</button>
+                  <button class="ps-toggle-btn" data-dur="corte_600" aria-pressed="false">10 min</button>
+                  <button class="ps-toggle-btn" data-dur="corte_900" aria-pressed="false">15 min</button>
+                </div>
+                <div class="est-param-desc">Para entrevistas, podcasts e explicações completas.</div>
+              </div>
+            </div>
+
+            <div class="ytm-setting-group">
+              <label class="est-param-label" for="numClips">Quantidade</label>
+              <input id="numClips" type="number" min="1" max="15" value="3" class="ytm-num-input" inputmode="numeric">
+              <div class="est-param-desc">De 1 a 15. Em branco, a IA decide.</div>
+            </div>
+
+            <div class="ytm-setting-group">
+              <div class="est-param-label">Idioma</div>
+              <div class="ps-toggle-group ytm-lang-toggle" role="group" aria-label="Idioma do conteúdo">
+                <button class="ps-toggle-btn active" data-lang="pt" aria-pressed="true">Português</button>
+                <button class="ps-toggle-btn" data-lang="en" aria-pressed="false">English</button>
+                <button class="ps-toggle-btn" data-lang="es" aria-pressed="false">Español</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ps-accordion ytm-accordion ytm-advanced">
+          <button class="ps-accordion-toggle" id="advToggleBtn" aria-expanded="false" aria-controls="advBody">
+            <span class="ps-accordion-toggle-left">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              Opções avançadas
+            </span>
+            <span class="ytm-advanced-summary">Legenda, tradução, nicho e fechamento</span>
+            <svg class="ps-accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="ps-accordion-body ytm-advanced-body" id="advBody" hidden>
+            <div class="ytm-advanced-grid">
+              <div class="ytm-setting-group ytm-setting-wide">
+                <label class="est-param-label" for="nicheProducao">Contexto do nicho <span>(opcional)</span></label>
+                <div class="ps-field">
+                  <span class="ps-field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+                  <input id="nicheProducao" type="text" class="ps-field-input" placeholder="ex: finanças pessoais, programação, fitness...">
+                </div>
+                <div class="est-param-desc">Ajuda a IA a reconhecer momentos relevantes para o seu público.</div>
+              </div>
+
+              <div class="ytm-setting-group">
+                <div class="est-param-label">Legenda no vídeo</div>
+                <label class="ytm-legenda-toggle">
+                  <input type="checkbox" id="gerarLegenda" checked>
+                  <span>Gerar legenda queimada</span>
+                </label>
+                <div id="legendaIdiomaWrap" class="ytm-legenda-idioma">
+                  <label class="est-param-desc" for="legendaIdioma">Tradução da legenda</label>
+                  <select id="legendaIdioma" class="est-theme-input">
+                    <option value="">Não traduzir</option>
+                    <option value="pt">Português</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="ytm-setting-group">
+                <div class="est-param-label">Identidade / fechamento</div>
+                <label class="ytm-legenda-toggle">
+                  <input type="checkbox" id="adicionarFechamento" checked>
+                  <span>Adicionar vídeo de fechamento</span>
+                </label>
+                <div class="est-param-desc">Usa o fechamento configurado no projeto e adapta a resolução automaticamente.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-box" id="prodErrorBox" hidden></div>
+
+        <div class="ytm-action-zone">
+          <button class="est-generate-btn ytm-primary-action" id="gerarClipsBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
             <span>Gerar Clips</span>
           </button>
           <p class="est-cost-hint">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Duração máxima: 20 min de vídeo
+            Vídeos de até 20 minutos
           </p>
         </div>
-
-        <!-- COLUNA LATERAL: parâmetros -->
-        <aside class="est-side-col">
-          <div class="est-param-block">
-            <div class="est-param-label">Tipo de conteúdo</div>
-            <div class="ps-toggle-group" id="contentTypeGroup">
-              <button class="ps-toggle-btn active" data-ctype="shorts">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
-                Shorts
-              </button>
-              <button class="ps-toggle-btn" data-ctype="cortes">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                Cortes
-              </button>
-            </div>
-
-            <div id="shortsInfo" class="ytm-ctype-info">
-              <div class="est-param-label" style="margin-top:12px">Duração</div>
-              <div class="ps-toggle-group est-toggle-sm" id="shortsDurGroup">
-                <button class="ps-toggle-btn active" data-dur="shorts_30">30s</button>
-                <button class="ps-toggle-btn" data-dur="shorts_45">45s</button>
-                <button class="ps-toggle-btn" data-dur="shorts_90">1:30</button>
-              </div>
-              <div class="est-param-desc">Vertical, autocontido — Reels, Shorts, TikTok.</div>
-            </div>
-            <div id="cortesInfo" class="ytm-ctype-info" hidden>
-              <div class="est-param-label" style="margin-top:12px">Duração</div>
-              <div class="ps-toggle-group est-toggle-sm" id="cortesDurGroup">
-                <button class="ps-toggle-btn active" data-dur="corte_120">2 min</button>
-                <button class="ps-toggle-btn" data-dur="corte_300">5 min</button>
-                <button class="ps-toggle-btn" data-dur="corte_600">10 min</button>
-                <button class="ps-toggle-btn" data-dur="corte_900">15 min</button>
-              </div>
-              <div class="est-param-desc">Entrevistas, podcasts e explicações completas.</div>
-            </div>
-          </div>
-
-          <div class="est-param-block">
-            <div class="est-param-label">Quantidade de cortes</div>
-            <input id="numClips" type="number" min="1" max="15" value="3" class="ytm-num-input">
-            <div class="est-param-desc">1 a 15. Deixe em branco para a IA decidir.</div>
-          </div>
-
-          <div class="est-param-block">
-            <div class="est-param-label">Idioma</div>
-            <div class="ps-toggle-group est-toggle-vertical">
-              <button class="ps-toggle-btn active" data-lang="pt">Português</button>
-              <button class="ps-toggle-btn" data-lang="en">English</button>
-              <button class="ps-toggle-btn" data-lang="es">Español</button>
-            </div>
-          </div>
-
-          <div class="est-param-block">
-            <div class="est-param-label">Legenda queimada</div>
-            <label class="ytm-legenda-toggle">
-              <input type="checkbox" id="gerarLegenda" checked>
-              <span>Gerar legenda no vídeo (Shorts)</span>
-            </label>
-            <div id="legendaIdiomaWrap" class="ytm-legenda-idioma">
-              <div class="est-param-desc" style="margin-bottom:6px">Traduzir legenda para (opcional — útil se o vídeo fonte está em outro idioma):</div>
-              <select id="legendaIdioma" class="est-theme-input">
-                <option value="">Não traduzir (idioma original do vídeo)</option>
-                <option value="pt">Português</option>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="est-param-block">
-            <div class="est-param-label">Identidade / fechamento</div>
-            <label class="ytm-legenda-toggle">
-              <input type="checkbox" id="adicionarFechamento" checked>
-              <span>Colar vídeo de fechamento no final (Shorts + Cortes)</span>
-            </label>
-            <div class="est-param-desc">Usa <code>static/video/fechamento.mp4</code> — ajusta a resolução sozinho pra não distorcer.</div>
-          </div>
-        </aside>
-      </div>
+      </section>
 
       <!-- Pipeline -->
       <section id="prodPipeline" hidden class="est-pipeline-section">
@@ -398,6 +421,6 @@
 
   </main>
 
-  <script src="{{ url_for('static', filename='js/youtuber.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/youtuber.js') }}" defer></script>
 </body>
 </html>

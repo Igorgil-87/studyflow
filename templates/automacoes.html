@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Automações</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     .automacoes-launch{background:var(--surface);border-radius:16px;padding:40px;
@@ -23,10 +21,12 @@
     .automacoes-note{font-size:12px;color:var(--text-3);margin-top:6px;max-width:420px;line-height:1.5}
   </style>
 </head>
-<body>
+<body data-module="neutral">
   <div class="grain"></div>
 
-  <aside class="sidebar">
+  {% include 'partials/_mobile_header.html' %}
+
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -48,11 +48,11 @@
       </div>
       <h2>Editor de fluxos n8n</h2>
       <p>O n8n roda como um serviço próprio, isolado. Abre num clique — todos os fluxos e credenciais ficam salvos lá, com seu próprio login.</p>
-      <a href="http://localhost:5678" target="_blank" rel="noopener" class="automacoes-launch-btn">
+      <a href="{{ n8n_url|default('/n8n') }}" target="_blank" rel="noopener" class="automacoes-launch-btn">
         Abrir n8n
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
       </a>
-      <p class="automacoes-note">Abre em outra aba (não como um quadro dentro dessa tela) — o editor completo do n8n tem bugs conhecidos e não resolvidos quando embutido em iframe atrás de um proxy, então optamos pelo caminho confiável.</p>
+      <p class="automacoes-note">Abre em outra aba — o editor completo do n8n tem bugs conhecidos e não resolvidos quando embutido em iframe atrás de um proxy, então optamos pelo caminho confiável.</p>
     </div>
   </main>
 </body>

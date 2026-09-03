@@ -58,17 +58,19 @@ def montar_material_e_claims(
 
     if chunks:
         material = "\n\n---\n\n".join(c["text"] for c in chunks)
-        claims = [
-            {
+        claims = []
+        for c in chunks:
+            meta = c.get("metadata") or {}
+            claims.append({
                 "claim_text": c["text"][:500],
                 "tipo": "fonte",
                 "doc_id": source_doc_id,
-                "chunk_id": str(c.get("start", "")),
-                "page": None,  # documento não tem página real indexada (ver rag/index.py)
-                "section": None,
-            }
-            for c in chunks
-        ]
+                "chunk_id": str(meta.get("chunk_id", c.get("start", ""))),
+                "page": meta.get("page"),
+                "section": meta.get("section") or (f"Slide {meta.get('slide')}" if meta.get("slide") is not None else None),
+                "source_name": meta.get("source_name"),
+                "score": c.get("score"),
+            })
         return material, claims
 
     claims = [{

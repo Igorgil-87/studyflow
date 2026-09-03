@@ -92,8 +92,12 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      mpt-api:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/healthz', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   worker:
     build: .
@@ -150,10 +154,11 @@ services:
 
   # ─────────────── MoneyPrinterTurbo (motor do Módulo Criador) ───────────────
   mpt-api:
+    profiles: ["mpt"]
     build:
       # aponta para a pasta do MoneyPrinter ao lado deste projeto.
       # Se a pasta tiver outro nome, ajuste aqui.
-      context: ../MoneyPrinterTurbo-main
+      context: ${MPT_DIR:-../MoneyPrinterTurbo-main}
       dockerfile: Dockerfile
       args:
         # usa mirrors padrão (não os da China, que vêm no default do projeto)
@@ -166,7 +171,7 @@ services:
       - "8080:8080"
     volumes:
       # monta o config.toml e a pasta do projeto (onde ele salva os vídeos)
-      - ../MoneyPrinterTurbo-main:/MoneyPrinterTurbo
+      - ${MPT_DIR:-../MoneyPrinterTurbo-main}:/MoneyPrinterTurbo
     healthcheck:
       # /ping existe no código do MPT mas nunca é registrado em app/router.py
       # nesta versão (v1.3.2) — sempre daria 404. /openapi.json é gerado

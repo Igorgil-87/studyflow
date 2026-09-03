@@ -4,29 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Catálogo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-  <div class="grain"></div>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Flow · Módulo Curso</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+<body data-module="study">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -79,22 +66,33 @@
         </div>
         <div class="cat-grid" id="catGrid">
           {% for curso in cursos %}
-          <article class="cat-card" data-cat="{{ curso.categoria }}" data-nivel="{{ curso.nivel }}">
-            <div class="cat-card-tags">
-              <span class="cat-tag">CURSO</span>
-              <span class="cat-tag cat-tag-h">🕐 {{ curso.horas }}h</span>
-            </div>
-            <div class="cat-card-cat">{{ curso.categoria|upper }}</div>
-            <h3 class="cat-card-title">{{ curso.titulo }}</h3>
-            <p class="cat-card-desc">{{ curso.desc }}</p>
-            <div class="cat-card-foot">
-              <span class="cat-card-nivel">{{ curso.nivel }}</span>
-              <span class="cat-card-line"></span>
+          <article class="cat-card{% if curso.gerado %} cat-card-generated{% endif %}" data-cat="{{ curso.categoria }}" data-nivel="{{ curso.nivel }}"{% if curso.gerado %} role="link" tabindex="0" data-href="{{ url_for('curso_salvo_page', course_id=curso.id) }}"{% endif %}>
+            {% if curso.imagem %}
+            <div class="cat-card-cover"><img src="{{ curso.imagem }}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>
+            {% endif %}
+            <div class="cat-card-body">
+              <div class="cat-card-tags">
+                <span class="cat-tag">{% if curso.gerado %}MEU CURSO{% else %}CURSO{% endif %}</span>
+                {% if curso.horas %}<span class="cat-tag cat-tag-h">🕐 {{ curso.horas }}h</span>{% endif %}
+              </div>
+              <div class="cat-card-cat">{{ curso.categoria|upper }}</div>
+              <h3 class="cat-card-title">{{ curso.titulo }}</h3>
+              {% if curso.autor %}<div class="cat-card-author">por {{ curso.autor }}</div>{% endif %}
+              <p class="cat-card-desc">{{ curso.desc }}</p>
+              <div class="cat-card-foot">
+                <span class="cat-card-nivel">{{ curso.nivel }}</span>
+                <span class="cat-card-line"></span>
+              </div>
             </div>
           </article>
           {% endfor %}
         </div>
-        <div class="cat-empty" id="catEmpty" hidden>Nenhum curso com esses filtros. Ajuste a seleção à esquerda.</div>
+        <div class="cat-empty ux-empty-state" id="catEmpty" hidden>
+          <div class="ux-empty-state-icon" aria-hidden="true">⌕</div>
+          <h3>Nenhum curso corresponde a estes filtros</h3>
+          <p>Remova uma categoria ou nível para ampliar os resultados.</p>
+          <button class="ux-action ux-action-secondary ux-empty-state-action" id="catClearFilters" type="button">Limpar filtros</button>
+        </div>
       </div>
     </div>
   </main>
@@ -107,6 +105,11 @@
       const nivelBoxes = Array.from(document.querySelectorAll('.f-nivel'));
       const count = document.getElementById('catCount');
       const empty = document.getElementById('catEmpty');
+      cards.filter(card=>card.dataset.href).forEach(card=>{
+        const go=()=>window.location.href=card.dataset.href;
+        card.addEventListener('click',go);
+        card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+      });
       function apply(){
         const cats = catBoxes.filter(b=>b.checked).map(b=>b.value);
         const nivs = nivelBoxes.filter(b=>b.checked).map(b=>b.value);
@@ -122,6 +125,10 @@
         empty.hidden = visible > 0;
       }
       [...catBoxes, ...nivelBoxes].forEach(b=>b.addEventListener('change', apply));
+      document.getElementById('catClearFilters').addEventListener('click', ()=>{
+        [...catBoxes, ...nivelBoxes].forEach(b=>b.checked=false);
+        apply();
+      });
     })();
   </script>
 </body>

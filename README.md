@@ -118,3 +118,18 @@ O quiz é salvo em `output/quizzes/quiz_<tema>_<timestamp>.json`:
    from langchain_anthropic import ChatAnthropic
    ```
 4. No `.env`, defina `ANTHROPIC_API_KEY` e `LLM_MODEL=claude-3-5-sonnet-20241022`
+
+---
+
+## GenAI Case Cockpit
+
+Para a apresentação técnica do case de IA generativa, acesse `/case`. O cockpit consolida problema de negócio, arquitetura, matriz requisito→implementação→evidência, Quality Gates, RAG, Responsible AI, AI Gateway e Production Health sem disparar chamadas pagas de LLM ao abrir a página.
+
+Documentação dedicada: `docs/case/README_CASE.md`.
+
+Pré-checks antes da apresentação:
+
+```bash
+python scripts/verify_reproducibility.py
+python scripts/verify_case_coverage.py
+```

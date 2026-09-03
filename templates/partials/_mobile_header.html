@@ -1,0 +1,20 @@
+<header class="mobile-app-bar" aria-label="Navegação móvel">
+  <a class="mobile-app-brand" href="/" aria-label="StudyFlow — Início">
+    <span class="mobile-app-brand-mark" aria-hidden="true">◐</span>
+    <span class="mobile-app-brand-name">Study<em>Flow</em></span>
+  </a>
+  <button
+    class="mobile-nav-toggle"
+    id="mobileNavToggle"
+    type="button"
+    aria-label="Abrir menu"
+    aria-controls="appSidebar"
+    aria-expanded="false"
+  >
+    <span aria-hidden="true"></span>
+    <span aria-hidden="true"></span>
+    <span aria-hidden="true"></span>
+  </button>
+</header>
+<div class="mobile-nav-backdrop" id="mobileNavBackdrop" hidden></div>
+<script src="{{ url_for('static', filename='js/navigation.js') }}" defer></script>

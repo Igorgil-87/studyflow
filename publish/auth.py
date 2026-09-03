@@ -15,6 +15,7 @@ autorização é uma ação sua, no seu navegador, com a sua conta.
 
 from __future__ import annotations
 
+import json
 import os
 
 from . import config
@@ -30,13 +31,23 @@ def get_credentials():
     from google.auth.transport.requests import Request
     from google.auth.exceptions import RefreshError
 
-    if not os.path.exists(config.TOKEN_FILE):
+    if not os.path.exists(config.TOKEN_FILE) or os.path.getsize(config.TOKEN_FILE) == 0:
+        # Cobre tanto o arquivo realmente ausente quanto o caso comum no
+        # Docker local: montar um bind mount de um arquivo que não existe
+        # no host faz o Docker criar um arquivo VAZIO no lugar (sem avisar
+        # nada) — o app.exists() dá True, mas o JSON dentro está vazio.
         raise NotAuthenticatedError(
-            f"Token não encontrado ({config.TOKEN_FILE}). "
+            f"Token ausente ou vazio ({config.TOKEN_FILE}). "
             "Rode: python -m publish.auth"
         )
 
-    creds = Credentials.from_authorized_user_file(config.TOKEN_FILE, config.SCOPES)
+    try:
+        creds = Credentials.from_authorized_user_file(config.TOKEN_FILE, config.SCOPES)
+    except (ValueError, json.JSONDecodeError) as e:
+        raise NotAuthenticatedError(
+            f"Token corrompido ou inválido em {config.TOKEN_FILE} ({e}). "
+            "Rode de novo: python -m publish.auth"
+        ) from e
     if not creds.valid:
         if creds.expired and creds.refresh_token:
             try:

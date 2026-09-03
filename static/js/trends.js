@@ -180,79 +180,35 @@ function buildCrossCard(theme) {
 
 // ── category filter ───────────────────────────────────────────────────────────
 function applyFilter(cat) {
+  const changed = activeCat !== cat;
   activeCat = cat;
+  if (changed) _trackTrendUx('trend_filter_used');
   document.querySelectorAll('.gt-cat-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.cat === cat);
+    const selected = b.dataset.cat === cat;
+    b.classList.toggle('active', selected);
+    b.setAttribute('aria-pressed', String(selected));
   });
   renderEditorial();
   updateTrendsHeader();
 }
 
-// ── Layout editorial: hero + manchetes empilhadas (estilo jornal) ──
+// ── Sprint 5: sistema único e escaneável de cards de tendência ────────────────
 function renderEditorial() {
   const grid = $('gtTrendsGrid');
   if (!grid) return;
   let items = allTrends.slice();
   if (activeCat !== 'todos') items = items.filter(i => i.category === activeCat);
-  items.sort((a, b) => (b.trend.viral_score || 0) - (a.trend.viral_score || 0));
+  items.sort((a, b) => (b.trend.oportunidade_score || 0) - (a.trend.oportunidade_score || 0));
 
-  if (!items.length) { grid.innerHTML = ''; return; }
-
-  const hero = items[0];
-  const rest = items.slice(1);
-
-  grid.className = 'nx-portal';
+  grid.className = 'ux-trend-list';
   grid.innerHTML = '';
+  const filterEmpty = $('gtFilterEmpty');
+  if (filterEmpty) filterEmpty.hidden = items.length > 0 || allTrends.length === 0;
+  if (!items.length) return;
 
-  // manchete de destaque (largura total)
-  grid.appendChild(buildHero(hero.category, hero.trend));
-
-  // demais tendências em GRADE de cards (preenche a largura)
-  if (rest.length) {
-    const sec = el('section', 'nx-portal-section');
-    sec.innerHTML = '<div class="nx-portal-head"><span class="nx-kicker-red">MAIS TENDÊNCIAS</span></div>';
-    const cardGrid = el('div', 'nx-card-grid');
-    rest.forEach(({ category, trend }) => cardGrid.appendChild(buildTrendNewsCard(category, trend)));
-    sec.appendChild(cardGrid);
-    grid.appendChild(sec);
-  }
-}
-
-// card de tendência estilo "TREND INSIGHTS" (badge + thumb + título + métricas)
-function buildTrendNewsCard(category, trend) {
-  const card = el('article', 'ti-card');
-  const icon = CAT_ICONS[category] || '•';
-  const label = (CAT_LABELS[category] || category);
-  const score = trend.viral_score || 0;
-
-  // badge de status conforme o score (estilo do design system)
-  let badge = '<span class="ti-badge ti-badge-hot">🔥 EM ALTA</span>';
-  if (score >= 90) badge = '<span class="ti-badge ti-badge-live">● AO VIVO</span>';
-  else if (score >= 75) badge = '<span class="ti-badge ti-badge-up">↗ SUBINDO</span>';
-  else badge = '<span class="ti-badge ti-badge-new">☆ NOVO</span>';
-
-  const insight = (trend.insight || '').slice(0, 120);
-  card.innerHTML = `
-    <div class="ti-card-thumb">
-      ${badge}
-      <span class="ti-card-thumb-emoji">${icon}</span>
-    </div>
-    <div class="ti-card-body">
-      <h3 class="ti-card-title">${escapeHtml(trend.titulo || '')}</h3>
-      <p class="ti-card-sub">${escapeHtml(insight)}${(trend.insight || '').length > 120 ? '…' : ''}</p>
-      <div class="ti-card-meta">
-        <span class="ti-card-source">${icon} ${escapeHtml(label)}</span>
-        <span class="ti-card-score">🔥 ${score}</span>
-      </div>
-      ${_sourceLinks(trend)}
-      <div class="ti-card-foot">
-        <span class="ti-card-trend">↗ Em alta agora</span>
-        <button class="ti-card-cta">Criar conteúdo</button>
-      </div>
-    </div>`;
-  card.querySelector('.ti-card-cta').addEventListener('click', () => _goCreate(category, trend));
-  card.querySelector('.ti-card-title').addEventListener('click', () => _goCreate(category, trend));
-  return card;
+  items.forEach(({ category, trend }, index) => {
+    grid.appendChild(buildOpportunityCard(category, trend, index === 0));
+  });
 }
 
 function _briefingFromTrend(category, trend) {
@@ -275,55 +231,170 @@ function _goCreate(category, trend) {
   window.location.href = '/youtuber';
 }
 
-function _sourceLinks(trend) {
-  const links = (trend.links || []).filter(l => l && l.url).slice(0, 4);
+function _sourceLinks(trend, detailed = false) {
+  const links = (trend.links || []).filter(l => l && l.url).slice(0, detailed ? 8 : 4);
   if (!links.length) return '';
-  return `<div class="nx-sources">${links.map(l => {
+  return `<div class="ux-trend-sources${detailed ? ' is-detailed' : ''}">${links.map(l => {
     let host = ''; try { host = new URL(l.url).hostname.replace('www.', ''); } catch {}
     const label = (l.title && l.title.length > 3) ? l.title : (host || 'fonte');
-    return `<a class="nx-source" href="${l.url}" target="_blank" rel="noopener">${escapeHtml(label.length > 46 ? label.slice(0,46)+'…' : label)}</a>`;
+    const source = l.source ? String(l.source).replace(/[_-]/g, ' ') : host;
+    return `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" data-trend-source-link="1"><span class="ux-source-name">${escapeHtml(source || 'Fonte')}</span><strong>${escapeHtml(label.length > 96 ? label.slice(0,96)+'…' : label)}</strong><span class="ux-source-host">${escapeHtml(host)}</span></a>`;
   }).join('')}</div>`;
 }
 
-function buildHero(category, trend) {
-  const wrap = el('article', 'nx-hero');
-  const icon = CAT_ICONS[category] || '•';
-  const label = (CAT_LABELS[category] || category).toUpperCase();
-  const score = trend.viral_score || 0;
-  wrap.innerHTML = `
-    <div class="nx-hero-kicker"><span class="nx-kicker-red">${icon} ${escapeHtml(label)}</span>
-      <span class="nx-hero-badge">DESTAQUE</span></div>
-    <h2 class="nx-hero-title">${escapeHtml(trend.titulo || '')}</h2>
-    <p class="nx-hero-standfirst">${escapeHtml(trend.insight || '')}</p>
-    ${trend.angulo ? `<p class="nx-hero-angle"><span class="nx-angle-tag">ÂNGULO</span> ${escapeHtml(trend.angulo)}</p>` : ''}
-    <div class="nx-hero-meta">
-      <span class="nx-metric"><b>${score}</b> viral</span>
-      ${trend.oportunidade_score ? `<span class="nx-metric"><b>${trend.oportunidade_score}</b> oportunidade</span>` : ''}
-      ${trend.polemica_score ? `<span class="nx-metric nx-metric-hot"><b>${trend.polemica_score}</b> polêmica</span>` : ''}
-    </div>
-    ${_sourceLinks(trend)}
-    <button class="nx-cta">▶ Criar conteúdo sobre isso</button>`;
-  wrap.querySelector('.nx-cta').addEventListener('click', () => _goCreate(category, trend));
-  return wrap;
+function _trackTrendUx(event) {
+  try {
+    fetch('/api/ux/events', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({event, page:'trends'}), keepalive:true}).catch(()=>{});
+  } catch { /* analytics nunca bloqueia a tarefa */ }
 }
 
-function buildHeadlineRow(category, trend) {
-  const row = el('article', 'nx-headline');
+function _sensitiveTrendContext(category, trend) {
+  const text = `${category || ''} ${trend.titulo || ''} ${trend.insight || ''} ${trend.angulo || ''}`.toLowerCase();
+  const categoryReason = {
+    politica: 'política e assuntos públicos',
+    economia: 'economia e finanças',
+    ciencia: 'ciência',
+    fitness: 'saúde e bem-estar',
+  }[category];
+  const keywordGroups = [
+    { reason: 'saúde e bem-estar', words: ['saúde','saude','médic','medic','doença','doenca','tratamento','vacina','nutrição','nutricao','suplement','diagnóstico','diagnostico'] },
+    { reason: 'finanças', words: ['investimento','ações','acoes','bolsa','juros','crédito','credito','financiamento','bitcoin','cripto','renda fixa'] },
+    { reason: 'segurança', words: ['segurança','seguranca','ataque','vulnerabilidade','malware','ransomware','ciber'] },
+  ];
+  const keywordReason = keywordGroups.find(g => g.words.some(w => text.includes(w)))?.reason;
+  const reason = categoryReason || keywordReason;
+  return reason ? { sensitive: true, reason } : { sensitive: false, reason: '' };
+}
+
+function _trustNotice(context, sourceCount) {
+  if (!context.sensitive) return '';
+  const evidence = sourceCount
+    ? `${sourceCount} ${sourceCount === 1 ? 'fonte verificável está disponível' : 'fontes verificáveis estão disponíveis'} nesta análise.`
+    : 'Nenhuma fonte verificável foi retornada nesta análise.';
+  return `<aside class="ux-trust-notice" aria-label="Atenção para verificação">
+    <strong>Confira as fontes antes de publicar ou tomar decisões</strong>
+    <p>Este assunto envolve ${escapeHtml(context.reason)}. A IA resume e interpreta os sinais disponíveis, mas pode deixar contexto importante de fora. ${escapeHtml(evidence)}</p>
+    ${sourceCount ? '<button type="button" class="ux-trust-sources-link">Ver fontes</button>' : ''}
+  </aside>`;
+}
+
+function _trendDetailModal(category, trend, potential) {
+  const label = CAT_LABELS[category] || category;
   const icon = CAT_ICONS[category] || '•';
-  const label = (CAT_LABELS[category] || category).toUpperCase();
-  const score = trend.viral_score || 0;
-  row.innerHTML = `
-    <div class="nx-headline-main">
-      <div class="nx-headline-kicker"><span class="nx-kicker-red">${icon} ${escapeHtml(label)}</span>
-        <span class="nx-headline-score">${score} viral</span></div>
-      <h3 class="nx-headline-title">${escapeHtml(trend.titulo || '')}</h3>
-      <p class="nx-headline-sub">${escapeHtml(trend.insight || '')}</p>
-      ${_sourceLinks(trend)}
+  const links = (trend.links || []).filter(l => l && l.url);
+  const trustContext = _sensitiveTrendContext(category, trend);
+  const overlay = el('div', 'ux-trend-modal-overlay');
+  overlay.setAttribute('role', 'presentation');
+  const modal = el('section', 'ux-trend-modal');
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-labelledby', 'uxTrendModalTitle');
+  modal.setAttribute('aria-describedby', 'uxTrendModalDescription');
+  modal.innerHTML = `
+    <div class="ux-trend-modal-head">
+      <div><span class="ux-trend-category">${icon} ${escapeHtml(label)}</span><h2 id="uxTrendModalTitle">${escapeHtml(trend.titulo || 'Análise da tendência')}</h2></div>
+      <button class="ux-trend-modal-close" type="button" aria-label="Fechar análise">×</button>
     </div>
-    <button class="nx-headline-cta" title="Criar conteúdo">＋</button>`;
-  row.querySelector('.nx-headline-cta').addEventListener('click', () => _goCreate(category, trend));
-  row.querySelector('.nx-headline-title').addEventListener('click', () => _goCreate(category, trend));
-  return row;
+    <div class="ux-trend-modal-body" id="uxTrendModalDescription">
+      ${_trustNotice(trustContext, links.length)}
+      <div class="ux-provenance-legend" aria-label="Como ler esta análise"><span class="is-source">↗ Fonte disponível</span><span>◇ Leitura da IA</span><span>✦ Ideia sugerida pela IA</span></div>
+      <section class="ux-analysis-section">
+        <span class="ux-analysis-kicker">Resumo</span>
+        <div class="ux-analysis-meta">${potential ? `<span>Potencial: <strong>${escapeHtml(potential.label)}</strong> · estimativa da IA</span>` : ''}</div>
+        <p>${escapeHtml(trend.insight || 'Não há síntese adicional disponível para esta tendência.')}</p>
+        <span class="ux-content-origin is-ai">Síntese da IA</span>
+      </section>
+      <section class="ux-analysis-section">
+        <span class="ux-analysis-kicker">Por que olhar para este assunto?</span>
+        <p>${escapeHtml(trend.insight || 'Os dados atuais não trazem explicação suficiente para afirmar por que este tema está crescendo.')}</p>
+        <span class="ux-content-origin is-ai">Leitura da IA com base nos sinais disponíveis</span>
+      </section>
+      <section class="ux-analysis-section">
+        <span class="ux-analysis-kicker" id="uxTrendEvidenceHeading">Fontes para conferir</span>
+        ${links.length ? `<p class="ux-analysis-help">Abra as fontes originais para conferir o contexto. O texto acima é uma síntese da IA, não uma citação das páginas.</p>${_sourceLinks(trend, true)}` : '<div class="ux-analysis-empty">Nenhuma fonte verificável foi retornada para esta tendência.</div>'}
+        <span class="ux-content-origin is-source">Fontes originais disponíveis</span>
+      </section>
+      <section class="ux-analysis-section">
+        <span class="ux-analysis-kicker">Uma forma de abordar</span>
+        ${trend.angulo ? `<p>${escapeHtml(trend.angulo)}</p><span class="ux-content-origin is-creative">Ideia sugerida pela IA</span>` : '<div class="ux-analysis-empty">Nenhum ângulo de conteúdo foi gerado para esta tendência.</div>'}
+      </section>
+    </div>
+    <div class="ux-trend-modal-actions">
+      <button class="ux-btn-secondary ux-action ux-action-secondary ux-trend-modal-dismiss" data-action-level="secondary" type="button">Voltar às tendências</button>
+      <button class="ux-btn-primary ux-action ux-action-primary ux-trend-modal-create" data-action-level="primary" type="button">Criar conteúdo com esta ideia <span aria-hidden="true">→</span></button>
+    </div>`;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  document.body.classList.add('ux-modal-open');
+  _trackTrendUx('trend_opened');
+  const previousFocus = document.activeElement;
+  const close = () => { document.body.classList.remove('ux-modal-open'); overlay.remove(); if (previousFocus && previousFocus.focus) previousFocus.focus(); };
+  modal.querySelector('.ux-trend-modal-close').addEventListener('click', close);
+  modal.querySelector('.ux-trend-modal-dismiss').addEventListener('click', close);
+  modal.querySelector('.ux-trend-modal-create').addEventListener('click', () => { _trackTrendUx('trend_create_content_clicked'); _goCreate(category, trend); });
+  modal.querySelectorAll('[data-trend-source-link]').forEach(a => a.addEventListener('click', () => _trackTrendUx('trend_sources_opened')));
+  const trustSourcesBtn = modal.querySelector('.ux-trust-sources-link');
+  if (trustSourcesBtn) trustSourcesBtn.addEventListener('click', () => { modal.querySelector('#uxTrendEvidenceHeading')?.scrollIntoView({behavior:'smooth', block:'start'}); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  const onKey = e => {
+    if (e.key === 'Escape') { document.removeEventListener('keydown', onKey); close(); return; }
+    if (e.key === 'Tab') {
+      const focusables = [...modal.querySelectorAll('button,a[href]')].filter(x => !x.disabled);
+      if (!focusables.length) return;
+      const first=focusables[0], last=focusables[focusables.length-1];
+      if (e.shiftKey && document.activeElement===first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement===last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  document.addEventListener('keydown', onKey);
+  modal.querySelector('.ux-trend-modal-close').focus();
+}
+
+function qualitativePotential(rawScore) {
+  const score = Number(rawScore);
+  if (!Number.isFinite(score) || score <= 0) return null;
+  // O backend atual produz oportunidade_score por julgamento do LLM (1–10),
+  // sem uma fórmula calibrada/validada. A UX evita expor falsa precisão.
+  if (score >= 8) return { level: 'high', label: 'Alto' };
+  if (score >= 5) return { level: 'medium', label: 'Médio' };
+  return { level: 'low', label: 'Baixo' };
+}
+
+function buildOpportunityCard(category, trend, featured = false) {
+  const card = el('article', `ux-trend-card${featured ? ' is-featured' : ''}`);
+  card.dataset.cat = category;
+  const icon = CAT_ICONS[category] || '•';
+  const label = CAT_LABELS[category] || category;
+  const potential = qualitativePotential(trend.oportunidade_score);
+  const detailsId = `trend-detail-${Math.random().toString(36).slice(2, 10)}`;
+
+  card.innerHTML = `
+    <div class="ux-trend-card-top">
+      <div class="ux-trend-card-context">
+        <span class="ux-trend-category">${icon} ${escapeHtml(label)}</span>
+        ${featured ? '<span class="ux-trend-featured">Destaque agora</span>' : ''}
+      </div>
+      ${potential ? `<div class="ux-trend-potential ux-trend-potential-${potential.level}" title="Estimativa qualitativa da IA a partir dos sinais disponíveis. Não é previsão de desempenho."><span>Potencial <button class="ux-potential-help" type="button" aria-label="Como o potencial é apresentado" title="Estimativa qualitativa da IA a partir dos sinais disponíveis. Não é previsão de desempenho.">?</button></span><strong>${potential.label}</strong><small>Estimativa da IA</small></div>` : ''}
+    </div>
+
+    <div class="ux-trend-card-copy">
+      <h3>${escapeHtml(trend.titulo || '')}</h3>
+      <p>${escapeHtml(trend.insight || 'Abra a análise para entender os sinais disponíveis sobre este assunto.')}</p>
+    </div>
+
+    <div class="ux-trend-card-actions">
+      <button class="ux-btn-secondary ux-action ux-action-secondary ux-trend-analysis-btn" data-action-level="secondary" type="button" aria-expanded="false" aria-controls="${detailsId}">Ver análise</button>
+      <button class="ux-btn-primary ux-action ux-action-primary ux-trend-create-btn" data-action-level="primary" type="button">Criar conteúdo <span aria-hidden="true">→</span></button>
+    </div>
+
+    `;
+
+  const analysisBtn = card.querySelector('.ux-trend-analysis-btn');
+  analysisBtn.removeAttribute('aria-controls');
+  analysisBtn.removeAttribute('aria-expanded');
+  analysisBtn.addEventListener('click', () => _trendDetailModal(category, trend, potential));
+  card.querySelector('.ux-trend-create-btn').addEventListener('click', () => { _trackTrendUx('trend_create_content_clicked'); _goCreate(category, trend); });
+  return card;
 }
 
 function updateTrendsHeader() {
@@ -346,6 +417,7 @@ function updateTrendsHeader() {
 // ── show / hide sections ──────────────────────────────────────────────────────
 function showPipeline() {
   $('gtPipeline').hidden = false;
+  $('gtPipeline').setAttribute('aria-busy', 'true');
   $('gtEmpty').hidden    = true;
   $('gtError').hidden    = true;
 }
@@ -357,9 +429,11 @@ function showResults() {
 
 function showError(msg) {
   const box = $('gtError');
-  box.textContent = msg;
+  const message = $('gtErrorMessage');
+  if (message) message.textContent = msg || 'Tente novamente em alguns instantes.';
   box.hidden = false;
   $('gtPipeline').hidden = true;
+  box.focus?.();
 }
 
 function resetUI() {
@@ -396,7 +470,9 @@ async function startAnalysis() {
   const btn   = $('analyzeBtn');
   const label = $('analyzeBtnLabel');
   btn.disabled = true;
-  label.textContent = 'Analisando…';
+  label.textContent = 'Buscando…';
+  const emptyBtn = $('emptyAnalyzeBtn');
+  if (emptyBtn) emptyBtn.disabled = true;
 
   resetUI();
   showPipeline();
@@ -407,6 +483,8 @@ async function startAnalysis() {
     : [activeCat];
 
   initCatDots(cats);
+  const monitored = $('uxMonitoredCategories');
+  if (monitored) monitored.textContent = String(cats.length);
 
   let jobId;
   try {
@@ -419,12 +497,13 @@ async function startAnalysis() {
       body: JSON.stringify({ categories: cats, urls }),
     });
     const data = await res.json();
-    if (!res.ok || !data.job_id) throw new Error(data.error || 'Erro ao iniciar análise');
+    if (!res.ok || !data.job_id) throw new Error(data.error || 'Não foi possível iniciar a busca. Tente novamente.');
     jobId = data.job_id;
   } catch (err) {
     showError(err.message);
     btn.disabled = false;
-    label.textContent = 'Analisar Tendências Globais';
+    label.textContent = 'Buscar oportunidades';
+    if (emptyBtn) emptyBtn.disabled = false;
     return;
   }
 
@@ -454,6 +533,7 @@ async function startAnalysis() {
 
   eventSource.addEventListener('complete', e => {
     const d = JSON.parse(e.data);
+    _trackTrendUx('trend_analysis_completed');
 
     // editorial summary
     if (d.summary) {
@@ -477,36 +557,45 @@ async function startAnalysis() {
     }
 
     $('gtPipeline').hidden = true;
+    $('gtPipeline').setAttribute('aria-busy', 'false');
   });
 
   eventSource.addEventListener('pipeline_error', e => {
-    let msg = 'Erro na análise de tendências';
+    _trackTrendUx('trend_analysis_failed');
+    let msg = 'Não foi possível concluir a busca de oportunidades.';
     try { msg = JSON.parse(e.data).message || msg; } catch (_) {}
     showError(msg);
     btn.disabled = false;
-    label.textContent = 'Analisar Tendências Globais';
+    label.textContent = 'Buscar oportunidades';
+    if (emptyBtn) emptyBtn.disabled = false;
     eventSource.close();
   });
 
   eventSource.addEventListener('end', () => {
     eventSource.close();
     btn.disabled = false;
-    label.textContent = 'Atualizar Tendências';
+    label.textContent = 'Buscar novamente';
+    if (emptyBtn) emptyBtn.disabled = false;
   });
 
   // SSE connection error (network level)
   eventSource.onerror = () => {
     if (eventSource.readyState === EventSource.CLOSED) return;
-    showError('Conexão SSE perdida. Tente novamente.');
+    _trackTrendUx('trend_analysis_failed');
+    showError('A conexão com a análise foi interrompida. Tente novamente.');
     btn.disabled = false;
-    label.textContent = 'Analisar Tendências Globais';
+    label.textContent = 'Buscar oportunidades';
+    if (emptyBtn) emptyBtn.disabled = false;
     eventSource.close();
   };
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  _trackTrendUx('trends_view');
   $('analyzeBtn')?.addEventListener('click', startAnalysis);
+  $('emptyAnalyzeBtn')?.addEventListener('click', startAnalysis);
+  $('gtRetryBtn')?.addEventListener('click', startAnalysis);
 
   document.querySelectorAll('.gt-cat-btn').forEach(btn => {
     btn.addEventListener('click', () => applyFilter(btn.dataset.cat));
@@ -846,3 +935,9 @@ setInterval(nxLoadNasa, 21600000); // atualiza a cada 6h (muda 1x/dia)
 
   loadLayout();
 })();
+
+// Sprint 13: recovery action for a valid analysis with no results in the selected filter.
+document.addEventListener('DOMContentLoaded', () => {
+  const showAll = $('gtShowAllBtn');
+  if (showAll) showAll.addEventListener('click', () => applyFilter('todos'));
+});
