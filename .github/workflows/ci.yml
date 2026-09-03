@@ -26,24 +26,6 @@ jobs:
           pip install -r requirements.txt --break-system-packages
           pip install pytest ruff --break-system-packages
 
-      - name: "[DIAGNÓSTICO TEMPORÁRIO] Investigar o langchain_core"
-        run: |
-          echo "== onde o pip acha que instalou langchain-core =="
-          pip show langchain-core || echo "pip show falhou"
-          echo
-          echo "== python resolve langchain_core pra onde =="
-          python3 -c "import langchain_core; print('arquivo:', langchain_core.__file__); print('path:', langchain_core.__path__)" || echo "IMPORT FALHOU (isso é o próprio bug acontecendo aqui)"
-          echo
-          echo "== conteudo real da pasta instalada =="
-          python3 -c "import site; print(site.getsitepackages())"
-          find / -maxdepth 6 -iname "langchain_core*" -not -path "*/node_modules/*" 2>/dev/null
-          echo
-          echo "== sys.path completo =="
-          python3 -c "import sys; [print(p) for p in sys.path]"
-          echo
-          echo "== esse langchain_core tem __init__.py de verdade? =="
-          python3 -c "import importlib.util; spec = importlib.util.find_spec('langchain_core'); print('spec encontrado:', spec); print('origin:', spec.origin if spec else None); print('submodule_search_locations:', spec.submodule_search_locations if spec else None)"
-
       - name: Lint (ruff) — não bloqueia ainda, só avisa
         continue-on-error: true
         run: ruff check .

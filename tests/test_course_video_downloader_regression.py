@@ -5,6 +5,22 @@ from pathlib import Path
 
 # Stubs mínimos: o ambiente de validação deste artefato não tem yt-dlp/langchain,
 # mas queremos testar a nossa lógica de seleção/normalização sem rede.
+#
+# IMPORTANTE: sys.modules é um estado GLOBAL compartilhado por toda a sessão
+# do pytest — stubar aqui sem desfazer depois quebra QUALQUER teste coletado
+# depois deste que precise do langchain_core/tools DE VERDADE (foi exatamente
+# isso que causou o bug real em produção: 9 outros arquivos de teste falhando
+# com "'langchain_core' is not a package", porque esse dublê ficava pra trás
+# depois que este arquivo terminava de carregar). Por isso: guarda o que já
+# estava em sys.modules ANTES de stubar, e restaura depois de carregar o
+# módulo sob teste — os stubs só precisam existir durante esse import, não
+# depois (os testes abaixo usam só a classe já carregada).
+_CHAVES_STUB = [
+    "yt_dlp", "langchain_core", "langchain_core.tools",
+    "tools", "tools.youtube_runtime", "tools.yt_error_classifier",
+]
+_ORIGINAIS = {chave: sys.modules.get(chave) for chave in _CHAVES_STUB}
+
 yt_dlp = types.ModuleType('yt_dlp')
 class DummyYDL:
     def __init__(self, opts): self.opts = opts
@@ -44,6 +60,15 @@ spec = importlib.util.spec_from_file_location('video_downloader_under_test', Pat
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 VideoDownloaderTool = mod.VideoDownloaderTool
+
+# Restaura sys.modules pro estado de antes deste arquivo — devolve o real se
+# já existia, ou remove o stub se não existia nada (deixando o próximo
+# import de verdade acontecer normalmente pros arquivos de teste seguintes).
+for _chave, _original in _ORIGINAIS.items():
+    if _original is None:
+        sys.modules.pop(_chave, None)
+    else:
+        sys.modules[_chave] = _original
 
 
 def test_video_downloader_returns_static_relative_mp4(tmp_path, monkeypatch):
