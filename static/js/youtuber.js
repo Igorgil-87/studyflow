@@ -72,8 +72,9 @@ let contentType = 'shorts_45'; // preset de duração (clip_rules)
 
 document.querySelectorAll('.ps-toggle-btn[data-ctype]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.ps-toggle-btn[data-ctype]').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.ps-toggle-btn[data-ctype]').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
     const ctype = btn.dataset.ctype;
     const shortsInfo = $('#shortsInfo');
     const cortesInfo = $('#cortesInfo');
@@ -95,8 +96,9 @@ document.querySelectorAll('.ps-toggle-btn[data-ctype]').forEach((btn) => {
 document.querySelectorAll('.ps-toggle-btn[data-dur]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const group = btn.closest('.ps-toggle-group');
-    group?.querySelectorAll('.ps-toggle-btn').forEach((b) => b.classList.remove('active'));
+    group?.querySelectorAll('.ps-toggle-btn').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
     contentType = btn.dataset.dur;
   });
 });
@@ -104,8 +106,9 @@ document.querySelectorAll('.ps-toggle-btn[data-dur]').forEach((btn) => {
 /* Language toggle */
 document.querySelectorAll('.ps-toggle-btn[data-lang]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.ps-toggle-btn[data-lang]').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.ps-toggle-btn[data-lang]').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
   });
 });
 
@@ -114,6 +117,7 @@ $('#advToggleBtn')?.addEventListener('click', () => {
   const body    = $('#advBody');
   const open    = !body.hidden;
   body.hidden   = open;
+  $('#advToggleBtn')?.setAttribute('aria-expanded', String(!open));
   const chevron = $('#advToggleBtn')?.querySelector('.ps-accordion-chevron');
   if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
 });

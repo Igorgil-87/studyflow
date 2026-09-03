@@ -3,101 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Flow · Pergunte ao vídeo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>StudyFlow · RAG verificável</title>
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
-    .rag-wrap{max-width:760px}
-    .rag-row{display:flex;gap:10px;margin-bottom:8px}
-    .rag-row input{flex:1;padding:12px 14px;background:var(--surface-2);color:var(--text);
-      border:1px solid var(--line);border-radius:10px;font-size:15px}
-    .rag-row input::placeholder{color:var(--text-3)}
-    .rag-row button{padding:12px 20px;background:var(--accent);color:#0a0a0b;
-      font-weight:700;border:none;border-radius:10px;cursor:pointer;font-size:15px}
-    .rag-row button:disabled{opacity:.6;cursor:default}
-    .rag-hint{color:var(--text-3);font-size:12px;margin-bottom:24px}
-    .rag-vid{width:100%;margin-bottom:8px;box-sizing:border-box;padding:12px 14px;
-      background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px}
-    .rag-answer{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
-      padding:20px;margin-top:20px;line-height:1.6;white-space:pre-wrap}
-    .rag-answer.err{color:#ff9b9b}
-    .rag-sources{margin-top:18px}
-    .rag-src{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
-      padding:12px 14px;margin-bottom:8px;font-size:13px}
-    .rag-src-time{color:var(--accent);font-weight:700;margin-right:8px}
-    .rag-src-score{color:var(--text-3);float:right;font-size:12px}
+    .rag-wrap{max-width:920px}.rag-row{display:flex;gap:10px;margin-bottom:8px}.rag-row input{flex:1;padding:12px 14px;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px;font-size:15px}.rag-row button{padding:12px 20px;background:var(--accent);color:#0a0a0b;font-weight:700;border:none;border-radius:10px;cursor:pointer}.rag-row button:disabled{opacity:.6}.rag-hint{color:var(--text-3);font-size:12px;margin-bottom:18px}.rag-vid{width:100%;box-sizing:border-box;padding:12px 14px;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:10px}.rag-answer{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:20px;line-height:1.65;white-space:pre-wrap}.rag-answer.err{color:#ff9b9b}.rag-sources{margin-top:18px}.rag-section-title{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-3);margin:20px 0 8px}.rag-src{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px;font-size:13px}.rag-src-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.rag-badge{border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:11px}.rag-badge.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}.rag-src-score{margin-left:auto;color:var(--text-3);font-size:12px}.rag-src-text{color:var(--text-2);line-height:1.5}.rag-debug{margin-top:18px;border:1px dashed var(--line);border-radius:12px;overflow:hidden}.rag-debug summary{cursor:pointer;padding:12px 14px;color:var(--text-2);font-weight:650}.rag-debug-body{padding:0 14px 14px}.rag-debug-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.rag-debug-kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px}.rag-debug-kpi b{display:block;font-size:17px}.rag-debug-kpi span{font-size:10px;color:var(--text-3);text-transform:uppercase}.rag-debug-row{display:grid;grid-template-columns:52px 78px 1fr 120px;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:12px}.rag-trace{font-family:monospace;color:var(--text-3);font-size:11px;margin-top:8px}@media(max-width:700px){.rag-row{flex-direction:column}.rag-debug-grid{grid-template-columns:1fr 1fr}.rag-debug-row{grid-template-columns:44px 70px 1fr}.rag-debug-row span:last-child{grid-column:1/-1}}
   </style>
 </head>
-<body>
+<body data-module="video">
   <div class="grain"></div>
-
-  <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">◐</div>
-      <span class="brand-name">Study<em>Flow</em></span>
-    </div>
-
-    {% set active = 'rag' %}
-    {% set modulo_group = 'youtuber' %}
-    {% include 'partials/_sidebar.html' %}
+  {% include 'partials/_mobile_header.html' %}
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
+    <div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>
+    {% set active = 'rag' %}{% set modulo_group = 'youtuber' %}{% include 'partials/_sidebar.html' %}
   </aside>
-
-  <!-- ░░ MAIN ░░ -->
   <main class="stage rag-wrap">
-    <div class="head-tag">Youtuber</div>
-    <h1 class="cat-title">Pergunte ao <em>vídeo</em></h1>
-    <div class="sub">RAG sobre as transcrições — busca por similaridade na base vetorial (Postgres + pgvector) e responde citando os timestamps.</div>
-
-    <div class="rag-row">
-      <input id="q" type="text" placeholder="Ex: o que o vídeo fala sobre juros compostos?"
-        onkeydown="if(event.key==='Enter')ask()">
-      <button id="askBtn" onclick="ask()">Perguntar</button>
-    </div>
-    <div class="rag-hint">Indexe vídeos antes: rode o pipeline com <code>RAG_ENABLED=1</code>. Opcional: cole uma URL de vídeo para restringir a busca a ela.</div>
-    <input id="vid" class="rag-vid" type="text" placeholder="(opcional) URL do vídeo para filtrar">
-
+    <div class="head-tag">Knowledge Engine · Retrieval Augmented Generation</div>
+    <h1 class="cat-title">RAG <em>verificável</em></h1>
+    <div class="sub">Respostas grounded com evidências rastreáveis: fonte, página/slide ou timestamp, chunk, similaridade e trace da execução.</div>
+    <div class="rag-row"><input id="q" type="text" placeholder="Ex: qual política o material define?" onkeydown="if(event.key==='Enter')ask()"><button id="askBtn" onclick="ask()">Perguntar</button></div>
+    <div class="rag-hint">Opcional: informe um <code>video_id/doc_id</code> específico para restringir o retrieval. Sem filtro, pesquisa toda a base vetorial.</div>
+    <input id="vid" class="rag-vid" type="text" placeholder="video_id ou doc_id específico (opcional)">
     <div id="out"></div>
   </main>
-
   <script>
+    function escapeHtml(s){const d=document.createElement('div');d.textContent=s??'';return d.innerHTML;}
+    function sourceLocation(s){if(s.page!=null)return 'Página '+s.page;if(s.slide!=null)return 'Slide '+s.slide;if(s.source_type==='video')return Math.floor(s.start||0)+'s–'+Math.floor(s.end||0)+'s';return 'Chunk '+(s.chunk_id??'—');}
     async function ask(){
-      const q = document.getElementById('q').value.trim();
-      const vid = document.getElementById('vid').value.trim();
-      const out = document.getElementById('out');
-      const btn = document.getElementById('askBtn');
-      if(!q){ return; }
-      btn.disabled = true; btn.textContent = 'Buscando…';
-      out.innerHTML = '<div class="rag-answer">Buscando na base vetorial…</div>';
+      const q=document.getElementById('q').value.trim(),vid=document.getElementById('vid').value.trim(),out=document.getElementById('out'),btn=document.getElementById('askBtn');if(!q)return;
+      btn.disabled=true;btn.textContent='Buscando…';out.innerHTML='<div class="rag-answer">Consultando embeddings e recuperando evidências…</div>';
       try{
-        const res = await fetch('/api/rag/query', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ pergunta:q, video_id: vid || null }),
-        });
-        const data = await res.json();
-        if(data.error && !data.answer){
-          out.innerHTML = `<div class="rag-answer err">${data.error}</div>`;
-        } else {
-          let html = `<div class="rag-answer">${escapeHtml(data.answer || '')}</div>`;
-          if((data.sources||[]).length){
-            html += '<div class="rag-sources"><b>Fontes (timestamps):</b>';
-            data.sources.forEach(s=>{
-              const sc = s.score!=null ? `<span class="rag-src-score">sim ${(s.score*100).toFixed(0)}%</span>` : '';
-              html += `<div class="rag-src">${sc}<span class="rag-src-time">${Math.floor(s.start)}s–${Math.floor(s.end)}s</span>${escapeHtml(s.trecho||'')}</div>`;
-            });
-            html += '</div>';
-          }
-          out.innerHTML = html;
-        }
-      }catch(e){
-        out.innerHTML = `<div class="rag-answer err">Erro: ${e.message}</div>`;
-      }finally{
-        btn.disabled = false; btn.textContent = 'Perguntar';
-      }
+        const res=await fetch('/api/rag/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pergunta:q,video_id:vid||null})});
+        const data=await res.json();if(data.error&&!data.answer){out.innerHTML=`<div class="rag-answer err">${escapeHtml(data.error)}</div>`;return;}
+        let html=`<div class="rag-answer">${escapeHtml(data.answer||'')}</div>`;
+        const sources=data.sources||[];
+        if(sources.length){html+='<div class="rag-section-title">Evidências utilizadas</div><div class="rag-sources">';sources.forEach(s=>{const sc=s.score!=null?Math.round(s.score*100)+'%':'—';html+=`<div class="rag-src"><div class="rag-src-head"><span class="rag-badge accent">Fonte ${s.citation_id}</span><span class="rag-badge">${escapeHtml(s.source_name||s.video_id||'fonte')}</span><span class="rag-badge">${escapeHtml(sourceLocation(s))}</span><span class="rag-badge">Chunk ${escapeHtml(String(s.chunk_id??'—'))}</span><span class="rag-src-score">similaridade ${sc}</span></div><div class="rag-src-text">${escapeHtml(s.trecho||'')}</div></div>`;});html+='</div>';}
+        const dbg=data.retrieval_debug||{};html+=`<details class="rag-debug"><summary>Retrieval Debug · evidência técnica</summary><div class="rag-debug-body"><div class="rag-debug-grid"><div class="rag-debug-kpi"><b>${escapeHtml(String(dbg.top_k??'—'))}</b><span>Top-K</span></div><div class="rag-debug-kpi"><b>${escapeHtml(String(dbg.returned??0))}</b><span>Retornados</span></div><div class="rag-debug-kpi"><b>${sources.length?Math.round(Math.max(...sources.map(s=>s.score||0))*100)+'%':'—'}</b><span>Melhor score</span></div><div class="rag-debug-kpi"><b>${escapeHtml(data.evaluation?.judge_score!=null?Math.round(data.evaluation.judge_score*100)+'%':'—')}</b><span>Judge</span></div></div>`;
+        (dbg.results||[]).forEach(r=>{let loc=r.page!=null?'p.'+r.page:(r.slide!=null?'slide '+r.slide:'chunk '+(r.chunk_id??'—'));html+=`<div class="rag-debug-row"><span>#${r.rank}</span><span>${r.score!=null?Math.round(r.score*100)+'%':'—'}</span><span>${escapeHtml(r.source_name||'fonte')}</span><span>${escapeHtml(loc)}</span></div>`;});
+        if(data.trace_id)html+=`<div class="rag-trace">trace_id: ${escapeHtml(data.trace_id)}</div>`;html+='</div></details>';out.innerHTML=html;
+      }catch(e){out.innerHTML=`<div class="rag-answer err">Erro: ${escapeHtml(e.message)}</div>`;}finally{btn.disabled=false;btn.textContent='Perguntar';}
     }
-    function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
   </script>
 </body>
 </html>

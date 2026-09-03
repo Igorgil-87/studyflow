@@ -35,9 +35,14 @@ function wireToggleGroup(groupId, attr, onChange) {
   const group = document.getElementById(groupId);
   if (!group) return;
   group.querySelectorAll('.est-toggle-btn').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.classList.contains('active')));
     btn.addEventListener('click', () => {
-      group.querySelectorAll('.est-toggle-btn').forEach((b) => b.classList.remove('active'));
+      group.querySelectorAll('.est-toggle-btn').forEach((b) => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
       onChange(btn.dataset[attr]);
     });
   });
@@ -56,10 +61,13 @@ wireToggleGroup('estCountGroup', 'count', (v) => { estCount = parseInt(v, 10) ||
 
 /* ── accordion avançado ───────────────────────────────────────────── */
 if (estAdvToggleBtn) {
+  estAdvToggleBtn.setAttribute('aria-expanded', String(!estAdvBody.hidden));
+  estAdvToggleBtn.setAttribute('aria-controls', 'estAdvBody');
   estAdvToggleBtn.addEventListener('click', () => {
     const open = !estAdvBody.hidden;
     estAdvBody.hidden = open;
     estAdvToggleBtn.classList.toggle('open', !open);
+    estAdvToggleBtn.setAttribute('aria-expanded', String(!open));
   });
 }
 
@@ -212,7 +220,7 @@ function setLoading(on) {
   if (!estGerarBtn) return;
   estGerarBtn.disabled = on;
   const span = estGerarBtn.querySelector('span');
-  if (span) span.textContent = on ? 'Produzindo…' : 'Gerar Vídeo';
+  if (span) span.textContent = on ? 'Produzindo…' : 'Criar vídeo';
 }
 
 function showError(box, msg) {
@@ -226,9 +234,13 @@ function showError(box, msg) {
    ═══════════════════════════════════════════════════════════════════ */
 document.querySelectorAll('.est-tabs .ps-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.est-tabs .ps-tab').forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('.est-tabs .ps-tab').forEach((t) => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
     document.querySelectorAll('#paneEstudio, #paneImagens').forEach((p) => { p.hidden = true; });
     tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
     const panel = document.getElementById(tab.dataset.panel);
     if (panel) panel.hidden = false;
   });
@@ -418,7 +430,7 @@ async function gerarImagem() {
   } catch (e) {
     showError(imgErrorBox, e.message);
     imgGerarBtn.disabled = false;
-    if (imgBtnLabel) imgBtnLabel.textContent = 'Gerar Imagem';
+    if (imgBtnLabel) imgBtnLabel.textContent = 'Criar imagem';
   }
 }
 
@@ -448,7 +460,7 @@ function listenImagemStream(jobId) {
     const data = JSON.parse(e.data);
     renderImagens(data);
     imgGerarBtn.disabled = false;
-    if (imgBtnLabel) imgBtnLabel.textContent = 'Gerar Imagem';
+    if (imgBtnLabel) imgBtnLabel.textContent = 'Criar imagem';
   });
 
   imgEventSource.addEventListener('pipeline_error', (e) => {
@@ -456,7 +468,7 @@ function listenImagemStream(jobId) {
       showError(imgPipelineError, JSON.parse(e.data).message);
     } catch { /* conexão fechada — ignora */ }
     imgGerarBtn.disabled = false;
-    if (imgBtnLabel) imgBtnLabel.textContent = 'Gerar Imagem';
+    if (imgBtnLabel) imgBtnLabel.textContent = 'Criar imagem';
   });
 
   imgEventSource.addEventListener('end', () => imgEventSource.close());

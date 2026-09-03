@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Responsible AI & Security · StudyFlow</title>
+  {% include 'partials/_fonts.html' %}
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    :root{--sec-ok:#b7ff3c;--sec-warn:#ffca68;--sec-bad:#ff7777}
+    .sec-wrap{max-width:1180px;margin:0 auto;padding:42px 36px 80px}
+    .sec-kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+    .sec-title{font-size:42px;line-height:1.05;margin:8px 0 10px}.sec-title em{color:var(--accent);font-style:normal}
+    .sec-sub{color:var(--text-2);max-width:850px;line-height:1.65;margin-bottom:28px}
+    .sec-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .sec-card{background:var(--surface,rgba(255,255,255,.035));border:1px solid var(--line);border-radius:16px;padding:18px}
+    .sec-card.full{grid-column:1/-1}.sec-card.half{grid-column:span 2}
+    .metric-label{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em}.metric-value{font-size:30px;font-weight:750;margin-top:8px}
+    .ok{color:var(--sec-ok)}.warn{color:var(--sec-warn)}.bad{color:var(--sec-bad)}
+    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--line)}
+    .status.ok{background:rgba(183,255,60,.09)}.status.warn{background:rgba(255,202,104,.09)}.status.bad{background:rgba(255,119,119,.09)}
+    h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-2);margin:0 0 14px}
+    .control{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}.control:last-child{border-bottom:0}
+    .control small{display:block;color:var(--text-2);margin-top:4px;line-height:1.45}
+    .flow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:center}.node{padding:12px 8px;text-align:center;border:1px solid var(--line);border-radius:12px;font-size:11px;background:rgba(255,255,255,.025)}.arrow{text-align:center;color:var(--text-2)}
+    table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}th{color:var(--text-2);font-weight:500}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+    .note{padding:12px 14px;border:1px solid var(--line);border-radius:12px;color:var(--text-2);font-size:12px;line-height:1.6}
+    .refresh{border:1px solid var(--line);background:var(--accent-dim);color:var(--accent);border-radius:10px;padding:8px 14px;cursor:pointer;float:right}
+    @media(max-width:900px){.sec-grid{grid-template-columns:1fr 1fr}.sec-card.half{grid-column:1/-1}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+    @media(max-width:620px){.sec-wrap{padding:24px 16px 60px}.sec-title{font-size:32px}.sec-grid{grid-template-columns:1fr}.sec-card.full,.sec-card.half{grid-column:1}.refresh{float:none;margin-bottom:14px}}
+  </style>
+</head>
+<body data-module="neutral">
+  <div class="grain"></div>
+  {% include 'partials/_mobile_header.html' %}
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
+    <div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>
+    {% set active = 'security' %}{% include 'partials/_sidebar.html' %}
+  </aside>
+  <main class="stage sec-wrap">
+    <button class="refresh" onclick="loadSecurity()">↻ Atualizar</button>
+    <div class="sec-kicker">Case · Engenharia de IA</div>
+    <h1 class="sec-title">Responsible AI <em>&amp; Security</em></h1>
+    <p class="sec-sub">Controles verificáveis para autenticação, boundary de prompts, proteção de saída, auditoria e postura de secrets. O painel mostra o estado real do ambiente — inclusive gaps — em vez de declarar segurança sem evidência.</p>
+
+    <div class="sec-grid">
+      <div class="sec-card"><div class="metric-label">Guard mode</div><div class="metric-value" id="guardMode">—</div></div>
+      <div class="sec-card"><div class="metric-label">Eventos auditados</div><div class="metric-value" id="events">—</div></div>
+      <div class="sec-card"><div class="metric-label">Bloqueios</div><div class="metric-value" id="blocked">—</div></div>
+      <div class="sec-card"><div class="metric-label">Saídas redigidas</div><div class="metric-value" id="redacted">—</div></div>
+    </div>
+
+    <div class="sec-grid">
+      <section class="sec-card full"><h2>AI Security Boundary</h2><div class="flow">
+        <div class="node">Usuário autenticado</div><div class="arrow">→</div><div class="node">Input Guard<br><span class="ok">Prompt Injection</span></div><div class="arrow">→</div><div class="node">RAG / Tutor<br><span class="ok">Contexto autorizado</span></div><div class="arrow">→</div><div class="node">Output Guard<br><span class="ok">Secret Redaction</span></div>
+      </div></section>
+
+      <section class="sec-card half"><h2>Controles implementados</h2><div id="controls">Carregando...</div></section>
+      <section class="sec-card half"><h2>Secrets & configuração</h2><div id="secrets">Carregando...</div></section>
+
+      <section class="sec-card full"><h2>Audit trail · eventos recentes</h2>
+        <div style="overflow:auto"><table><thead><tr><th>Evento</th><th>Ação</th><th>Risco</th><th>Target</th><th>Trace</th><th>Motivo</th></tr></thead><tbody id="eventsBody"><tr><td colspan="6">Carregando...</td></tr></tbody></table></div>
+      </section>
+      <section class="sec-card full"><div class="note"><strong>Interpretação para a banca:</strong> heurísticas de prompt injection reduzem ataques óbvios, mas não são garantia absoluta. O StudyFlow registra decisões, aplica autorização do curso antes do Tutor, redige padrões de credenciais na saída e mantém controles configuráveis em <span class="mono">AI_GUARD_MODE</span>. Segurança de produção exige também remover arquivos de segredo do repositório e usar secret manager/volumes.</div></section>
+    </div>
+  </main>
+<script>
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const label=k=>k.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+function row(name,value,detail=''){return `<div class="control"><div>${esc(name)}${detail?`<small>${esc(detail)}</small>`:''}</div><span class="status ${value?'ok':'bad'}">${value?'ATIVO':'ATENÇÃO'}</span></div>`}
+async function loadSecurity(){
+  const r=await fetch('/api/security/summary'); const d=await r.json();
+  document.getElementById('guardMode').textContent=(d.guardrails?.mode||'—').toUpperCase();
+  document.getElementById('guardMode').className='metric-value '+(d.guardrails?.mode==='enforce'?'ok':'warn');
+  document.getElementById('events').textContent=d.events?.events??0; document.getElementById('blocked').textContent=d.events?.blocked??0; document.getElementById('redacted').textContent=d.events?.redacted??0;
+  document.getElementById('controls').innerHTML=Object.entries(d.controls||{}).map(([k,v])=>row(label(k),!!v)).join('');
+  const s=d.secrets||{}, checks=s.checks||{}; let html=row('Produção pronta',!!s.production_ready,s.production_ready?'Sem gaps críticos detectados':'Há itens que devem ser corrigidos antes de produção');
+  html+=row('SECRET_KEY não padrão',!checks.secret_key_default); html+=row('Senha admin não padrão',!checks.admin_password_default); html+=row('Cookie Secure',!!checks.session_cookie_secure,'Ative em HTTPS/produção');
+  html+=row('Secrets fora do pacote',!(s.risky_files||[]).length,(s.risky_files||[]).length?'Detectados: '+s.risky_files.join(', '):'Nenhum arquivo sensível conhecido detectado'); document.getElementById('secrets').innerHTML=html;
+  document.getElementById('eventsBody').innerHTML=(d.recent||[]).length?(d.recent||[]).map(e=>{let reasons='';try{reasons=JSON.parse(e.reasons_json||'[]').join(', ')}catch(_){reasons=e.reasons_json||''}return `<tr><td>${esc(e.event_type)}</td><td>${esc(e.action)}</td><td><span class="status ${e.risk==='high'?'bad':e.risk==='medium'?'warn':'ok'}">${esc(e.risk)}</span></td><td>${esc(e.target)}</td><td class="mono">${esc(e.trace_id)}</td><td>${esc(reasons||'—')}</td></tr>`}).join(''):'<tr><td colspan="6">Nenhum evento ainda. Faça uma pergunta no RAG ou à Georgina.</td></tr>';
+}
+loadSecurity();
+</script>
+</body></html>

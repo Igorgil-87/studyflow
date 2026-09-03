@@ -138,7 +138,17 @@ def resumo_por_tier(plataforma: str | None = None) -> list[dict]:
     """Agrupa por tier PREVISTO pela IA (S/A/B/C) e calcula a média de
     views/retenção REAIS de cada grupo — é isso que prova (ou desmente)
     se a previsão da IA bate com o resultado de verdade. Só considera
-    publicações que já tiveram métrica buscada (views IS NOT NULL)."""
+    publicações que já tiveram métrica buscada (views IS NOT NULL).
+
+    Ordena por retenção média, não por views brutas — a partir de
+    24/08/2026 o YouTube passou a contar "view" a partir do primeiro
+    frame (sem tempo mínimo) em vídeos longos, igualando ao que já
+    fazia com Shorts desde 2025. Isso infla view em conteúdo novo por
+    causa da régua ter mudado, não porque o vídeo ficou melhor —
+    retenção continua sendo a métrica que o próprio YouTube usa pra
+    monetização/recomendação (chamada de "Engaged Views"/"Engaged
+    Watch Hours" no Analytics deles), então é o sinal mais estável
+    pra comparar tier entre si."""
     conn = _connect()
     try:
         _ensure_table(conn)
@@ -151,7 +161,7 @@ def resumo_por_tier(plataforma: str | None = None) -> list[dict]:
         if plataforma:
             sql += " AND plataforma = %s"
             params.append(plataforma)
-        sql += " GROUP BY tier ORDER BY media_views DESC NULLS LAST"
+        sql += " GROUP BY tier ORDER BY media_retencao DESC NULLS LAST, media_views DESC NULLS LAST"
         with conn.cursor() as c:
             c.execute(sql, params)
             cols = ["tier", "n", "media_views", "media_retencao"]

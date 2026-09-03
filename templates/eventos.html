@@ -4,31 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Eventos</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-  <div class="grain"></div>
-<body>
-  <div class="grain"></div>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Flow · Módulo Curso</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+<body data-module="study">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -83,7 +68,12 @@
         <div class="ev-list-wrap">
           <h3 class="ev-list-title">Próximos eventos</h3>
           <div class="ev-list" id="evList"><div class="ev-loading">carregando…</div></div>
-          <div class="ev-empty" id="evEmpty" hidden>Nenhum evento ainda. Crie o primeiro acima.</div>
+          <div class="ev-empty ux-empty-state ux-empty-state-compact" id="evEmpty" hidden>
+            <div class="ux-empty-state-icon" aria-hidden="true">＋</div>
+            <h3>Nenhum próximo evento</h3>
+            <p>Adicione uma aula, live, prazo ou lembrete para organizar sua agenda.</p>
+            <button class="ux-action ux-action-secondary ux-empty-state-action" id="evEmptyCreate" type="button">Criar evento</button>
+          </div>
         </div>
       </aside>
     </div>
@@ -94,6 +84,7 @@
       const TIPOS = {aula:{e:'📘',c:'var(--accent)'}, live:{e:'🔴',c:'#ff5a5a'}, prazo:{e:'⏰',c:'#ffb020'}, lembrete:{e:'🔔',c:'#8b5cf6'}};
       let eventos = [];
       let viewDate = new Date();
+      document.getElementById('evEmptyCreate').addEventListener('click', ()=>{ document.getElementById('evTitulo').focus(); document.querySelector('.ev-form').scrollIntoView({behavior:'smooth', block:'start'}); });
       const $=id=>document.getElementById(id);
       const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
       function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}

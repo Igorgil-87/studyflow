@@ -69,6 +69,7 @@ def _ensure_schema(conn) -> None:
                 objetivo          text DEFAULT '',
                 ordem             int  NOT NULL DEFAULT 0,
                 duracao_min       int  DEFAULT 0,
+                dificuldade_estimada int DEFAULT 50,
                 video_required    boolean NOT NULL DEFAULT false,
                 audio_required    boolean NOT NULL DEFAULT false,
                 quiz_required     boolean NOT NULL DEFAULT true,
@@ -77,6 +78,7 @@ def _ensure_schema(conn) -> None:
                 video_url         text,
                 audio_url         text
             );
+            ALTER TABLE lessons ADD COLUMN IF NOT EXISTS dificuldade_estimada int DEFAULT 50;
             CREATE INDEX IF NOT EXISTS ix_lessons_module_id ON lessons (module_id);
 
             CREATE TABLE IF NOT EXISTS concepts (
@@ -127,8 +129,12 @@ def _ensure_schema(conn) -> None:
                 doc_id      text,
                 chunk_id    text,
                 page        int,
-                section     text
+                section     text,
+                source_name text,
+                score       double precision
             );
+            ALTER TABLE provenance_claims ADD COLUMN IF NOT EXISTS source_name text;
+            ALTER TABLE provenance_claims ADD COLUMN IF NOT EXISTS score double precision;
             CREATE INDEX IF NOT EXISTS ix_provenance_lesson_id ON provenance_claims (lesson_id);
 
             CREATE TABLE IF NOT EXISTS knowledge_profile (
@@ -163,6 +169,29 @@ def _ensure_schema(conn) -> None:
             );
             CREATE INDEX IF NOT EXISTS ix_exercise_attempts_exercise
                 ON exercise_attempts (exercise_id, user_key);
+
+            CREATE TABLE IF NOT EXISTS quiz_attempts (
+                id               uuid PRIMARY KEY,
+                lesson_id        uuid NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+                user_key         text NOT NULL,
+                total_perguntas  int NOT NULL,
+                acertos          int NOT NULL,
+                criado_em        timestamptz NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS ix_quiz_attempts_lesson_user
+                ON quiz_attempts (lesson_id, user_key, criado_em);
+
+            CREATE TABLE IF NOT EXISTS lesson_inclusions (
+                lesson_id        uuid PRIMARY KEY REFERENCES lessons(id) ON DELETE CASCADE,
+                include_text     boolean,
+                include_video    boolean,
+                include_audio    boolean,
+                include_podcast  boolean,
+                include_quiz     boolean,
+                include_exercise boolean,
+                tutor_notes_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+                atualizado_em    timestamptz NOT NULL DEFAULT now()
+            );
             """
         )
     conn.commit()
@@ -224,12 +253,13 @@ def _gravar_estrutura(cursor, course_id, manifest: dict) -> None:
             lesson_id = uuid.uuid4()
             cursor.execute(
                 """INSERT INTO lessons (id, module_id, titulo, objetivo, ordem,
-                       duracao_min, video_required, audio_required,
+                       duracao_min, dificuldade_estimada, video_required, audio_required,
                        quiz_required, exercise_required, status)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (str(lesson_id), str(module_id), aula.get("title", ""),
                  aula.get("objective", ""), l_ordem,
                  aula.get("duration_min", 0),
+                 aula.get("dificuldade_estimada", 50),
                  bool(aula.get("video_required", False)),
                  bool(aula.get("audio_required", False)),
                  bool(aula.get("quiz_required", True)),
@@ -641,6 +671,174 @@ def get_exercise_attempts(exercise_id: str, user_key: str) -> list[dict]:
         conn.close()
 
 
+# ── Calibração previsão-vs-realidade (Sprint B) ──────────────────────────
+# Mesmo espírito do resumo_por_tier do Growth (analytics/store.py): nada
+# de tabela extra de "previsão" — cada consulta agrega o que já existe
+# na hora, na consulta em si.
+
+def registrar_tentativa_quiz(lesson_id: str, user_key: str, total_perguntas: int, acertos: int) -> str:
+    """Registra o resultado de um quiz/checkpoint respondido — é a
+    ÚNICA gravação de resultado de quiz que existe no produto inteiro
+    (nem o Modo YouTube original salvava isso). Usada como sinal de
+    'realidade' pra calibrar o ExerciseAgent (Sprint B2)."""
+    if acertos > total_perguntas or acertos < 0 or total_perguntas <= 0:
+        raise CursoStoreError(
+            f"acertos ({acertos}) precisa estar entre 0 e total_perguntas ({total_perguntas})"
+        )
+    attempt_id = str(uuid.uuid4())
+    conn = _connect()
+    try:
+        _ensure_schema(conn)
+        with conn.cursor() as c:
+            c.execute(
+                """INSERT INTO quiz_attempts (id, lesson_id, user_key, total_perguntas, acertos)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (attempt_id, lesson_id, user_key, total_perguntas, acertos),
+            )
+        conn.commit()
+        return attempt_id
+    finally:
+        conn.close()
+
+
+def calibracao_exercicios(course_id: str | None = None) -> list[dict]:
+    """A nota que o ExerciseAgent deu pra resposta do aluno (previsto)
+    bate com o desempenho real do MESMO aluno no quiz da MESMA aula,
+    depois? Agrupa em faixas de nota prevista (0-40/40-70/70-100) e
+    compara com a taxa de acerto média real de quem tirou aquela nota.
+    Só considera quiz respondido DEPOIS do exercício (senão não é
+    'resultado depois', é só coincidência de tempo)."""
+    conn = _connect()
+    try:
+        _ensure_schema(conn)
+        sql = """
+            WITH pares AS (
+                SELECT
+                    ea.nota_pct AS nota_prevista,
+                    (qa.acertos::numeric / NULLIF(qa.total_perguntas, 0) * 100) AS taxa_acerto_real
+                FROM exercise_attempts ea
+                JOIN exercises ex ON ex.id = ea.exercise_id
+                JOIN lessons l ON l.id = ex.lesson_id
+                JOIN modules m ON m.id = l.module_id
+                JOIN quiz_attempts qa
+                    ON qa.lesson_id = ex.lesson_id
+                   AND qa.user_key = ea.user_key
+                   AND qa.criado_em > ea.criado_em
+                WHERE ea.nota_pct IS NOT NULL
+        """
+        params: list = []
+        if course_id:
+            sql += " AND m.course_id = %s"
+            params.append(course_id)
+        sql += """
+            )
+            SELECT
+                CASE
+                    WHEN nota_prevista < 40 THEN 'baixa (0-40)'
+                    WHEN nota_prevista < 70 THEN 'média (40-70)'
+                    ELSE 'alta (70-100)'
+                END AS faixa_prevista,
+                COUNT(*) AS n,
+                AVG(nota_prevista) AS media_prevista,
+                AVG(taxa_acerto_real) AS media_real
+            FROM pares
+            GROUP BY faixa_prevista
+            ORDER BY media_prevista
+        """
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as c:
+            c.execute(sql, params)
+            return [dict(r) for r in c.fetchall()]
+    finally:
+        conn.close()
+
+
+def calibracao_tutor(course_id: str | None = None, janela_minutos: int = 20) -> dict:
+    """O Tutor IA está ajudando de verdade? Heurística: se o aluno NÃO
+    fez outra pergunta na MESMA aula dentro de `janela_minutos` depois
+    de uma resposta do tutor, conta como 'resolvido' — é uma aproximação
+    (não sabemos de verdade se entendeu), documentado como tal. Não
+    precisa de tabela nova, usa tutor_messages que já existe (Fase 5)."""
+    conn = _connect()
+    try:
+        _ensure_schema(conn)
+        sql = """
+            WITH perguntas AS (
+                SELECT tm.id, tm.lesson_id, tm.user_key, tm.criado_em,
+                       LEAD(tm.criado_em) OVER (
+                           PARTITION BY tm.lesson_id, tm.user_key ORDER BY tm.criado_em
+                       ) AS proxima_pergunta_em
+                FROM tutor_messages tm
+                JOIN lessons l ON l.id = tm.lesson_id
+                JOIN modules m ON m.id = l.module_id
+                WHERE tm.role = 'aluno'
+        """
+        params: list = []
+        if course_id:
+            sql += " AND m.course_id = %s"
+            params.append(course_id)
+        sql += """
+            )
+            SELECT
+                COUNT(*) AS total_perguntas,
+                COUNT(*) FILTER (
+                    WHERE proxima_pergunta_em IS NULL
+                       OR proxima_pergunta_em > criado_em + (%s || ' minutes')::interval
+                ) AS resolvidas_sem_nova_pergunta
+            FROM perguntas
+        """
+        params.append(janela_minutos)
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as c:
+            c.execute(sql, params)
+            row = dict(c.fetchone())
+        total = row["total_perguntas"] or 0
+        resolvidas = row["resolvidas_sem_nova_pergunta"] or 0
+        row["taxa_resolucao_pct"] = round(resolvidas / total * 100, 1) if total else None
+        return row
+    finally:
+        conn.close()
+
+
+def calibracao_dificuldade(course_id: str | None = None) -> list[dict]:
+    """A dificuldade que o CurriculumAgent estimou pra aula (previsto)
+    bate com a realidade? Relação esperada é INVERSA: aula prevista como
+    mais difícil deveria ter taxa de acerto REAL menor no quiz. Agrupa
+    por faixa de dificuldade prevista e mostra a taxa de acerto média
+    real de cada faixa — se a calibração estiver certa, 'alta' deveria
+    ter a menor taxa de acerto, 'baixa' a maior."""
+    conn = _connect()
+    try:
+        _ensure_schema(conn)
+        sql = """
+            SELECT
+                CASE
+                    WHEN l.dificuldade_estimada < 40 THEN 'baixa (0-40)'
+                    WHEN l.dificuldade_estimada < 70 THEN 'média (40-70)'
+                    ELSE 'alta (70-100)'
+                END AS faixa_prevista,
+                COUNT(DISTINCT l.id) AS n_aulas,
+                COUNT(qa.id) AS n_tentativas_quiz,
+                AVG(l.dificuldade_estimada) AS media_dificuldade_prevista,
+                AVG(qa.acertos::numeric / NULLIF(qa.total_perguntas, 0) * 100) AS media_acerto_real
+            FROM lessons l
+            JOIN modules m ON m.id = l.module_id
+            LEFT JOIN quiz_attempts qa ON qa.lesson_id = l.id
+            WHERE l.dificuldade_estimada IS NOT NULL
+        """
+        params: list = []
+        if course_id:
+            sql += " AND m.course_id = %s"
+            params.append(course_id)
+        sql += """
+            GROUP BY faixa_prevista
+            ORDER BY media_dificuldade_prevista
+        """
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as c:
+            c.execute(sql, params)
+            return [dict(r) for r in c.fetchall()]
+    finally:
+        conn.close()
+
+
 def save_podcast_script(lesson_id: str, script: dict) -> None:
     """UPSERT do roteiro de podcast (Fase 4) — mesmo padrão de
     save_storyboard, mesma pré-condição (lesson_content já existir)."""
@@ -694,11 +892,11 @@ def save_provenance(lesson_id: str, claims: list[dict]) -> None:
             for claim in claims:
                 c.execute(
                     """INSERT INTO provenance_claims
-                       (id, lesson_id, claim_text, tipo, doc_id, chunk_id, page, section)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                       (id, lesson_id, claim_text, tipo, doc_id, chunk_id, page, section, source_name, score)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (str(uuid.uuid4()), lesson_id, claim.get("claim_text", ""),
                      claim.get("tipo", "fonte"), claim.get("doc_id"), claim.get("chunk_id"),
-                     claim.get("page"), claim.get("section")),
+                     claim.get("page"), claim.get("section"), claim.get("source_name"), claim.get("score")),
                 )
         conn.commit()
     finally:
@@ -768,3 +966,75 @@ def get_glossario(course_id: str) -> list[dict]:
         return [dict(r) for r in rows]
     finally:
         conn.close()
+
+
+# ── Seleção editorial do curso final (V15) ─────────────────────────────
+def get_lesson_inclusion(lesson_id: str) -> dict:
+    """Retorna o que entra no curso final. Campos NULL herdam a intenção
+    pedagógica original da aula; assim cursos já existentes ganham o novo
+    recurso sem migração destrutiva."""
+    conn = _connect()
+    try:
+        _ensure_schema(conn)
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as c:
+            c.execute("SELECT * FROM lessons WHERE id = %s", (lesson_id,))
+            lesson = c.fetchone()
+            if not lesson:
+                raise CursoStoreError("aula não encontrada")
+            c.execute("SELECT * FROM lesson_inclusions WHERE lesson_id = %s", (lesson_id,))
+            row = c.fetchone()
+        row = dict(row) if row else {}
+        def val(name, fallback):
+            return fallback if row.get(name) is None else bool(row.get(name))
+        return {
+            "lesson_id": lesson_id,
+            "include_text": val("include_text", True),
+            "include_video": val("include_video", bool(lesson["video_required"])),
+            "include_audio": val("include_audio", bool(lesson["audio_required"])),
+            "include_podcast": val("include_podcast", False),
+            "include_quiz": val("include_quiz", bool(lesson["quiz_required"])),
+            "include_exercise": val("include_exercise", bool(lesson["exercise_required"])),
+            "tutor_notes": row.get("tutor_notes_json") or [],
+        }
+    finally:
+        conn.close()
+
+
+def save_lesson_inclusion(lesson_id: str, patch: dict) -> dict:
+    atual = get_lesson_inclusion(lesson_id)
+    permitidos = {"include_text", "include_video", "include_audio", "include_podcast",
+                  "include_quiz", "include_exercise"}
+    for k in permitidos:
+        if k in patch:
+            atual[k] = bool(patch[k])
+    notes = list(atual.get("tutor_notes") or [])
+    nota = patch.get("add_tutor_note")
+    if isinstance(nota, str) and nota.strip() and nota.strip() not in notes:
+        notes.append(nota.strip())
+    remover = patch.get("remove_tutor_note")
+    if isinstance(remover, str) and remover in notes:
+        notes.remove(remover)
+
+    conn = _connect()
+    try:
+        _ensure_schema(conn)
+        with conn.cursor() as c:
+            c.execute(
+                """INSERT INTO lesson_inclusions
+                   (lesson_id, include_text, include_video, include_audio, include_podcast,
+                    include_quiz, include_exercise, tutor_notes_json, atualizado_em)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,now())
+                   ON CONFLICT (lesson_id) DO UPDATE SET
+                     include_text=EXCLUDED.include_text, include_video=EXCLUDED.include_video,
+                     include_audio=EXCLUDED.include_audio, include_podcast=EXCLUDED.include_podcast,
+                     include_quiz=EXCLUDED.include_quiz, include_exercise=EXCLUDED.include_exercise,
+                     tutor_notes_json=EXCLUDED.tutor_notes_json, atualizado_em=now()""",
+                (lesson_id, atual["include_text"], atual["include_video"], atual["include_audio"],
+                 atual["include_podcast"], atual["include_quiz"], atual["include_exercise"],
+                 json.dumps(notes)),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    atual["tutor_notes"] = notes
+    return atual

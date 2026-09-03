@@ -8,6 +8,7 @@ operação, volume de chamadas, taxa de erro, feedback 👍/👎 e médias dos e
 from __future__ import annotations
 
 from . import db
+from . import quality
 
 
 def _percentile(values: list[float], pct: float) -> float:
@@ -60,6 +61,7 @@ def summary() -> dict:
     # evals
     ev = db.query(
         "SELECT AVG(groundedness) g, AVG(relevance) r, AVG(coherence) c, "
+        "AVG(source_fidelity) sf, AVG(completeness) cp, "
         "AVG(judge_score) s, AVG(hallucination) h, COUNT(*) n FROM evals"
     )
     ev = ev[0] if ev else {}
@@ -120,6 +122,24 @@ def summary() -> dict:
         "indexed_chunks": None,   # preenchido pelo endpoint (best-effort)
     }
 
+    # Qualidade por tipo de artefato (RAG, tutor, quiz...) para comparação.
+    target_rows = db.query(
+        "SELECT target, COUNT(*) n, AVG(judge_score) s, AVG(groundedness) g, "
+        "AVG(relevance) r, AVG(source_fidelity) sf, AVG(completeness) cp, "
+        "AVG(hallucination) h FROM evals GROUP BY target ORDER BY n DESC"
+    )
+    evals_by_target = {
+        (r["target"] or "?"): {
+            "count": r["n"] or 0,
+            "judge_score": round(r["s"] or 0, 3),
+            "groundedness": round(r["g"] or 0, 3),
+            "relevance": round(r["r"] or 0, 3),
+            "source_fidelity": round(r["sf"] or 0, 3),
+            "completeness": round(r["cp"] or 0, 3),
+            "hallucination_rate": round(r["h"] or 0, 3),
+        } for r in target_rows
+    }
+
     return {
         "totals": {
             "calls": total_calls,
@@ -142,7 +162,10 @@ def summary() -> dict:
             "avg_groundedness": round(ev.get("g") or 0, 3),
             "avg_relevance": round(ev.get("r") or 0, 3),
             "avg_coherence": round(ev.get("c") or 0, 3),
+            "avg_source_fidelity": round(ev.get("sf") or 0, 3),
+            "avg_completeness": round(ev.get("cp") or 0, 3),
             "avg_judge_score": round(ev.get("s") or 0, 3),
+            "by_target": evals_by_target,
             "hallucination_rate": round(ev.get("h") or 0, 3),
         },
         "finops": {
@@ -156,6 +179,7 @@ def summary() -> dict:
             "spend_by_day": dict(sorted(spend_by_day.items())),
         },
         "rag": rag,
+        "quality_gate": quality.aggregate(),
     }
 
 
@@ -171,8 +195,9 @@ def recent_logs(limit: int = 100) -> list[dict]:
 def recent_evals(limit: int = 20) -> list[dict]:
     """Avaliações recentes do LLM-as-Judge, com o racional."""
     return db.query(
-        "SELECT ts, target, groundedness, relevance, coherence, judge_score, "
-        "hallucination, model, rationale FROM evals ORDER BY ts DESC LIMIT ?",
+        "SELECT ts, trace_id, target, groundedness, relevance, coherence, "
+        "source_fidelity, completeness, judge_score, hallucination, model, "
+        "prompt_version, rationale FROM evals ORDER BY ts DESC LIMIT ?",
         (limit,)
     )
 
@@ -184,3 +209,30 @@ def errors_recent(limit: int = 50) -> list[dict]:
         "WHERE status != 'ok' AND status != 'cache_hit' "
         "ORDER BY ts DESC LIMIT ?", (limit,)
     )
+
+
+def recent_benchmarks(limit: int = 50) -> list[dict]:
+    return db.query(
+        "SELECT ts, suite, case_id, label, target, trace_id, judge_model, "
+        "prompt_version, groundedness, relevance, source_fidelity, completeness, "
+        "judge_score, hallucination, gate_status, gate_failures "
+        "FROM benchmark_runs ORDER BY ts DESC LIMIT ?", (limit,)
+    )
+
+
+def benchmark_summary(limit: int = 200) -> dict:
+    rows = recent_benchmarks(limit)
+    if not rows:
+        return {"count": 0, "pass_rate": None, "by_suite": {}}
+    by_suite = {}
+    for r in rows:
+        suite = r.get("suite") or "default"
+        b = by_suite.setdefault(suite, {"count": 0, "passed": 0, "judge_sum": 0.0})
+        b["count"] += 1
+        b["passed"] += 1 if r.get("gate_status") == "pass" else 0
+        b["judge_sum"] += float(r.get("judge_score") or 0)
+    for b in by_suite.values():
+        b["pass_rate"] = round(b["passed"] / b["count"], 4) if b["count"] else None
+        b["avg_judge_score"] = round(b.pop("judge_sum") / b["count"], 4) if b["count"] else 0
+    passed = sum(1 for r in rows if r.get("gate_status") == "pass")
+    return {"count": len(rows), "pass_rate": round(passed/len(rows),4), "by_suite": by_suite}

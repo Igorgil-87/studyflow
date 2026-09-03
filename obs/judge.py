@@ -25,8 +25,11 @@ from . import db, pricing, tracing
 JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", os.getenv("LLM_MODEL", "gpt-4o-mini"))
 MAX_CONTEXT_CHARS = int(os.getenv("EVAL_MAX_CONTEXT_CHARS", "6000"))
 
+PROMPT_VERSION = os.getenv("EVAL_PROMPT_VERSION", "eval-v2")
+
 _NEUTRAL = {
     "groundedness": None, "relevance": None, "coherence": None,
+    "source_fidelity": None, "completeness": None,
     "hallucination": None, "judge_score": None,
     "rationale": "juiz indisponível (veredito neutro)", "ok": False,
 }
@@ -42,6 +45,32 @@ TRANSCRIPT:
 
 QUIZ (JSON):
 {quiz}
+"""
+
+
+_RESPONSE_PROMPT = """Você é um avaliador rigoroso de sistemas RAG e tutores educacionais.
+Avalie a RESPOSTA usando SOMENTE o CONTEXTO como fonte factual e considerando a PERGUNTA.
+
+Critérios (0..1):
+- groundedness: quanto das afirmações factuais está sustentado pelo contexto.
+- relevance: quanto a resposta atende diretamente à pergunta.
+- coherence: clareza, consistência e organização.
+- source_fidelity: fidelidade ao contexto, sem distorcer ou extrapolar o material.
+- completeness: cobertura suficiente do que a pergunta exige, dentro do contexto disponível.
+- hallucination: true se houver afirmação factual relevante não sustentada pelo contexto.
+- judge_score: nota consolidada 0..1.
+
+Responda APENAS JSON válido, sem markdown, neste formato exato:
+{{"groundedness":0..1,"relevance":0..1,"coherence":0..1,"source_fidelity":0..1,"completeness":0..1,"hallucination":true/false,"judge_score":0..1,"rationale":"1 frase objetiva"}}
+
+CONTEXTO:
+{context}
+
+PERGUNTA:
+{question}
+
+RESPOSTA:
+{answer}
 """
 
 
@@ -98,6 +127,71 @@ def judge_quiz(
         return out
 
 
+def judge_response(
+    question: str, context: str, answer: str,
+    model: str | None = None, trace_id: str | None = None, _caller=None,
+) -> dict:
+    """Avalia uma resposta grounded (RAG/tutor). Fail-open."""
+    model = model or JUDGE_MODEL
+    caller = _caller or _default_caller
+    prompt = _RESPONSE_PROMPT.format(
+        context=(context or "")[:MAX_CONTEXT_CHARS],
+        question=(question or "")[:2000],
+        answer=(answer or "")[:MAX_CONTEXT_CHARS],
+    )
+    raw = tracing.traced_llm(
+        "openai", "judge_response", model, caller, prompt, model,
+        trace_id=trace_id, input_text=prompt, timeout=60, fallback="",
+    )
+    if not raw:
+        return dict(_NEUTRAL)
+    try:
+        text = raw.strip()
+        if text.startswith("```"):
+            text = text.strip("`").lstrip("json").strip()
+        data = json.loads(text)
+        return {
+            "groundedness": float(data.get("groundedness", 0)),
+            "relevance": float(data.get("relevance", 0)),
+            "coherence": float(data.get("coherence", 0)),
+            "source_fidelity": float(data.get("source_fidelity", data.get("groundedness", 0))),
+            "completeness": float(data.get("completeness", data.get("relevance", 0))),
+            "hallucination": bool(data.get("hallucination", False)),
+            "judge_score": float(data.get("judge_score", 0)),
+            "rationale": str(data.get("rationale", ""))[:500],
+            "ok": True,
+        }
+    except Exception as e:
+        out = dict(_NEUTRAL)
+        out["rationale"] = f"parse falhou: {e}"
+        return out
+
+
+def run_response_eval(
+    trace_id: str, target: str, question: str, context: str, answer: str,
+    model: str | None = None, _caller=None,
+) -> dict:
+    """Avalia uma resposta e persiste métricas comparáveis no dashboard."""
+    verdict = judge_response(
+        question, context, answer, model=model, trace_id=trace_id, _caller=_caller,
+    )
+    if verdict.get("ok"):
+        db.insert_eval({
+            "trace_id": trace_id, "target": target,
+            "groundedness": verdict["groundedness"],
+            "relevance": verdict["relevance"],
+            "coherence": verdict["coherence"],
+            "source_fidelity": verdict["source_fidelity"],
+            "completeness": verdict["completeness"],
+            "hallucination": verdict["hallucination"],
+            "judge_score": verdict["judge_score"],
+            "model": model or JUDGE_MODEL,
+            "prompt_version": PROMPT_VERSION,
+            "rationale": verdict["rationale"],
+        })
+    return verdict
+
+
 def run_quiz_eval(
     trace_id: str, transcript: str, quiz: dict,
     model: str | None = None, _caller=None,
@@ -111,9 +205,12 @@ def run_quiz_eval(
             "groundedness": verdict["groundedness"],
             "relevance": verdict["relevance"],
             "coherence": verdict["coherence"],
+            "source_fidelity": verdict["groundedness"],
+            "completeness": verdict["relevance"],
             "hallucination": verdict["hallucination"],
             "judge_score": verdict["judge_score"],
             "model": model or JUDGE_MODEL,
+            "prompt_version": PROMPT_VERSION,
             "rationale": verdict["rationale"],
         })
     return verdict

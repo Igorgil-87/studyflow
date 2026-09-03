@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyFlow · AI Gateway & Modelos</title>
+  {% include 'partials/_fonts.html' %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .models-wrap{max-width:1080px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+    .provider-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .provider-name{font-size:17px;font-weight:700;text-transform:capitalize}
+    .badge{font-size:11px;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--text-3)}
+    .badge.ok{background:var(--accent-dim);color:var(--accent)}
+    .meta{font-size:12px;color:var(--text-2);margin-top:10px;line-height:1.7}
+    .route{margin:14px 0 22px;padding:15px 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+    .route strong{color:var(--accent)}
+    .lab{margin-top:22px}
+    .lab textarea{width:100%;box-sizing:border-box;min-height:110px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--text);resize:vertical}
+    .lab .context{min-height:76px}
+    .controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:12px 0}
+    .provider-check{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--text-2)}
+    .btn{border:0;border-radius:10px;padding:10px 14px;background:var(--accent);color:#10120d;font-weight:700;cursor:pointer}
+    .btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+    .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+    .result{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:150px}
+    .result pre{white-space:pre-wrap;font-family:inherit;font-size:13px;color:var(--text-2);line-height:1.55}
+    .metric{display:flex;justify-content:space-between;gap:12px;font-size:12px;border-bottom:1px solid var(--line);padding:6px 0}
+    .metric:last-child{border:0}
+    .warn{font-size:12px;color:var(--text-3);margin-top:8px}
+    .history{margin-top:22px;overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line)}
+    th{color:var(--text-3);font-weight:500}
+    @media(max-width:860px){.grid,.results{grid-template-columns:1fr}.models-wrap{max-width:none}}
+  </style>
+</head>
+<body data-module="neutral">
+  <div class="grain"></div>
+  {% include 'partials/_mobile_header.html' %}
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
+    <div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>
+    {% set active = 'models' %}
+    {% include 'partials/_sidebar.html' %}
+  </aside>
+  <main class="stage models-wrap">
+    <div class="head-tag">AI Engineering</div>
+    <h1 class="cat-title">AI Gateway & Modelos</h1>
+    <p class="cat-sub">Roteamento multi-modelo, fallback e comparação controlada sem expor chaves de API.</p>
+
+    <div class="route" id="routeBox">Carregando rota do gateway...</div>
+    <section class="grid" id="providers"></section>
+
+    <section class="card lab">
+      <h2 style="margin:0 0 4px;font-size:16px">Model Benchmark Lab</h2>
+      <p class="warn">Executa o mesmo prompt isoladamente em cada provedor selecionado. É manual e pode consumir créditos de API.</p>
+      <label class="cfg-row-label" for="prompt">Prompt</label>
+      <textarea id="prompt" placeholder="Ex.: Explique RAG em até 5 linhas e cite apenas fatos presentes no contexto."></textarea>
+      <label class="cfg-row-label" for="context" style="display:block;margin-top:10px">Contexto de referência (opcional, usado na avaliação)</label>
+      <textarea id="context" class="context" placeholder="Cole aqui o contexto/ground truth se quiser avaliar groundedness e relevância."></textarea>
+      <div class="controls">
+        <label class="provider-check"><input type="checkbox" value="gemini" checked> Gemini</label>
+        <label class="provider-check"><input type="checkbox" value="openai" checked> OpenAI</label>
+        <label class="provider-check"><input type="checkbox" value="anthropic" checked> Anthropic</label>
+        <label class="provider-check"><input id="evaluate" type="checkbox"> Rodar AI Eval</label>
+        <button id="compareBtn" class="btn" type="button">Comparar modelos</button>
+      </div>
+      <div id="compareMsg" class="warn"></div>
+      <div class="results" id="results"></div>
+    </section>
+
+    <section class="card history">
+      <h2 style="margin:0 0 10px;font-size:16px">Últimas comparações</h2>
+      <table><thead><tr><th>Comparison</th><th>Provider</th><th>Modelo</th><th>Status</th><th>Latência</th><th>Judge</th></tr></thead><tbody id="historyBody"><tr><td colspan="6">Carregando...</td></tr></tbody></table>
+    </section>
+  </main>
+<script>
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function loadStatus(){
+    const data = await fetch('/api/models/status').then(r=>r.json());
+    const g = data.gateway || {};
+    document.getElementById('routeBox').innerHTML = `Rota padrão: <strong>${esc(g.primary_provider)}</strong> → fallback: ${esc((g.fallback_providers||[]).join(' → ') || 'desativado')} · timeout ${esc(g.timeout_seconds)}s`;
+    document.getElementById('providers').innerHTML = (data.providers||[]).map(p=>`
+      <div class="card">
+        <div class="provider-head"><div class="provider-name">${esc(p.provider)}</div><span class="badge ${p.configured?'ok':''}">${p.configured?'Configurado':'Sem chave'}</span></div>
+        <div class="meta">Modelo: <b>${esc(p.model)}</b><br>${p.primary?'Rota primária':(p.fallback?'Fallback configurado':'Fora da rota padrão')}<br>Secret: ${esc(p.key_env)} · valor nunca exibido</div>
+        <button class="btn secondary" style="margin-top:12px" onclick="testProvider('${esc(p.provider)}')" ${p.configured?'':'disabled'}>Testar conexão</button>
+        <div class="warn" id="test-${esc(p.provider)}"></div>
+      </div>`).join('');
+  }
+  async function testProvider(provider){
+    const el=document.getElementById('test-'+provider); el.textContent='Testando...';
+    const res=await fetch('/api/models/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider})});
+    const data=await res.json();
+    el.textContent=data.ok?`OK · ${data.model} · ${Math.round(data.latency_ms)} ms`:`Falhou · ${data.error||'erro'}`;
+  }
+  async function compare(){
+    const btn=document.getElementById('compareBtn'), msg=document.getElementById('compareMsg');
+    const providers=[...document.querySelectorAll('.provider-check input[type=checkbox][value]:checked')].map(x=>x.value);
+    const prompt=document.getElementById('prompt').value.trim();
+    if(!prompt){msg.textContent='Digite um prompt.';return}
+    btn.disabled=true; msg.textContent='Executando benchmark...'; document.getElementById('results').innerHTML='';
+    try{
+      const res=await fetch('/api/models/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,context:document.getElementById('context').value,providers,evaluate:document.getElementById('evaluate').checked})});
+      const data=await res.json(); if(!res.ok) throw new Error(data.error||'Falha no benchmark');
+      msg.textContent=`Comparison ${data.comparison_id}${data.evaluation_requested&&!data.evaluate?' · AI Eval solicitado, mas EVAL_ENABLED=0':''}`;
+      document.getElementById('results').innerHTML=(data.results||[]).map(r=>`
+        <div class="result"><div class="provider-head"><b>${esc(r.provider)}</b><span class="badge ${r.status==='ok'?'ok':''}">${esc(r.status)}</span></div>
+        <div class="meta">${esc(r.model||'—')} · ${r.latency_ms?Math.round(r.latency_ms)+' ms':'—'}</div>
+        ${r.evaluation?`<div style="margin:10px 0"><div class="metric"><span>Judge</span><b>${Math.round((r.evaluation.judge_score||0)*100)}%</b></div><div class="metric"><span>Groundedness</span><b>${Math.round((r.evaluation.groundedness||0)*100)}%</b></div><div class="metric"><span>Relevance</span><b>${Math.round((r.evaluation.relevance||0)*100)}%</b></div></div>`:''}
+        <pre>${esc(r.response||r.error||'Provedor não configurado')}</pre></div>`).join('');
+      loadHistory();
+    }catch(e){msg.textContent=e.message}finally{btn.disabled=false}
+  }
+  async function loadHistory(){
+    const data=await fetch('/api/models/comparisons?limit=30').then(r=>r.json());
+    const rows=data.runs||[];
+    document.getElementById('historyBody').innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.comparison_id)}</td><td>${esc(r.provider)}</td><td>${esc(r.model)}</td><td>${esc(r.status)}</td><td>${r.latency_ms?Math.round(r.latency_ms)+' ms':'—'}</td><td>${r.judge_score==null?'—':Math.round(r.judge_score*100)+'%'}</td></tr>`).join(''):'<tr><td colspan="6">Nenhuma comparação ainda.</td></tr>';
+  }
+  document.getElementById('compareBtn').addEventListener('click',compare);
+  loadStatus().catch(console.error); loadHistory().catch(console.error);
+</script>
+</body>
+</html>

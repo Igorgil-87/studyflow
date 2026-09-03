@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Flow · Módulo Curso</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <title>StudyFlow · Georgina</title>
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-module="study">
+  <a class="ux-skip-link" href="#mainContent">Pular para o conteúdo principal</a>
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -25,40 +26,54 @@
   </aside>
 
   <!-- ░░ MAIN ░░ -->
-  <main class="stage cx-main">
-    <!-- ░ HERO ENTERPRISE ░ -->
-    <header class="cx-hero">
+  <main class="stage cx-main" id="mainContent" tabindex="-1">
+    <!-- ░ GEORGINA EXPERIENCE · HERO + ESCOLHA DE JORNADA ░ -->
+    <header class="cx-hero cx-georgina-hero">
       <div class="cx-hero-left">
-        <div class="cx-eyebrow"><span class="cx-eyebrow-dot"></span> MÓDULO CURSO · IA</div>
-        <h1 class="cx-title">O que você quer <em>dominar</em> hoje?</h1>
-        <p class="cx-sub">Digite um tema. O agente busca no YouTube, transcreve com Whisper e monta seu quiz, roteiro de estudo e aulas cortadas — automaticamente.</p>
-        <div class="cx-pipeline-hint">
-          <span class="cx-hint-step">1 · Busca</span>
-          <span class="cx-hint-arrow">→</span>
-          <span class="cx-hint-step">2 · Transcreve</span>
-          <span class="cx-hint-arrow">→</span>
-          <span class="cx-hint-step">3 · Quiz + Roteiro</span>
-          <span class="cx-hint-arrow">→</span>
-          <span class="cx-hint-step">4 · Aulas</span>
+        <div class="cx-eyebrow"><span class="cx-eyebrow-dot"></span> GEORGINA · CONHECIMENTO QUE TRANSFORMA</div>
+        <h1 class="cx-title">O que você quer <em>aprender</em> hoje?</h1>
+        <p class="cx-sub" id="cxHeroSub">Transforme um tema ou seu próprio material em uma jornada de estudo com aulas, quiz, flashcards e roteiro — a IA cuida da estrutura.</p>
+        <div class="cx-pipeline-hint" id="cxPipelineHint" aria-label="Etapas da jornada de estudo">
+          <span class="cx-hint-step">1 · Escolha</span><span class="cx-hint-arrow">→</span>
+          <span class="cx-hint-step">2 · IA estrutura</span><span class="cx-hint-arrow">→</span>
+          <span class="cx-hint-step">3 · Estude</span><span class="cx-hint-arrow">→</span>
+          <span class="cx-hint-step">4 · Pratique</span>
         </div>
       </div>
-      <div class="cx-hero-badges">
-        <div class="cx-badge"><div class="cx-badge-num">4</div><div class="cx-badge-lbl">saídas por tema</div></div>
-        <div class="cx-badge"><div class="cx-badge-num">IA</div><div class="cx-badge-lbl">multi-modelo</div></div>
+      <div class="cx-georgina-art" aria-hidden="true">
+        <picture>
+          <source media="(max-width: 639px)" srcset="{{ url_for('static', filename='img/modules/georgina-256.webp') }}">
+          <source media="(max-width: 1023px)" srcset="{{ url_for('static', filename='img/modules/georgina-512.webp') }}">
+          <img src="{{ url_for('static', filename='img/modules/georgina-512.webp') }}" width="512" height="512" alt="" decoding="async" fetchpriority="high">
+        </picture>
       </div>
     </header>
 
-    <!-- ░ ESCOLHA DO MODO DE CRIAÇÃO (AI Course Generation Engine) ░ -->
-    <div class="cx-mode-toggle" id="cxModeToggle">
-      <button type="button" class="cx-mode-btn active" data-mode="youtube">📺 Curso pelo YouTube</button>
-      <button type="button" class="cx-mode-btn" data-mode="criativo">📄 Modo Criativo</button>
-    </div>
+    <section class="cx-journey" aria-labelledby="cxJourneyTitle">
+      <div class="cx-journey-head">
+        <span class="cx-kicker">FONTE DO CONTEÚDO</span>
+        <h2 id="cxJourneyTitle">De onde vem o conteúdo?</h2>
+        <p class="cx-journey-intro" id="cxJourneyIntro">No YouTube, a Georgina busca o conteúdo e entrega o curso completo. Em Meu material, você revisa a estrutura antes da geração.</p>
+      </div>
+      <div class="cx-mode-toggle cx-mode-cards" id="cxModeToggle" role="group" aria-label="Fonte do curso">
+        <button type="button" class="cx-mode-btn active" data-mode="youtube" aria-pressed="true">
+          <span class="cx-mode-icon" aria-hidden="true">▶</span>
+          <span class="cx-mode-copy"><strong>YouTube</strong><small>Digite um tema e a IA encontra o conteúdo e monta o curso completo.</small></span>
+          <span class="cx-mode-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="cx-mode-btn" data-mode="criativo" aria-pressed="false">
+          <span class="cx-mode-icon" aria-hidden="true">✦</span>
+          <span class="cx-mode-copy"><strong>Meu material</strong><small>Use seus próprios documentos como base para o estudo.</small></span>
+          <span class="cx-mode-check" aria-hidden="true">✓</span>
+        </button>
+      </div>
+    </section>
 
     <!-- ░ COMPOSER (Opção 1 · YouTube — fluxo INTOCADO) ░ -->
     <section class="composer cx-composer" id="composer">
       <div class="composer-glow"></div>
-      <label class="cx-composer-label">Tema do curso</label>
-      <textarea id="topic" rows="1" placeholder="ex: redes neurais convolucionais, contratos inteligentes, fotossíntese..."></textarea>
+      <label class="cx-composer-label" for="topic">O que você quer aprender?</label>
+      <textarea id="topic" rows="1" placeholder="Ex.: redes neurais convolucionais, contratos inteligentes, fotossíntese..."></textarea>
 
       <div class="composer-bar cx-composer-bar">
         <div class="controls cx-controls">
@@ -75,91 +90,61 @@
             </select>
           </label>
         </div>
-        <button class="generate-btn cx-generate" id="generateBtn">
+        <button class="generate-btn cx-generate ux-action ux-action-primary" data-action-level="primary" id="generateBtn" type="button">
           <span class="btn-label">Gerar curso</span>
-          <span class="btn-ico">→</span>
+          <span class="btn-ico" aria-hidden="true">→</span>
         </button>
       </div>
     </section>
 
-    <!-- ░ MODO CRIATIVO (Opção 2 · documento é a fonte de verdade) ░ -->
-    <section class="cx-material" id="cxCriativo" hidden>
-      <div class="cx-material-head">
-        <span class="cx-material-title">📄 Modo Criativo — transforme seu material em curso</span>
-        <span class="cx-material-hint">Upload obrigatório: PDF, DOCX, PPTX, TXT ou Markdown. O documento é a fonte
-          de verdade — a IA estrutura um curso pedagógico a partir dele, não só resume.</span>
+    <!-- ░ MEU MATERIAL · documento é a fonte de verdade ░ -->
+    <section class="cx-material cx-creative" id="cxCriativo" hidden>
+      <div class="cx-material-head cx-creative-head">
+        <span class="cx-kicker">MEU MATERIAL</span>
+        <span class="cx-material-title">Transforme seu conteúdo em uma jornada de estudo</span>
+        <span class="cx-material-hint">Envie o material principal. A Georgina organiza os pontos importantes em uma sequência de estudo que você poderá revisar.</span>
       </div>
 
-      <label class="cx-material-upload" for="cxCriativoInput">
-        <span id="cxCriativoLabel">Escolher documento (até 20MB) — obrigatório</span>
+      <label class="cx-material-upload cx-upload-zone" for="cxCriativoInput">
+        <span class="cx-upload-icon" aria-hidden="true">↑</span>
+        <span class="cx-upload-copy"><strong id="cxCriativoLabel">Selecionar material</strong><small>PDF, DOCX, PPTX, TXT ou Markdown · até 20 MB</small></span>
+        <span class="cx-upload-action">Escolher arquivo</span>
       </label>
       <input id="cxCriativoInput" type="file" accept=".pdf,.docx,.pptx,.txt,.md,.markdown" hidden>
 
-      <div class="cx-criativo-grid">
-        <label class="ctrl cx-ctrl">
-          <span>Nome do curso (opcional — a IA sugere)</span>
-          <input id="cxCriativoNome" type="text" class="est-theme-input" placeholder="deixe em branco pra IA sugerir">
+      <div class="cx-creative-primary form-grid">
+        <label class="form-field">
+          <span class="form-label">Nome do curso <small>opcional</small></span>
+          <input id="cxCriativoNome" type="text" class="est-theme-input" placeholder="Deixe em branco para receber uma sugestão">
         </label>
-        <label class="ctrl cx-ctrl">
-          <span>Objetivo (opcional)</span>
-          <input id="cxCriativoObjetivo" type="text" class="est-theme-input" placeholder="ex: aprender arquitetura de agentes de IA">
-        </label>
-        <label class="ctrl cx-ctrl">
-          <span>Público</span>
-          <select id="cxCriativoPublico" class="est-theme-input">
-            <option value="iniciante">Iniciante</option>
-            <option value="estudante" selected>Estudante</option>
-            <option value="desenvolvedor">Desenvolvedor</option>
-            <option value="arquiteto">Arquiteto</option>
-            <option value="executivo">Executivo</option>
-            <option value="especialista">Especialista</option>
-          </select>
-        </label>
-        <label class="ctrl cx-ctrl">
-          <span>Nível</span>
-          <select id="cxCriativoNivel" class="est-theme-input">
-            <option value="introducao">Introdução</option>
-            <option value="fundamentos" selected>Fundamentos</option>
-            <option value="intermediario">Intermediário</option>
-            <option value="avancado">Avançado</option>
-            <option value="deep_dive">Deep Dive</option>
-          </select>
-        </label>
-        <label class="ctrl cx-ctrl">
-          <span>Duração desejada</span>
-          <select id="cxCriativoDuracao" class="est-theme-input">
-            <option value="30">30 minutos</option>
-            <option value="60" selected>1 hora</option>
-            <option value="120">2 horas</option>
-            <option value="240">4 horas</option>
-          </select>
-        </label>
-        <label class="ctrl cx-ctrl">
-          <span>Estilo</span>
-          <select id="cxCriativoEstilo" class="est-theme-input">
-            <option value="academico">Acadêmico</option>
-            <option value="executivo">Executivo</option>
-            <option value="professor">Professor</option>
-            <option value="tecnico">Técnico</option>
-            <option value="pratico" selected>Prático</option>
-            <option value="storytelling">Storytelling</option>
-          </select>
+        <label class="form-field">
+          <span class="form-label">Objetivo <small>opcional</small></span>
+          <input id="cxCriativoObjetivo" type="text" class="est-theme-input" placeholder="Ex.: dominar arquitetura de agentes de IA">
         </label>
       </div>
 
-      <button class="generate-btn cx-generate" id="cxCriativoBtn" style="margin-top:16px">
-        <span class="btn-label">Analisar material e gerar estrutura</span>
-        <span class="btn-ico">→</span>
-      </button>
+      <details class="cx-personalize">
+        <summary><span>⚙ Personalizar curso</span><small>Público, nível, duração e estilo</small></summary>
+        <div class="cx-criativo-grid">
+          <label class="form-field"><span class="form-label">Público</span><select id="cxCriativoPublico" class="est-theme-input"><option value="iniciante">Iniciante</option><option value="estudante" selected>Estudante</option><option value="desenvolvedor">Desenvolvedor</option><option value="arquiteto">Arquiteto</option><option value="executivo">Executivo</option><option value="especialista">Especialista</option></select></label>
+          <label class="form-field"><span class="form-label">Nível</span><select id="cxCriativoNivel" class="est-theme-input"><option value="introducao">Introdução</option><option value="fundamentos" selected>Fundamentos</option><option value="intermediario">Intermediário</option><option value="avancado">Avançado</option><option value="deep_dive">Deep Dive</option></select></label>
+          <label class="form-field"><span class="form-label">Duração desejada</span><select id="cxCriativoDuracao" class="est-theme-input"><option value="30">30 minutos</option><option value="60" selected>1 hora</option><option value="120">2 horas</option><option value="240">4 horas</option></select></label>
+          <label class="form-field"><span class="form-label">Estilo</span><select id="cxCriativoEstilo" class="est-theme-input"><option value="academico">Acadêmico</option><option value="executivo">Executivo</option><option value="professor">Professor</option><option value="tecnico">Técnico</option><option value="pratico" selected>Prático</option><option value="storytelling">Storytelling</option></select></label>
+        </div>
+      </details>
 
-      <div id="cxCriativoError" class="error-box" hidden></div>
+      <button class="generate-btn cx-generate cx-creative-cta ux-action ux-action-primary" data-action-level="primary" id="cxCriativoBtn" type="button">
+        <span class="btn-label">Criar plano de estudo</span><span class="btn-ico" aria-hidden="true">→</span>
+      </button>
+      <p class="cx-action-help">Você revisa e ajusta o plano antes de começar a estudar.</p>
+      <div id="cxCriativoError" class="error-box ux-inline-system-error" role="alert" aria-live="assertive" hidden></div>
     </section>
 
     <!-- ░ MATERIAL DE APOIO (PDF/PPTX/DOCX ou URL → RAG do curso) ░ -->
     <section class="cx-material" id="cxMaterial">
       <div class="cx-material-head">
         <span class="cx-material-title">📎 Material de apoio (opcional)</span>
-        <span class="cx-material-hint">PDF, PPTX, DOCX, XLSX, CSV, HTML, EPUB, ZIP, imagem ou uma URL — o conteúdo entra na base de conhecimento pra enriquecer as perguntas do curso.</span>
+        <span class="cx-material-hint">Adicione arquivos ou um link para complementar o conteúdo usado nas perguntas e explicações do curso.</span>
       </div>
       <label class="cx-material-upload" for="cxMaterialInput">
         <span id="cxMaterialLabel">Escolher arquivo (até 20MB)</span>
@@ -167,19 +152,20 @@
       <input id="cxMaterialInput" type="file" accept=".pdf,.pptx,.docx,.xlsx,.xls,.csv,.json,.xml,.html,.htm,.zip,.epub,.png,.jpg,.jpeg,.gif,.bmp" hidden>
 
       <div class="cx-material-url-row">
-        <input id="cxMaterialUrl" type="url" class="est-theme-input" placeholder="ou cole uma URL (ex: artigo, documentação)">
-        <button type="button" id="cxMaterialUrlBtn" class="ghost-btn">Indexar URL</button>
+        <label class="ux-sr-only" for="cxMaterialUrl">URL do material de apoio</label>
+        <input id="cxMaterialUrl" type="url" class="est-theme-input" placeholder="Cole um link, como um artigo ou documentação">
+        <button type="button" id="cxMaterialUrlBtn" class="ghost-btn ux-action ux-action-secondary" data-action-level="secondary">Adicionar link</button>
       </div>
 
       <div id="cxMaterialList" class="cx-material-list"></div>
-      <div id="cxMaterialError" class="error-box" hidden></div>
+      <div id="cxMaterialError" class="error-box ux-inline-system-error" role="alert" aria-live="assertive" hidden></div>
     </section>
 
     <!-- ░ PIPELINE LOG ░ -->
     <section class="pipeline" id="pipeline" hidden>
       <div class="pipeline-head">
         <h2>Agente trabalhando</h2>
-        <button class="reset-btn" id="resetBtn">Cancelar</button>
+        <button class="reset-btn ux-action ux-action-tertiary" data-action-level="tertiary" id="resetBtn">Cancelar</button>
       </div>
 
       <div class="video-card" id="videoCard" hidden>
@@ -253,9 +239,52 @@
       <div class="clips-view" id="aulasView" hidden></div>
 
       <div class="result-foot">
-        <button class="ghost-btn" id="newBtn">＋ Novo curso</button>
-        <button class="cx-conclude-btn" id="concludeBtn">🎓 Concluir e emitir certificado</button>
+        <button class="ghost-btn ux-action ux-action-secondary" data-action-level="secondary" id="newBtn">＋ Novo curso</button>
+        <div class="result-foot-actions">
+          <button class="ghost-btn save-course-btn ux-action ux-action-secondary" data-action-level="secondary" id="saveCourseBtn" type="button">♡ Salvar curso</button>
+          <button class="cx-conclude-btn ux-action ux-action-primary" data-action-level="primary" id="concludeBtn">🎓 Concluir e emitir certificado</button>
+        </div>
       </div>
+
+      <dialog class="save-course-dialog" id="saveCourseDialog" aria-labelledby="saveCourseTitle">
+        <form method="dialog" class="save-course-shell" id="saveCourseForm">
+          <div class="save-course-preview">
+            <img id="saveCourseImage" alt="Capa do curso" loading="lazy">
+          </div>
+          <div class="save-course-fields">
+            <div class="save-course-head">
+              <div>
+                <div class="result-tag cx-result-tag">Salvar na biblioteca</div>
+                <h3 id="saveCourseTitle">Guarde este curso</h3>
+              </div>
+              <button class="save-course-close" value="cancel" type="submit" aria-label="Fechar">×</button>
+            </div>
+            <label class="form-control">
+              <span class="form-label">Título</span>
+              <input id="saveCourseTitleInput" maxlength="180" required>
+            </label>
+            <label class="form-control">
+              <span class="form-label">Autor / canal</span>
+              <input id="saveCourseAuthorInput" maxlength="120">
+            </label>
+            <label class="form-control">
+              <span class="form-label">Imagem da capa</span>
+              <input id="saveCourseImageFile" type="file" accept="image/png,image/jpeg,image/webp">
+              <span class="form-helper">Envie PNG, JPG ou WebP (até 8 MB).</span>
+            </label>
+            <label class="form-control">
+              <span class="form-label">ou use uma URL</span>
+              <input id="saveCourseImageInput" type="url" placeholder="https://...">
+              <span class="form-helper">No YouTube, a thumbnail original continua como padrão.</span>
+            </label>
+            <div class="save-course-feedback" id="saveCourseFeedback" role="status" aria-live="polite"></div>
+            <div class="save-course-actions">
+              <button class="ghost-btn ux-action ux-action-tertiary" data-action-level="tertiary" value="cancel" type="submit">Cancelar</button>
+              <button class="cx-conclude-btn ux-action ux-action-primary" data-action-level="primary" id="saveCourseConfirm" type="button">Salvar no catálogo</button>
+            </div>
+          </div>
+        </form>
+      </dialog>
     </section>
 
     <script>
@@ -271,10 +300,33 @@
 
         toggle.querySelectorAll('.cx-mode-btn').forEach(function(btn){
           btn.addEventListener('click', function(){
-            toggle.querySelectorAll('.cx-mode-btn').forEach(function(b){ b.classList.remove('active'); });
+            toggle.querySelectorAll('.cx-mode-btn').forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
             btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
             var modo = btn.dataset.mode;
             var ehCriativo = modo === 'criativo';
+
+            // Cada origem tem uma jornada diferente. YouTube entrega o curso
+            // completo; documento mantém revisão/aprovação da estrutura.
+            var heroSub = document.getElementById('cxHeroSub');
+            var journeyIntro = document.getElementById('cxJourneyIntro');
+            var hint = document.getElementById('cxPipelineHint');
+            if(heroSub){
+              heroSub.textContent = ehCriativo
+                ? 'Use seu próprio material como fonte principal. A Georgina prepara uma estrutura para você revisar antes de gerar o curso.'
+                : 'Transforme um tema em um curso completo com vídeo, aulas, quiz, flashcards e roteiro — a IA cuida da estrutura.';
+            }
+            if(journeyIntro){
+              journeyIntro.textContent = ehCriativo
+                ? 'Envie seu material e revise a estrutura antes de gerar o curso.'
+                : 'A Georgina busca conteúdo no YouTube e entrega o curso completo, pronto para estudar.';
+            }
+            if(hint){
+              hint.innerHTML = ehCriativo
+                ? '<span class="cx-hint-step">1 · Material</span><span class="cx-hint-arrow">→</span><span class="cx-hint-step">2 · Revise o plano</span><span class="cx-hint-arrow">→</span><span class="cx-hint-step">3 · Gere o curso</span><span class="cx-hint-arrow">→</span><span class="cx-hint-step">4 · Estude</span>'
+                : '<span class="cx-hint-step">1 · Tema</span><span class="cx-hint-arrow">→</span><span class="cx-hint-step">2 · IA estrutura</span><span class="cx-hint-arrow">→</span><span class="cx-hint-step">3 · Curso pronto</span><span class="cx-hint-arrow">→</span><span class="cx-hint-step">4 · Estude</span>';
+            }
+
             criativo.hidden = !ehCriativo;
             composerYoutube.hidden = ehCriativo;
             if(materialYoutube) materialYoutube.hidden = ehCriativo;
@@ -285,7 +337,7 @@
         var fileInput = document.getElementById('cxCriativoInput');
         var fileLabel = document.getElementById('cxCriativoLabel');
         fileInput.addEventListener('change', function(){
-          fileLabel.textContent = fileInput.files[0] ? fileInput.files[0].name : 'Escolher documento (até 20MB) — obrigatório';
+          fileLabel.textContent = fileInput.files[0] ? fileInput.files[0].name : 'Selecionar material';
         });
 
         var btn = document.getElementById('cxCriativoBtn');
@@ -299,7 +351,7 @@
         btn.addEventListener('click', function(){
           errBox.hidden = true;
           var arquivo = fileInput.files[0];
-          if(!arquivo){ mostrarErro('Escolha um documento — é obrigatório no Modo Criativo.'); return; }
+          if(!arquivo){ mostrarErro('Escolha um arquivo para criar o plano a partir do seu material.'); return; }
 
           var fd = new FormData();
           fd.append('arquivo', arquivo);
@@ -311,18 +363,18 @@
           fd.append('estilo', document.getElementById('cxCriativoEstilo').value);
 
           btn.disabled = true;
-          btn.querySelector('.btn-label').textContent = 'Analisando material (pode levar um minuto)...';
+          btn.querySelector('.btn-label').textContent = 'Criando plano...';
 
           fetch('/api/curso2/criar', {method:'POST', body: fd})
             .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
             .then(function(res){
-              if(!res.ok){ throw new Error(res.data.error || 'Falha ao gerar estrutura do curso.'); }
+              if(!res.ok){ throw new Error(res.data.error || 'Não foi possível criar o plano de estudo. Tente novamente.'); }
               window.location.href = '/curso2/' + res.data.curso.course_id + '/revisar';
             })
             .catch(function(e){
               mostrarErro(e.message);
               btn.disabled = false;
-              btn.querySelector('.btn-label').textContent = 'Analisar material e gerar estrutura';
+              btn.querySelector('.btn-label').textContent = 'Criar plano de estudo';
             });
         });
       })();
@@ -353,6 +405,6 @@
     </script>
   </main>
 
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>

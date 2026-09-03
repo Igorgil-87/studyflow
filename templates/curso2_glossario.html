@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Glossário</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     .gl-wrap{max-width:760px;margin:0 auto;padding:32px 24px 80px}
@@ -24,9 +22,11 @@
     .gl-loading{color:var(--text-3);font-size:14px;padding:40px 0;text-align:center}
   </style>
 </head>
-<body>
+<body data-module="study">
   <div class="grain"></div>
-  <aside class="sidebar">
+  {% include 'partials/_mobile_header.html' %}
+
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>
     {% set active = 'curso' %}
     {% set modulo_group = 'curso' %}

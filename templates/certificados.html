@@ -4,31 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Certificados</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-  <div class="grain"></div>
-<body>
-  <div class="grain"></div>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Flow · Módulo Curso</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+<body data-module="study">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -47,9 +32,11 @@
     </header>
 
     <div class="ct-list" id="ctList"><div class="ct-loading">carregando…</div></div>
-    <div class="ct-empty" id="ctEmpty" hidden>
-      <div class="ct-empty-emoji">🎓</div>
-      <p>Você ainda não concluiu nenhum curso.<br>Vá ao <a href="/curso">Módulo Curso</a>, gere um curso e clique em <strong>Concluir</strong> para emitir seu primeiro certificado.</p>
+    <div class="ct-empty ux-empty-state" id="ctEmpty" hidden>
+      <div class="ux-empty-state-icon" aria-hidden="true">◇</div>
+      <h3>Seus certificados aparecerão aqui</h3>
+      <p>Conclua um curso para emitir seu primeiro certificado e poder baixá-lo depois.</p>
+      <a class="ux-action ux-action-primary ux-empty-state-action" href="/curso">Começar um curso <span aria-hidden="true">→</span></a>
     </div>
 
     <!-- modal de preview -->

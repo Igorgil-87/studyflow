@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Revisar Curso</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     /* Só o necessário pra esta tela — reaproveita as variáveis de tema e
@@ -68,6 +66,12 @@
     .rv-checkpoint-feedback{margin-top:8px;font-size:12px}
     .rv-checkpoint-feedback.certo{color:#78dc78}
     .rv-checkpoint-feedback.errado{color:#ff5a5a}
+    .rv-quiz-pergunta{margin-top:14px;padding-top:14px;border-top:1px solid var(--surface-2)}
+    .rv-quiz-pergunta:first-of-type{margin-top:6px;padding-top:0;border-top:none}
+    .rv-quiz-enunciado{font-size:12.5px;font-weight:600;margin-bottom:6px}
+    .rv-opcao-selecionada{border-color:var(--accent)!important}
+    .rv-opcao-correta{border-color:#78dc78!important;color:#78dc78}
+    .rv-opcao-errada{border-color:#ff5a5a!important;color:#ff5a5a}
     .rv-tutor{margin-top:14px}
     .rv-tutor-msgs{max-height:220px;overflow-y:auto;margin-bottom:8px}
     .rv-tutor-msg{font-size:12px;padding:6px 10px;border-radius:8px;margin-top:5px;max-width:85%}
@@ -84,12 +88,44 @@
     .rv-exercicio-avaliacao{margin-top:8px;font-size:12px;color:var(--text-2)}
     .rv-exercicio-nota{font-weight:600;color:var(--accent)}
     .rv-loading{color:var(--text-3);font-size:14px;padding:40px 0;text-align:center}
+
+    .rv-compose{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+    .rv-compose-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin-right:2px}
+    .rv-include{border:1px solid var(--line);background:transparent;color:var(--text-3);border-radius:999px;padding:5px 10px;font-size:11px;cursor:pointer;transition:.18s ease}
+    .rv-include:hover{border-color:var(--accent);color:var(--text)}
+    .rv-include.on{border-color:color-mix(in srgb,var(--accent) 55%, transparent);background:var(--accent-dim);color:var(--accent)}
+    .rv-include[disabled]{opacity:.35;cursor:not-allowed}
+    .rv-tutor-msg-row{display:flex;align-items:flex-start;gap:6px;margin-top:5px}
+    .rv-tutor-msg-row .rv-tutor-msg{margin-top:0;flex:1}
+    .rv-tutor-include{white-space:nowrap;border:1px solid var(--line);background:transparent;color:var(--text-3);border-radius:999px;padding:5px 8px;font-size:10px;cursor:pointer}
+    .rv-tutor-include.on{color:var(--accent);border-color:var(--accent)}
+    .rv-tutor-sources{margin:5px 0 10px 0;display:grid;gap:5px;width:100%}
+    .rv-tutor-source{font-size:10px;color:var(--text-3);border-left:2px solid var(--accent);padding:5px 7px;background:var(--surface-2);border-radius:0 7px 7px 0}
+    .rv-tutor-source b{color:var(--text-2)}
+    .rv-finalize{margin-top:28px;padding:18px;border:1px solid color-mix(in srgb,var(--accent) 25%, var(--line));border-radius:14px;background:linear-gradient(135deg,var(--accent-dim),transparent 55%);display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .rv-finalize-copy strong{display:block;font-size:14px;color:var(--text)}
+    .rv-finalize-copy span{display:block;font-size:12px;color:var(--text-3);margin-top:3px}
+    .rv-save-dialog{width:min(620px,calc(100vw - 32px));border:1px solid var(--line);border-radius:18px;background:#151517;color:var(--text);padding:0;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+    .rv-save-dialog::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(5px)}
+    .rv-save-inner{padding:22px}
+    .rv-save-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}
+    .rv-save-title{font-family:'Instrument Serif',serif;font-size:27px}
+    .rv-save-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .rv-save-field{display:flex;flex-direction:column;gap:5px}
+    .rv-save-field.full{grid-column:1/-1}
+    .rv-save-field label{font-size:11px;color:var(--text-3)}
+    .rv-save-field input,.rv-save-field textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:9px;padding:10px 11px;font:inherit}
+    .rv-save-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+    .rv-save-feedback{font-size:12px;color:var(--accent);margin-top:10px;min-height:18px}
+    @media(max-width:700px){.rv-save-grid{grid-template-columns:1fr}.rv-save-field.full{grid-column:auto}.rv-finalize{align-items:stretch;flex-direction:column}.rv-finalize .generate-btn{width:100%}}
   </style>
 </head>
-<body>
+<body data-module="study">
   <div class="grain"></div>
 
-  <aside class="sidebar">
+  {% include 'partials/_mobile_header.html' %}
+
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -108,6 +144,21 @@
     <div id="rvError" class="error-box" hidden></div>
     <div id="rvContent" hidden></div>
   </main>
+
+  <dialog class="rv-save-dialog" id="rvSaveDialog">
+    <div class="rv-save-inner">
+      <div class="rv-save-head"><div><div class="rv-eyebrow">CURSO FINAL</div><div class="rv-save-title">Salvar no catálogo</div></div><button class="ghost-btn" type="button" id="rvSaveClose">Fechar</button></div>
+      <div class="rv-save-grid">
+        <div class="rv-save-field"><label>Título</label><input id="rvSaveTitle"></div>
+        <div class="rv-save-field"><label>Autor</label><input id="rvSaveAuthor" value="StudyFlow · Georgina"></div>
+        <div class="rv-save-field full"><label>Capa do curso</label><input id="rvSaveImageFile" type="file" accept="image/png,image/jpeg,image/webp"><small style="display:block;margin-top:6px;color:var(--text-3)">Envie PNG, JPG ou WebP (até 8 MB).</small></div>
+        <div class="rv-save-field full"><label>ou use uma URL de imagem</label><input id="rvSaveImage" placeholder="https://..."><small style="display:block;margin-top:6px;color:var(--text-3)">Se deixar os dois vazios, a Georgina gera uma capa StudyFlow.</small></div>
+        <div class="rv-save-field full"><label>Descrição</label><textarea id="rvSaveDesc" rows="3"></textarea></div>
+      </div>
+      <div class="rv-save-feedback" id="rvSaveFeedback"></div>
+      <div class="rv-save-actions"><button class="ghost-btn" type="button" id="rvSaveCancel">Cancelar</button><button class="generate-btn cx-generate" type="button" id="rvSaveConfirm"><span class="btn-label">Salvar curso completo</span><span class="btn-ico">→</span></button></div>
+    </div>
+  </dialog>
 
   <script>
     var COURSE_ID = {{ course_id | tojson }};
@@ -199,6 +250,14 @@
         actions.appendChild(el('div', '', '<span style="color:var(--text-3);font-size:13px">Estrutura aprovada — gere o conteúdo de cada aula abaixo.</span>'));
       }
       content.appendChild(actions);
+
+      if(status === 'aprovado' || status === 'gerando' || status === 'concluido'){
+        var finalBox = el('div', 'rv-finalize');
+        var copy = el('div', 'rv-finalize-copy', '<strong>Monte o curso do seu jeito</strong><span>Escolha em cada aula o que entra no curso final e salve quando estiver pronto.</span>');
+        var finalBtn = el('button', 'generate-btn cx-generate', '<span class="btn-label">Salvar curso</span><span class="btn-ico">→</span>');
+        finalBtn.addEventListener('click', abrirSalvarCurso);
+        finalBox.appendChild(copy); finalBox.appendChild(finalBtn); content.appendChild(finalBox);
+      }
     }
 
     function campoMeta(label, valor, editavel, onChange){
@@ -314,7 +373,15 @@
         box.appendChild(checkpointWrap);
         carregarCheckpoint(courseId, aula.title, checkpointWrap);
 
+        var quizBtn = el('button', 'ghost-btn rv-gen-btn', '📝 Fazer quiz completo');
+        var quizWrap = el('div', 'rv-quiz-wrap');
+        quizBtn.addEventListener('click', function(){ iniciarQuizCompleto(courseId, aula.title, quizBtn, quizWrap); });
+        box.appendChild(quizBtn);
+        box.appendChild(quizWrap);
+
         box.appendChild(montarTutorChat(courseId, aula.title));
+        montarCompositor(courseId, aula.title, box);
+        restaurarMidiasAula(courseId, aula.title, box);
       }
 
       return box;
@@ -371,11 +438,13 @@
     }
 
     function _resolverLessonId(courseId, tituloAula){
-      return fetch('/api/curso2/' + courseId + '/mapa-mental')
-        .then(function(r){ return r.json(); })
+      // V15: não depende mais do mapa mental para uma operação crítica.
+      // O mapa é uma visualização; a fonte correta para jobs é a lista real de aulas.
+      return fetch('/api/curso2/' + courseId + '/licoes')
+        .then(function(r){ if(!r.ok) throw new Error('não foi possível carregar as aulas'); return r.json(); })
         .then(function(d){
-          var no = (d.nodes || []).find(function(n){ return n.type === 'lesson' && n.label === tituloAula; });
-          return no ? no.lesson_id : null;
+          var aula = (d.licoes || []).find(function(l){ return l.titulo === tituloAula; });
+          return aula ? aula.id : null;
         });
     }
 
@@ -408,6 +477,10 @@
               });
               es.addEventListener('end', function(){ es.close(); btn.disabled = false; });
             });
+        })
+        .catch(function(err){
+          btn.textContent = 'Erro: ' + (err.message || 'falha ao enfileirar');
+          btn.disabled = false;
         });
     }
 
@@ -420,6 +493,8 @@
         video.style.width = '100%'; video.style.marginTop = '10px'; video.style.borderRadius = '8px';
         video.src = '/static/' + payload.video_url;
         videoWrap.appendChild(video);
+        var incBtn=box.querySelector('.rv-include[data-key="include_video"]');
+        if(incBtn) atualizarInclusao(courseId,tituloAula,'include_video',true,incBtn);
       });
     }
 
@@ -432,6 +507,7 @@
         audio.style.width = '100%'; audio.style.marginTop = '10px';
         audio.src = '/static/' + payload.audio_url;
         audioWrap.appendChild(audio);
+        var incBtn=box.querySelector('.rv-include[data-key="include_audio"]'); if(incBtn) atualizarInclusao(courseId,tituloAula,'include_audio',true,incBtn);
       });
     }
 
@@ -446,8 +522,104 @@
         audio.src = '/static/' + payload.podcast_url;
         audioWrap.appendChild(label);
         audioWrap.appendChild(audio);
+        var incBtn=box.querySelector('.rv-include[data-key="include_podcast"]'); if(incBtn) atualizarInclusao(courseId,tituloAula,'include_podcast',true,incBtn);
       });
     }
+
+    // ── Compositor editorial: o usuário decide o que entra no curso final ──
+    function montarCompositor(courseId, tituloAula, box){
+      var wrap = el('div', 'rv-compose');
+      wrap.appendChild(el('span', 'rv-compose-label', 'Incluir no curso'));
+      var defs = [
+        ['include_text','Texto'], ['include_video','Vídeo'], ['include_audio','Áudio'],
+        ['include_podcast','Podcast'], ['include_quiz','Quiz'], ['include_exercise','Exercício']
+      ];
+      defs.forEach(function(def){
+        var b = el('button', 'rv-include', def[1]); b.type='button'; b.dataset.key=def[0];
+        b.addEventListener('click', function(){ atualizarInclusao(courseId,tituloAula,def[0],!b.classList.contains('on'),b); });
+        wrap.appendChild(b);
+      });
+      box.appendChild(wrap);
+      _resolverLessonId(courseId,tituloAula).then(function(id){
+        if(!id) return;
+        fetch('/api/curso2/'+courseId+'/licoes/'+id+'/inclusao').then(r=>r.json()).then(function(d){
+          var inc=d.inclusao||{};
+          wrap.querySelectorAll('.rv-include').forEach(function(b){ b.classList.toggle('on',!!inc[b.dataset.key]); });
+        });
+      });
+    }
+
+    function atualizarInclusao(courseId,tituloAula,key,value,btn){
+      _resolverLessonId(courseId,tituloAula).then(function(id){
+        if(!id) return;
+        var body={}; body[key]=value;
+        return fetch('/api/curso2/'+courseId+'/licoes/'+id+'/inclusao',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      }).then(function(r){ if(!r) return; return r.json().then(d=>({ok:r.ok,data:d})); }).then(function(res){
+        if(!res) return; if(!res.ok){ btn.textContent='Erro'; return; }
+        btn.classList.toggle('on',!!res.data.inclusao[key]);
+      });
+    }
+
+    function incluirNotaTutor(courseId,tituloAula,texto,btn){
+      _resolverLessonId(courseId,tituloAula).then(function(id){
+        if(!id) return;
+        return fetch('/api/curso2/'+courseId+'/licoes/'+id+'/inclusao',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({add_tutor_note:texto})});
+      }).then(function(r){ if(!r)return; return r.json(); }).then(function(){ btn.textContent='✓ Incluído'; btn.classList.add('on'); btn.disabled=true; });
+    }
+
+    function restaurarMidiasAula(courseId,tituloAula,box){
+      _resolverLessonId(courseId,tituloAula).then(function(id){
+        if(!id) return;
+        fetch('/api/curso2/'+courseId+'/licoes/'+id).then(r=>r.json()).then(function(d){
+          var aula=d.aula||{}, conteudo=d.conteudo||{};
+          if(aula.video_url){
+            var vw=box.querySelector('.rv-video-wrap'); if(vw&&!vw.querySelector('video')){ var v=document.createElement('video');v.controls=true;v.style.width='100%';v.style.marginTop='10px';v.style.borderRadius='8px';v.src='/static/'+aula.video_url;vw.appendChild(v); }
+          }
+          var aw=box.querySelector('.rv-audio-wrap');
+          if(aula.audio_url&&aw&&!aw.querySelector('audio[data-kind="aula"]')){ var a=document.createElement('audio');a.controls=true;a.dataset.kind='aula';a.style.width='100%';a.src='/static/'+aula.audio_url;aw.appendChild(a); }
+          if(conteudo.podcast_url&&aw&&!aw.querySelector('audio[data-kind="podcast"]')){ var l=el('div','','🎙 Podcast (2 vozes):');l.style.marginTop='8px'; var p=document.createElement('audio');p.controls=true;p.dataset.kind='podcast';p.style.width='100%';p.src='/static/'+conteudo.podcast_url;aw.appendChild(l);aw.appendChild(p); }
+        });
+      });
+    }
+
+    function abrirSalvarCurso(){
+      var dlg=document.getElementById('rvSaveDialog');
+      document.getElementById('rvSaveTitle').value=manifestAtual.title||'Meu curso';
+      document.getElementById('rvSaveDesc').value=manifestAtual.description||'';
+      document.getElementById('rvSaveFeedback').textContent='';
+      dlg.showModal();
+    }
+
+    async function _uploadCourseCover(file){
+      if(!file) return '';
+      var fd=new FormData(); fd.append('file',file);
+      var r=await fetch('/api/course-cover-upload',{method:'POST',body:fd});
+      var d=await r.json(); if(!r.ok) throw new Error(d.error||'Falha no upload da capa'); return d.url||'';
+    }
+
+    async function salvarCursoFinal(){
+      var btn=document.getElementById('rvSaveConfirm'); btn.disabled=true;
+      document.getElementById('rvSaveFeedback').textContent='Montando curso e preservando conteúdo e mídias...';
+      try {
+        var file=document.getElementById('rvSaveImageFile').files[0];
+        var imagem=file ? await _uploadCourseCover(file) : document.getElementById('rvSaveImage').value.trim();
+        var r=await fetch('/api/curso2/'+COURSE_ID+'/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          titulo:document.getElementById('rvSaveTitle').value.trim(),
+          autor:document.getElementById('rvSaveAuthor').value.trim(),
+          imagem:imagem,
+          descricao:document.getElementById('rvSaveDesc').value.trim()
+        })});
+        var d=await r.json(); var res={ok:r.ok,data:d};
+        if(!res.ok) throw new Error(res.data.error||'Falha ao salvar');
+        document.getElementById('rvSaveFeedback').textContent='✓ Curso completo salvo. Abrindo no Catálogo...';
+        setTimeout(function(){ window.location.href='/curso-salvo/'+res.data.curso.id; },600);
+      } catch(e) { document.getElementById('rvSaveFeedback').textContent='⚠ '+e.message; }
+      finally { btn.disabled=false; }
+    }
+
+    document.getElementById('rvSaveClose').addEventListener('click',function(){document.getElementById('rvSaveDialog').close();});
+    document.getElementById('rvSaveCancel').addEventListener('click',function(){document.getElementById('rvSaveDialog').close();});
+    document.getElementById('rvSaveConfirm').addEventListener('click',salvarCursoFinal);
 
     // ── Checkpoint ("Antes de continuar...") ──────────────────────────
     function carregarCheckpoint(courseId, tituloAula, wrap){
@@ -474,6 +646,7 @@
         opcao.addEventListener('click', function(){
           box.querySelectorAll('.rv-checkpoint-opcao').forEach(function(o){ o.disabled = true; });
           var acertou = alt === checkpoint.resposta_correta;
+          _registrarResultadoCheckpoint(courseId, lessonId, acertou);
           if(acertou){
             feedback.className = 'rv-checkpoint-feedback certo';
             feedback.textContent = '✓ Certo! Pode continuar.';
@@ -486,6 +659,92 @@
         box.appendChild(opcao);
       });
       box.appendChild(feedback);
+      wrap.appendChild(box);
+    }
+
+    function _registrarResultadoCheckpoint(courseId, lessonId, acertou){
+      // Silencioso de propósito — é telemetria de calibração (Sprint B),
+      // não pode travar nem avisar erro pro aluno se falhar.
+      fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/checkpoint/resultado', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({acertou: acertou}),
+      }).catch(function(){});
+    }
+
+    // ── Quiz completo (N perguntas) ──────────────────────────────────────
+    function iniciarQuizCompleto(courseId, tituloAula, btn, wrap){
+      btn.disabled = true;
+      btn.textContent = 'Carregando quiz...';
+      _resolverLessonId(courseId, tituloAula).then(function(lessonId){
+        if(!lessonId){ btn.textContent = 'Erro: aula não encontrada'; btn.disabled = false; return; }
+        fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/quiz')
+          .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+          .then(function(res){
+            btn.disabled = false;
+            btn.textContent = '📝 Fazer quiz completo';
+            if(!res.ok){ wrap.innerHTML = '<div class="rv-checkpoint-feedback errado">' + res.data.error + '</div>'; return; }
+            renderQuizCompleto(res.data.perguntas, wrap, courseId, lessonId);
+          });
+      });
+    }
+
+    function renderQuizCompleto(perguntas, wrap, courseId, lessonId){
+      wrap.innerHTML = '';
+      var box = el('div', 'rv-checkpoint');
+      box.appendChild(el('div', 'rv-checkpoint-titulo', '📝 Quiz completo (' + perguntas.length + ' pergunta' + (perguntas.length > 1 ? 's' : '') + ')'));
+
+      var respostasEscolhidas = new Array(perguntas.length).fill(null);
+      var blocosPerguntas = [];
+
+      perguntas.forEach(function(pergunta, i){
+        var blocoPergunta = el('div', 'rv-quiz-pergunta');
+        blocoPergunta.appendChild(el('div', 'rv-quiz-enunciado', (i + 1) + '. ' + pergunta.enunciado));
+        (pergunta.alternativas || []).forEach(function(alt){
+          var opcao = el('button', 'rv-checkpoint-opcao', alt);
+          opcao.addEventListener('click', function(){
+            blocoPergunta.querySelectorAll('.rv-checkpoint-opcao').forEach(function(o){ o.classList.remove('rv-opcao-selecionada'); });
+            opcao.classList.add('rv-opcao-selecionada');
+            respostasEscolhidas[i] = alt;
+          });
+          blocoPergunta.appendChild(opcao);
+        });
+        box.appendChild(blocoPergunta);
+        blocosPerguntas.push(blocoPergunta);
+      });
+
+      var enviarBtn = el('button', 'ghost-btn rv-gen-btn', 'Corrigir quiz');
+      var resultadoEl = el('div', 'rv-checkpoint-feedback');
+      enviarBtn.addEventListener('click', function(){
+        if(respostasEscolhidas.some(function(r){ return r === null; })){
+          resultadoEl.className = 'rv-checkpoint-feedback errado';
+          resultadoEl.textContent = 'Responde todas as perguntas antes de corrigir.';
+          return;
+        }
+        enviarBtn.disabled = true;
+        enviarBtn.textContent = 'Corrigindo...';
+        fetch('/api/curso2/' + courseId + '/licoes/' + lessonId + '/quiz/responder', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({respostas: respostasEscolhidas}),
+        })
+          .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+          .then(function(res){
+            enviarBtn.disabled = false;
+            enviarBtn.textContent = 'Corrigir quiz';
+            if(!res.ok){ resultadoEl.className = 'rv-checkpoint-feedback errado'; resultadoEl.textContent = res.data.error; return; }
+            res.data.resultados.forEach(function(r, i){
+              blocosPerguntas[i].querySelectorAll('.rv-checkpoint-opcao').forEach(function(o){
+                o.disabled = true;
+                if(o.textContent === r.resposta_correta) o.classList.add('rv-opcao-correta');
+                else if(o.classList.contains('rv-opcao-selecionada') && !r.correto) o.classList.add('rv-opcao-errada');
+              });
+            });
+            var pct = Math.round(res.data.acertos / res.data.total * 100);
+            resultadoEl.className = 'rv-checkpoint-feedback ' + (pct >= 70 ? 'certo' : 'errado');
+            resultadoEl.textContent = '✓ ' + res.data.acertos + '/' + res.data.total + ' certas (' + pct + '%)';
+          });
+      });
+      box.appendChild(enviarBtn);
+      box.appendChild(resultadoEl);
       wrap.appendChild(box);
     }
 
@@ -568,7 +827,7 @@
       input.type = 'text';
       input.className = 'rv-tutor-input';
       input.placeholder = 'Ex: explique de forma mais simples, dê um exemplo...';
-      var sendBtn = el('button', 'ghost-btn rv-gen-btn', 'Enviar');
+      var sendBtn = el('button', 'ghost-btn rv-gen-btn', 'Perguntar');
 
       function enviar(){
         var pergunta = input.value.trim();
@@ -587,7 +846,26 @@
             .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
             .then(function(res){
               sendBtn.disabled = false;
-              msgs.appendChild(el('div', 'rv-tutor-msg tutor', res.ok ? res.data.resposta : ('Erro: ' + res.data.error)));
+              if(res.ok){
+                var row = el('div', 'rv-tutor-msg-row');
+                var answer = el('div', 'rv-tutor-msg tutor', res.data.resposta);
+                var includeBtn = el('button', 'rv-tutor-include', '+ Incluir');
+                includeBtn.addEventListener('click', function(){ incluirNotaTutor(courseId, tituloAula, res.data.resposta, includeBtn); });
+                row.appendChild(answer); row.appendChild(includeBtn); msgs.appendChild(row);
+                if((res.data.sources||[]).length){
+                  var srcWrap=el('div','rv-tutor-sources');
+                  res.data.sources.forEach(function(src){
+                    var loc=src.page!=null?'página '+src.page:(src.slide!=null?'slide '+src.slide:(src.source_type==='video'?Math.floor(src.start||0)+'s':'chunk '+(src.chunk_id==null?'—':src.chunk_id)));
+                    var score=src.score!=null?' · '+Math.round(src.score*100)+'%':'';
+                    var card=el('div','rv-tutor-source');
+                    card.textContent='[Fonte '+src.citation_id+'] '+(src.source_name||'material')+' · '+loc+score+' — '+(src.trecho||'').slice(0,180);
+                    srcWrap.appendChild(card);
+                  });
+                  msgs.appendChild(srcWrap);
+                }
+              } else {
+                msgs.appendChild(el('div', 'rv-tutor-msg tutor', 'Erro: ' + res.data.error));
+              }
               msgs.scrollTop = msgs.scrollHeight;
             });
         });

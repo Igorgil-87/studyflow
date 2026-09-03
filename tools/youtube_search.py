@@ -28,7 +28,7 @@ class YouTubeSearchTool(BaseTool):
     args_schema: type[BaseModel] = YouTubeSearchInput
 
     def _run(self, query: str, max_results: int = 3, suffix: str = "tutorial") -> str:
-        ydl_opts = common_ydl_opts(quiet=True)
+        ydl_opts = common_ydl_opts(quiet=True, use_auth=False)
         ydl_opts.update({
             "extract_flat": True,          # não baixa, só extrai metadados
             "playlist_items": f"1-{max_results}",
@@ -46,9 +46,12 @@ class YouTubeSearchTool(BaseTool):
             for entry in entries:
                 duration_sec = entry.get("duration", 0) or 0
                 duration_min = round(duration_sec / 60, 1)
+                video_id = entry.get("id", "")
                 results.append({
                     "titulo": entry.get("title", "Sem título"),
-                    "url": f"https://www.youtube.com/watch?v={entry.get('id', '')}",
+                    "url": f"https://www.youtube.com/watch?v={video_id}",
+                    "video_id": video_id,
+                    "thumbnail": f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg" if video_id else "",
                     "duracao_minutos": duration_min,
                     "canal": entry.get("uploader", "Desconhecido"),
                     "descricao": (entry.get("description") or "")[:200],

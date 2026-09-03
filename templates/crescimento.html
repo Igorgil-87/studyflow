@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Growth</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     .gr-wrap{max-width:920px}
@@ -38,10 +36,12 @@
     .gr-confianca.baixa{background:var(--surface-2);color:var(--text-3)}
   </style>
 </head>
-<body>
+<body data-module="neutral">
   <div class="grain"></div>
 
-  <aside class="sidebar">
+  {% include 'partials/_mobile_header.html' %}
+
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -58,7 +58,7 @@
     <section class="gr-sync-card">
       <h2>🚀 O que fazer no próximo conteúdo</h2>
       <p>Sintetiza os padrões encontrados em recomendações concretas — sempre citando o dado real que sustenta cada uma, nunca conselho genérico.</p>
-      <button class="est-generate-btn" id="recoBtn" style="width:auto;padding:0 24px" onclick="gerarRecomendacoes()">Gerar recomendações</button>
+      <button class="est-generate-btn" id="recoBtn" onclick="gerarRecomendacoes()">Gerar recomendações</button>
       <div id="recoStatus" class="gr-status"></div>
       <div id="recoContent" style="margin-top:16px"></div>
     </section>
@@ -66,14 +66,14 @@
     <section class="gr-sync-card">
       <h2>1. Sincronizar perfil do Instagram</h2>
       <p>Puxa TODOS os posts que já existem na sua conta (não só os publicados por aqui), e busca a métrica real de cada um. Roda de novo quando quiser — não duplica, só atualiza.</p>
-      <button class="est-generate-btn" id="syncBtn" style="width:auto;padding:0 24px" onclick="sincronizarPerfil()">Sincronizar agora</button>
+      <button class="est-generate-btn" id="syncBtn" onclick="sincronizarPerfil()">Sincronizar agora</button>
       <div id="syncStatus" class="gr-status"></div>
     </section>
 
     <section class="gr-sync-card">
       <h2>2. Analisar padrões (Hook-Substance-Payoff)</h2>
       <p>Aplica o framework de conteúdo viral em cada post — classifica o tipo de gancho, os critérios de viralização, e explica o padrão comparando com a métrica real. Só analisa quem ainda não foi analisado.</p>
-      <button class="est-generate-btn" id="analiseBtn" style="width:auto;padding:0 24px" onclick="analisarPadroes()">Analisar padrões</button>
+      <button class="est-generate-btn" id="analiseBtn" onclick="analisarPadroes()">Analisar padrões</button>
       <div id="analiseStatus" class="gr-status"></div>
     </section>
 

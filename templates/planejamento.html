@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Planejamento</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-module="neutral">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -107,8 +107,8 @@
       <label class="est-theme-label">Módulo</label>
       <div class="plan-modulo-switch" id="planModuloSwitch">
         <button type="button" class="plan-modulo-btn active" data-modulo="geral">📌 Geral</button>
-        <button type="button" class="plan-modulo-btn" data-modulo="estudo">📚 Estudo</button>
-        <button type="button" class="plan-modulo-btn" data-modulo="criador">🎬 Criador</button>
+        <button type="button" class="plan-modulo-btn" data-modulo="estudo">📚 Georgina</button>
+        <button type="button" class="plan-modulo-btn" data-modulo="criador">🎬 Marcos Cezar</button>
         <button type="button" class="plan-modulo-btn" data-modulo="youtuber">📹 Youtuber</button>
       </div>
 
@@ -220,6 +220,6 @@
     </div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/planejamento.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/planejamento.js') }}" defer></script>
 </body>
 </html>

@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Study Flow · Módulo Criador</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Study Flow · Marcos Cezar</title>
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-module="creator">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -27,48 +27,61 @@
   <!-- ░░ MAIN — Módulo Criador (namespace próprio est-*, não mexe no ps-* do Youtuber) ░░ -->
   <main class="stage est-main">
 
-    <!-- ── HERO ── -->
-    <header class="est-hero">
-      <div class="est-eyebrow"><span class="est-eyebrow-dot"></span> MÓDULO CRIADOR · IA GERATIVA</div>
-      <h1 class="est-title">Um tema. Um <em>vídeo</em> pronto.</h1>
-      <p class="est-sub">Roteiro, footage, narração, legendas e trilha — a IA produz o vídeo completo a partir de uma frase.</p>
-      <div class="est-flow-hint">
-        <span class="est-hint-step">1 · Tema</span>
-        <span class="est-hint-arrow">→</span>
-        <span class="est-hint-step">2 · Roteiro</span>
-        <span class="est-hint-arrow">→</span>
-        <span class="est-hint-step">3 · Produção</span>
-        <span class="est-hint-arrow">→</span>
-        <span class="est-hint-step">4 · Render final</span>
+    <!-- ── HERO · MARCOS CEZAR ── -->
+    <header class="est-hero est-hero-brand">
+      <div class="est-hero-copy">
+        <div class="est-eyebrow"><span class="est-eyebrow-dot"></span> MARCOS CEZAR · CRIAÇÃO COM IA</div>
+        <h1 class="est-title">Onde ideias <em>ganham forma.</em></h1>
+        <p class="est-sub">Comece com uma frase. O workspace transforma intenção em vídeo, imagem e conteúdo pronto para publicar — sem expor a complexidade do pipeline.</p>
+        <div class="est-brand-note" aria-label="Princípio do módulo">
+          <span class="est-brand-note-mark" aria-hidden="true">✦</span>
+          <span>Imaginar é o começo. Criar é tornar possível.</span>
+        </div>
+      </div>
+      <div class="est-hero-art" aria-hidden="true">
+        <div class="est-hero-art-glow"></div>
+        <picture>
+          <source media="(max-width: 639px)" srcset="{{ url_for('static', filename='img/modules/marcos-cezar-256.webp') }}">
+          <source media="(max-width: 1023px)" srcset="{{ url_for('static', filename='img/modules/marcos-cezar-512.webp') }}">
+          <img src="{{ url_for('static', filename='img/modules/marcos-cezar-512.webp') }}"
+               width="512" height="512" alt="" decoding="async" fetchpriority="high">
+        </picture>
       </div>
     </header>
 
+    <section class="est-create-switch" aria-labelledby="estCreateHeading">
+      <div class="est-section-kicker">COMECE PELO RESULTADO</div>
+      <h2 class="est-section-title" id="estCreateHeading">O que você quer criar?</h2>
+      <p class="est-section-sub">Escolha um formato. Os detalhes técnicos ficam em segundo plano e podem ser ajustados quando você quiser.</p>
+    </section>
+
     <!-- ── ABAS: Vídeo / Imagens ── -->
-    <nav class="ps-tab-nav est-tabs">
-      <button class="ps-tab active" data-panel="paneEstudio">
+    <nav class="ps-tab-nav est-tabs" role="tablist" aria-label="Tipo de criação">
+      <button class="ps-tab active" type="button" role="tab" aria-selected="true" aria-controls="paneEstudio" id="tabEstudio" data-panel="paneEstudio">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
         Vídeo
       </button>
-      <button class="ps-tab" data-panel="paneImagens">
+      <button class="ps-tab" type="button" role="tab" aria-selected="false" aria-controls="paneImagens" id="tabImagens" data-panel="paneImagens">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         Imagens
       </button>
     </nav>
 
-    <div id="paneEstudio" class="ps-panel">
+    <div id="paneEstudio" class="ps-panel" role="tabpanel" aria-labelledby="tabEstudio">
       <div class="est-layout">
 
         <!-- ── COLUNA PRINCIPAL: campo de tema em destaque ── -->
         <div class="est-main-col">
           <div class="est-theme-card">
             <div class="est-theme-glow"></div>
-            <label class="est-theme-label">Sobre o que é o vídeo?</label>
+            <div class="est-card-kicker">VÍDEO</div>
+            <label class="est-theme-label" for="estSubject">Qual ideia você quer transformar em vídeo?</label>
             <div class="est-theme-field">
               <svg class="est-theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.8L20 8l-4 3.9.9 5.6L12 15l-4.9 2.5.9-5.6L4 8l5.6-1.2z"/></svg>
               <input id="estSubject" type="text" class="est-theme-input"
-                placeholder="ex: Como a IA está mudando o dia a dia">
+                placeholder="Ex.: O que muda quando agentes de IA começam a tomar decisões?">
             </div>
-            <p class="est-theme-hint">A IA escreve o roteiro, busca footage HD e monta o vídeo completo — sem precisar digitar mais nada.</p>
+            <p class="est-theme-hint">Só o tema já basta. Marcos Cezar estrutura o roteiro, narração e produção usando os melhores padrões definidos para você.</p>
           </div>
 
           <!-- CONFIGURAÇÕES AVANÇADAS -->
@@ -76,7 +89,7 @@
             <button class="est-accordion-toggle" id="estAdvToggleBtn">
               <span class="est-accordion-left">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-                Já tem um roteiro pronto?
+                Usar meu próprio roteiro
               </span>
               <svg class="est-accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
@@ -91,7 +104,7 @@
 
           <button class="est-generate-btn" id="estGerarBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.8L20 8l-4 3.9.9 5.6L12 15l-4.9 2.5.9-5.6L4 8l5.6-1.2z"/></svg>
-            <span>Gerar Vídeo</span>
+            <span>Criar vídeo</span>
           </button>
           <p class="est-cost-hint">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -99,8 +112,13 @@
           </p>
         </div>
 
-        <!-- ── COLUNA LATERAL: parâmetros compactos ── -->
-        <aside class="est-side-col">
+        <!-- ── AJUSTES: visíveis no desktop, recolhíveis no mobile ── -->
+        <details class="est-settings" open>
+          <summary class="est-settings-summary">
+            <span><strong>Personalizar criação</strong><small>Formato, voz e quantidade</small></span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <aside class="est-side-col" aria-label="Ajustes do vídeo">
           <div class="est-param-block">
             <div class="est-param-label">Formato</div>
             <div class="est-toggle-group" id="estAspectGroup">
@@ -135,7 +153,8 @@
             </div>
             <div class="est-param-desc">Gere variações e escolha a melhor.</div>
           </div>
-        </aside>
+          </aside>
+        </details>
       </div>
 
       <!-- ══════════ PIPELINE (aparece durante o processamento) ══════════ -->
@@ -191,19 +210,20 @@
     <!-- ══════════════════════════════════════════════════════════ -->
     <!-- PAINEL — Imagens (thumbnail / carrossel / capa via Fooocus) -->
     <!-- ══════════════════════════════════════════════════════════ -->
-    <div id="paneImagens" class="ps-panel" hidden>
+    <div id="paneImagens" class="ps-panel" role="tabpanel" aria-labelledby="tabImagens" hidden>
       <div class="est-layout">
 
         <div class="est-main-col">
           <div class="est-theme-card est-theme-card-big">
             <div class="est-theme-glow"></div>
-            <label class="est-theme-label">Descreva a imagem (ou cole um texto/lista grande — tipo essa aqui)</label>
+            <div class="est-card-kicker">IMAGEM</div>
+            <label class="est-theme-label" for="imgPrompt">O que você quer comunicar visualmente?</label>
             <div class="est-theme-field est-theme-field-big">
               <svg class="est-theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               <textarea id="imgPrompt" class="est-theme-input est-theme-textarea" rows="4"
-                placeholder="ex: capa minimalista sobre inteligência artificial, tons escuros e verde-limão&#10;&#10;Ou cole uma lista/tabela grande e ligue &quot;Gerar texto de impacto automaticamente&quot; abaixo — o Claude organiza em slides legíveis em vez da IA tentar desenhar tudo (o que sempre sai ilegível com texto denso)."></textarea>
+                placeholder="Ex.: thumbnail editorial sobre IA e trabalho, fundo escuro, personagem central, forte contraste e área livre para título.&#10;&#10;Você também pode colar um texto maior; o modo de texto de impacto organiza o conteúdo com tipografia real."></textarea>
             </div>
-            <p class="est-theme-hint">A IA gera a imagem a partir da descrição — sem precisar mexer em parâmetros técnicos.</p>
+            <p class="est-theme-hint">Descreva a intenção, não os parâmetros. O sistema cuida da composição e você personaliza apenas quando precisar.</p>
 
             <div class="est-prompt-suggestions" id="imgPromptSuggestions">
               <button type="button" class="est-suggestion-chip" data-suggestion="capa estilo thumbnail, robô/IA centralizado com margem generosa nas bordas, fundo escuro dramático com brilho, deixe pelo menos 30% da parte de baixo livre para texto">Capa estilo thumbnail</button>
@@ -258,7 +278,7 @@
 
           <button class="est-generate-btn" id="imgGerarBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span id="imgBtnLabel">Gerar Imagem</span>
+            <span id="imgBtnLabel">Criar imagem</span>
           </button>
           <p class="est-cost-hint">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -266,7 +286,12 @@
           </p>
         </div>
 
-        <aside class="est-side-col">
+        <details class="est-settings" open>
+          <summary class="est-settings-summary">
+            <span><strong>Personalizar criação</strong><small>Motor e formato da imagem</small></span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <aside class="est-side-col" aria-label="Ajustes da imagem">
           <div class="est-param-block">
             <div class="est-param-label">Motor de geração</div>
             <div class="est-toggle-group est-toggle-vertical" id="imgEngineGroup">
@@ -285,7 +310,8 @@
             </div>
             <div class="est-param-desc" id="imgPresetDesc">Ideal para thumbnail de vídeo — proporção 16:9.</div>
           </div>
-        </aside>
+          </aside>
+        </details>
       </div>
 
       <!-- Pipeline -->
@@ -366,6 +392,6 @@
 
   </main>
 
-  <script src="{{ url_for('static', filename='js/estudio.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/estudio.js') }}" defer></script>
 </body>
 </html>

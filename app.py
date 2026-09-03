@@ -22,6 +22,7 @@ Rotas (inalteradas para o frontend):
 """
 
 import json
+import logging
 import os
 import uuid
 from pathlib import Path
@@ -42,11 +43,16 @@ from infra import bus, config, jobs
 from infra.dispatch import dispatch
 from obs import db as obs_db
 from obs import drift as obs_drift
+from obs import judge as obs_judge
+from obs import quality as obs_quality
 from obs import report as obs_report
 from tools import TrendFetcherTool, CATEGORIES as TREND_CATEGORIES
 from tools import cookies_config
+from production import health as production_health
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
@@ -55,7 +61,21 @@ SECRET_KEY = os.getenv("SECRET_KEY", "studyflow-dev-secret-change-me")
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "0") == "1",
+)
 CORS(app)
+
+@app.after_request
+def _security_headers(response):
+    """Baseline browser hardening without a CSP that would break legacy inline UI."""
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return response
 
 # CSRF só nos formulários HTML reais (login/signup/MFA); rotas de
 # API/AJAX ficam de fora, protegidas por login_required + sessão.
@@ -81,6 +101,37 @@ def index():
     if session.get("logged_in"):
         return render_template("home.html", username=session.get("user", ""))
     return redirect(url_for("login"))
+
+
+@app.route("/api/ux/events", methods=["POST"])
+@login_required
+def api_ux_event():
+    """Telemetria mínima de UX: somente eventos conhecidos, sem texto livre."""
+    body = request.get_json(silent=True) or {}
+    event = str(body.get("event") or "").strip()
+    page = str(body.get("page") or "").strip()
+    allowed = {
+        "home_view", "continue_learning_click", "learn_click",
+        "create_click", "trends_click",
+        "trend_opened", "trend_sources_opened", "trend_create_content_clicked",
+        "trends_view", "trend_filter_used", "trend_analysis_completed", "trend_analysis_failed",
+    }
+    if event not in allowed:
+        return jsonify({"error": "evento inválido"}), 400
+    valid_pages = {
+        "home": {"home_view", "continue_learning_click", "learn_click", "create_click", "trends_click"},
+        "trends": {"trends_view", "trend_filter_used", "trend_opened", "trend_sources_opened",
+                   "trend_create_content_clicked", "trend_analysis_completed", "trend_analysis_failed"},
+    }
+    if page not in valid_pages or event not in valid_pages[page]:
+        return jsonify({"error": "página inválida"}), 400
+    try:
+        import hashlib
+        user_ref = hashlib.sha256(_trilhas_user_key().encode("utf-8")).hexdigest()[:16]
+        obs_db.insert_ux_event(event, page=page, user_key=user_ref)
+    except Exception as exc:
+        print(f"[ux] evento não persistido: {exc}")
+    return jsonify({"ok": True})
 
 
 def _finish_login(name):
@@ -237,19 +288,191 @@ def curso2_revisar_page(course_id):
 
 
 # ══════════ Catálogo de cursos (enterprise) ══════════
+def _saved_courses_for_user():
+    from auth.prefs import get_pref
+    return get_pref(_trilhas_user_key(), "cursos_salvos", default=[]) or []
+
+
+def _catalog_courses_for_user():
+    import catalog
+    # Cursos salvos aparecem primeiro, seguidos do catálogo-base.
+    return _saved_courses_for_user() + list(catalog.all_courses())
+
+
 @app.route("/catalogo")
 @login_required
 def catalogo():
     import catalog
-    return render_template("catalogo.html", cursos=catalog.all_courses(),
-                           categorias=catalog.CATEGORIAS, niveis=catalog.NIVEIS)
+    cursos = _catalog_courses_for_user()
+    categorias = list(dict.fromkeys(
+        [c.get("categoria") for c in cursos if c.get("categoria")] + list(catalog.CATEGORIAS)
+    ))
+    niveis = list(dict.fromkeys(
+        [c.get("nivel") for c in cursos if c.get("nivel")] + list(catalog.NIVEIS)
+    ))
+    return render_template("catalogo.html", cursos=cursos,
+                           categorias=categorias, niveis=niveis)
 
+
+
+
+def _find_saved_course(course_id: str):
+    for item in _saved_courses_for_user():
+        if str(item.get("id")) == str(course_id):
+            return item
+    return None
+
+
+def _static_url_from_saved_path(value):
+    if not value:
+        return None
+    value = str(value)
+    if value.startswith(("http://", "https://", "/static/")):
+        return value
+    return "/static/" + value.lstrip("/")
+
+
+@app.route("/curso-salvo/<course_id>")
+@login_required
+def curso_salvo_page(course_id):
+    curso = _find_saved_course(course_id)
+    if not curso:
+        return redirect(url_for("catalogo"))
+    return render_template("curso_salvo.html", curso=curso, static_url=_static_url_from_saved_path)
+
+
+@app.route("/api/course-cover-upload", methods=["POST"])
+@login_required
+def api_course_cover_upload():
+    """Upload persistente de capa para cursos salvos.
+
+    Salva em static/images/course-covers/uploads, que está dentro do volume
+    images_data no docker-compose.full.yml.
+    """
+    from werkzeug.utils import secure_filename
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "Selecione uma imagem."}), 400
+    ext = Path(f.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".webp"}:
+        return jsonify({"error": "Use PNG, JPG, JPEG ou WebP."}), 400
+    f.seek(0, 2)
+    size = f.tell()
+    f.seek(0)
+    if size > 8 * 1024 * 1024:
+        return jsonify({"error": "A imagem deve ter no máximo 8 MB."}), 400
+    out_dir = Path(app.root_path) / "static" / "images" / "course-covers" / "uploads"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    name = secure_filename(Path(f.filename).stem)[:80] or "capa"
+    out = out_dir / f"{uuid.uuid4().hex[:12]}_{name}{ext}"
+    f.save(out)
+    return jsonify({"ok": True, "url": "/static/" + out.relative_to(Path(app.root_path) / "static").as_posix()})
 
 @app.route("/api/catalogo")
 @login_required
 def api_catalogo():
-    import catalog
-    return jsonify({"cursos": catalog.all_courses()})
+    return jsonify({"cursos": _catalog_courses_for_user()})
+
+
+def _safe_video_source(rel_path: str) -> Path | None:
+    if not rel_path or not isinstance(rel_path, str):
+        return None
+
+    rel = rel_path.replace("\\", "/").lstrip("/")
+    if rel.startswith("static/"):
+        rel = rel[len("static/"):]
+    if not rel:
+        return None
+
+    rel_obj = Path(rel)
+    if rel_obj.is_absolute():
+        return None
+    if any(part in ("..", ".", "") for part in rel_obj.parts):
+        return None
+
+    base = (Path(app.root_path) / "static" / "videos").resolve()
+    candidate = (Path(app.root_path) / "static" / rel_obj).resolve()
+    try:
+        candidate.relative_to(base)
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
+
+
+def _persist_saved_course_media(course_id: str, video_file, clips):
+    """Copia a mídia gerada para um diretório estável dentro do volume videos_data."""
+    import shutil
+    from werkzeug.utils import secure_filename
+
+    dest_root = Path(app.root_path) / "static" / "videos" / "saved_courses" / course_id
+    dest_root.mkdir(parents=True, exist_ok=True)
+
+    saved_video = None
+    src = _safe_video_source(video_file)
+    if src:
+        dst = dest_root / (secure_filename(src.name) or "curso.mp4")
+        shutil.copy2(src, dst)
+        saved_video = dst.relative_to(Path(app.root_path) / "static").as_posix()
+
+    saved_clips = []
+    for idx, clip in enumerate(clips or [], start=1):
+        item = dict(clip or {})
+        src = _safe_video_source(item.get("arquivo"))
+        if src:
+            clip_dir = dest_root / "aulas"
+            clip_dir.mkdir(parents=True, exist_ok=True)
+            filename = secure_filename(src.name) or f"aula_{idx:02d}.mp4"
+            dst = clip_dir / filename
+            shutil.copy2(src, dst)
+            item["arquivo"] = dst.relative_to(Path(app.root_path) / "static").as_posix()
+        saved_clips.append(item)
+    return saved_video, saved_clips
+
+
+@app.route("/api/cursos-salvos", methods=["GET"])
+@login_required
+def api_cursos_salvos_list():
+    return jsonify({"cursos": _saved_courses_for_user()})
+
+
+@app.route("/api/cursos-salvos", methods=["POST"])
+@login_required
+def api_cursos_salvos_create():
+    from auth.prefs import get_pref, set_pref
+    import time
+
+    body = request.get_json(silent=True) or {}
+    titulo = (body.get("titulo") or "").strip()
+    if not titulo:
+        return jsonify({"error": "Informe o título do curso."}), 400
+
+    course_id = "gen-" + uuid.uuid4().hex[:12]
+    video_file, clips = _persist_saved_course_media(
+        course_id, body.get("video_file"), body.get("clips") or []
+    )
+    duracao_min = float(body.get("duracao_minutos") or 0)
+    curso = {
+        "id": course_id,
+        "titulo": titulo,
+        "autor": (body.get("autor") or "StudyFlow").strip(),
+        "imagem": (body.get("imagem") or "").strip(),
+        "categoria": "Gerados com IA",
+        "nivel": "Personalizado",
+        "horas": round(duracao_min / 60, 1) if duracao_min else 0,
+        "desc": (body.get("descricao") or "Curso criado no StudyFlow a partir de conteúdo do YouTube.").strip(),
+        "origem": "youtube",
+        "source_url": (body.get("source_url") or "").strip(),
+        "video_file": video_file,
+        "clips": clips,
+        "quiz": body.get("quiz") or {},
+        "roadmap": body.get("roadmap") or {},
+        "salvo_em": time.strftime("%Y-%m-%d %H:%M"),
+        "gerado": True,
+    }
+    cursos = get_pref(_trilhas_user_key(), "cursos_salvos", default=[]) or []
+    cursos.insert(0, curso)
+    set_pref(_trilhas_user_key(), "cursos_salvos", cursos)
+    return jsonify({"ok": True, "curso": curso}), 201
 
 
 # ══════════ Trilhas (funcionalidade real, persistida por usuário) ══════════
@@ -444,8 +667,24 @@ def api_trilhas_delete(trilha_id):
 @app.route("/api/curso-atual", methods=["GET"])
 @login_required
 def api_curso_atual():
-    from auth.prefs import get_pref
+    from auth.prefs import get_pref, set_pref
     atual = get_pref(_trilhas_user_key(), "curso_atual", default=None)
+
+    # Recuperação segura da mídia pelo job que originou o curso.
+    # Não varre arquivos globais (o que poderia misturar mídia de usuários).
+    # Se um refresh ocorreu entre o complete SSE e a persistência, o JobStore
+    # ainda contém video_file/clips e podemos reidratar o curso corretamente.
+    if isinstance(atual, dict) and atual.get("job_id"):
+        job = jobs.get(atual["job_id"])
+        if job and job.get("kind") == "curso":
+            changed = False
+            for campo in ("video_file", "clips", "quiz", "roadmap"):
+                if not atual.get(campo) and job.get(campo):
+                    atual[campo] = job[campo]
+                    changed = True
+            if changed:
+                set_pref(_trilhas_user_key(), "curso_atual", atual)
+
     return jsonify({"curso": atual})
 
 
@@ -458,13 +697,27 @@ def api_curso_atual_save():
     titulo = (data.get("titulo") or "").strip()
     if not titulo:
         return jsonify({"error": "sem título"}), 400
+    # Preserve the generated course payload so a refresh/restart does not make
+    # the video and lesson clips disappear. Only lightweight metadata/paths are
+    # stored here; the MP4 files remain in the existing videos_data volume.
+    from auth.prefs import get_pref
+    anterior = get_pref(_trilhas_user_key(), "curso_atual", default={}) or {}
     curso = {
         "titulo": titulo,
-        "subtitulo": (data.get("subtitulo") or "Curso gerado por IA").strip(),
-        "progresso": int(data.get("progresso", 0)),
-        "aula_atual": (data.get("aula_atual") or "").strip(),
+        "subtitulo": (data.get("subtitulo") or anterior.get("subtitulo") or "Curso gerado por IA").strip(),
+        "progresso": int(data.get("progresso", anterior.get("progresso", 0))),
+        "aula_atual": (data.get("aula_atual") or anterior.get("aula_atual") or "").strip(),
         "atualizado_em": time.strftime("%Y-%m-%d %H:%M"),
     }
+
+    # Optional generated payload. Keep the previous value when a later update
+    # only changes progress/title (for example from the home card).
+    for campo in ("job_id", "source", "topic", "quiz", "roadmap", "video_file", "clips"):
+        if campo in data:
+            curso[campo] = data[campo]
+        elif campo in anterior:
+            curso[campo] = anterior[campo]
+
     set_pref(_trilhas_user_key(), "curso_atual", curso)
     return jsonify({"ok": True, "curso": curso})
 
@@ -1140,6 +1393,17 @@ def obs_dashboard():
     return render_template("obs.html")
 
 
+@app.route("/api/ux/analytics")
+@login_required
+def api_ux_analytics():
+    """Resumo agregado da jornada UX; não retorna conteúdo nem identificadores brutos."""
+    try:
+        days = int(request.args.get("days", 30))
+    except (TypeError, ValueError):
+        days = 30
+    return jsonify(obs_db.ux_analytics(days))
+
+
 @app.route("/api/observability/summary")
 @login_required
 def observability_summary():
@@ -1152,6 +1416,137 @@ def observability_summary():
     except Exception:
         data["rag"]["indexed_chunks"] = None
     return jsonify(data)
+
+
+@app.route("/api/observability/context")
+@login_required
+def observability_context():
+    """Context-window observability from real LLM traces.
+
+    Never returns prompt content. Categories not instrumented by a caller remain
+    null/unknown instead of being invented as zero.
+    """
+    try:
+        from obs.db import recent_context_snapshots, duplicate_context_count
+        rows = recent_context_snapshots(limit=40)
+        if not rows:
+            return jsonify({"ok": True, "latest": None, "recent": [], "alerts": [],
+                            "message": "Ainda não há snapshots de contexto. Faça uma nova chamada de IA após esta versão."})
+        requested = (request.args.get("snapshot_id") or "").strip()
+        chosen = next((r for r in rows if requested and str(r.get("id") or "") == requested), rows[0])
+        latest = dict(chosen)
+        limit = int(latest.get("context_limit") or 0)
+        used = int(latest.get("used_tokens") or 0)
+        reserve = int(latest.get("reserve_tokens") or 0)
+        free = max(0, limit - used - reserve)
+        known_keys = ["system_tokens", "tool_tokens", "skill_tokens", "memory_tokens",
+                      "conversation_tokens", "retrieved_tokens"]
+        known = sum(int(latest.get(k) or 0) for k in known_keys if latest.get(k) is not None)
+        latest["free_tokens"] = free
+        latest["used_pct"] = round(used / limit * 100, 1) if limit else None
+        latest["reserve_pct"] = round(reserve / limit * 100, 1) if limit else None
+        latest["free_pct"] = round(free / limit * 100, 1) if limit else None
+        latest["attribution_coverage_pct"] = round(known / used * 100, 1) if used else 100.0
+        latest["duplicate_count_7d"] = duplicate_context_count(latest.get("input_hash"), 7)
+
+        alerts = []
+        used_pct = latest.get("used_pct") or 0
+        if used_pct >= 80:
+            alerts.append({"severity":"critical", "title":"Contexto próximo do limite operacional",
+                           "action":"Persistir decisões importantes e reduzir contexto antes da próxima chamada."})
+        elif used_pct >= 65:
+            alerts.append({"severity":"warning", "title":"Contexto se aproximando da reserva de compactação",
+                           "action":"Mover material recuperável para retrieval/cache e manter apenas o contexto necessário."})
+        tool_tokens = latest.get("tool_tokens")
+        if tool_tokens is not None and limit and (tool_tokens / limit * 100) >= 15:
+            alerts.append({"severity":"warning", "title":"Definições de ferramentas consumindo muito contexto",
+                           "action":"Carregar ferramentas sob demanda em vez de injetar todas em cada chamada."})
+        if latest["attribution_coverage_pct"] < 80:
+            alerts.append({"severity":"info", "title":"Parte do contexto ainda não está atribuída por origem",
+                           "action":"Instrumentar system/tools/skills/memory/retrieval nos call sites para aumentar a cobertura."})
+        if latest["duplicate_count_7d"] >= 2:
+            alerts.append({"severity":"info", "title":"Payload idêntico foi injetado repetidamente",
+                           "action":"Avaliar cache ou memória persistente para evitar reinjeção exata."})
+
+        recent = []
+        for r in rows[:20]:
+            rr = dict(r)
+            lim = int(rr.get("context_limit") or 0); u = int(rr.get("used_tokens") or 0)
+            rr["used_pct"] = round(u / lim * 100, 1) if lim else None
+            rr.pop("input_hash", None)
+            recent.append(rr)
+        latest.pop("input_hash", None)
+        return jsonify({"ok": True, "latest": latest, "recent": recent, "alerts": alerts,
+                        "privacy": {"prompt_content_stored": False, "only_counts_and_hash": True}})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:300]}), 500
+
+
+@app.route("/api/observability/pipeline-stages")
+@login_required
+def observability_pipeline_stages():
+    """Retorna telemetria de performance sempre em JSON.
+
+    Este endpoint alimenta o painel /obs e não pode vazar uma página HTML de
+    erro para o frontend. Além de deixar o diagnóstico confuso ("Unexpected
+    token '<'"), isso escondia a causa real da falha.
+    """
+    try:
+        from obs.db import (resumo_por_etapa, etapas_recentes, jobs_recentes,
+                            resumo_por_job, etapas_do_job)
+        from cache import llm_cache
+
+        pipeline = request.args.get("pipeline") or None
+        try:
+            limit = max(1, min(200, int(request.args.get("limit", 60))))
+        except (TypeError, ValueError):
+            limit = 60
+
+        # Configuração operacional, sem expor chaves/segredos.
+        rag_enabled = False
+        try:
+            from rag import config as rag_config
+            rag_enabled = bool(rag_config.RAG_ENABLED)
+        except Exception:
+            pass
+
+        recent_jobs = jobs_recentes(pipeline=pipeline, limit=12)
+        requested_job_id = (request.args.get("job_id") or "").strip()
+        selected_job_id = requested_job_id or (recent_jobs[0]["job_id"] if recent_jobs else "")
+        selected_rows = etapas_do_job(selected_job_id, pipeline=pipeline, limit=200) if selected_job_id else []
+        if requested_job_id and not selected_rows:
+            selected_job_id = ""
+
+        return jsonify({
+            "ok": True,
+            "etapas": resumo_por_etapa(pipeline=pipeline),
+            "recentes": etapas_recentes(pipeline=pipeline, limit=limit),
+            "jobs": recent_jobs,
+            "selected_job": {
+                "job_id": selected_job_id,
+                "etapas": resumo_por_job(selected_job_id, pipeline=pipeline) if selected_job_id else [],
+                "recentes": selected_rows if selected_job_id else [],
+            },
+            "config": {
+                "cache_enabled": bool(llm_cache.CACHE_ENABLED),
+                "cache_semantic": bool(llm_cache.CACHE_SEMANTIC),
+                "rag_enabled": rag_enabled,
+                "whisper_model": WHISPER_MODEL,
+                "cut_workers": 1,
+                "vertical_workers": 1,
+                "vertical_preset": os.getenv("VERTICAL_PRESET", "veryfast").strip() or "veryfast",
+                "vertical_fast_blur": os.getenv("VERTICAL_FAST_BLUR", "1").strip().lower() not in ("0", "false", "no", "off"),
+                "rss_scope": "process_tree",
+                "measurement_version": 2,
+            },
+        })
+    except Exception as exc:
+        app.logger.exception("Falha ao carregar telemetria de performance")
+        return jsonify({
+            "ok": False,
+            "error": "Não foi possível carregar a telemetria de performance.",
+            "error_type": type(exc).__name__,
+        }), 500
 
 
 @app.route("/api/observability/logs")
@@ -1170,10 +1565,321 @@ def observability_evals():
     return jsonify({"evals": obs_report.recent_evals(20)})
 
 
+@app.route("/api/observability/evaluate", methods=["POST"])
+@login_required
+def observability_evaluate():
+    """Executa um eval explícito para demonstração/benchmark do case.
+
+    Não é acionado automaticamente por padrão; EVAL_ENABLED controla os evals
+    automáticos dos fluxos RAG/tutor. Este endpoint exige contexto, pergunta e
+    resposta reais — não fabrica nota sem evidência.
+    """
+    body = request.get_json(silent=True) or {}
+    question = (body.get("question") or body.get("pergunta") or "").strip()
+    context = (body.get("context") or body.get("contexto") or "").strip()
+    answer = (body.get("answer") or body.get("resposta") or "").strip()
+    target = (body.get("target") or "manual").strip()[:64]
+    if not question or not context or not answer:
+        return jsonify({"error": "question, context e answer são obrigatórios"}), 400
+
+    trace_id = (body.get("trace_id") or f"eval-{uuid.uuid4().hex[:12]}").strip()[:128]
+    verdict = obs_judge.run_response_eval(
+        trace_id, target, question, context, answer,
+    )
+    code = 200 if verdict.get("ok") else 503
+    return jsonify({"trace_id": trace_id, "target": target, "evaluation": verdict}), code
+
+
+@app.route("/api/observability/quality-gate")
+@login_required
+def observability_quality_gate():
+    target = (request.args.get("target") or "").strip() or None
+    try:
+        limit = max(1, min(2000, int(request.args.get("limit", 200))))
+    except (TypeError, ValueError):
+        limit = 200
+    return jsonify(obs_quality.aggregate(target=target, limit=limit))
+
+
+@app.route("/api/observability/benchmarks")
+@login_required
+def observability_benchmarks():
+    try:
+        limit = max(1, min(500, int(request.args.get("limit", 50))))
+    except (TypeError, ValueError):
+        limit = 50
+    return jsonify({
+        "summary": obs_report.benchmark_summary(limit=max(limit, 200)),
+        "runs": obs_report.recent_benchmarks(limit),
+    })
+
+
+@app.route("/api/observability/benchmark", methods=["POST"])
+@login_required
+def observability_benchmark():
+    """Executa uma suíte controlada de respostas já produzidas.
+
+    A Sprint 1B deliberadamente NÃO escolhe nem chama o modelo candidato; isso
+    pertence ao AI Gateway/multi-model. Aqui medimos respostas reais com o mesmo
+    juiz e os mesmos gates, permitindo comparar versões sem misturar responsabilidades.
+    """
+    body = request.get_json(silent=True) or {}
+    suite = (body.get("suite") or "manual").strip()[:80]
+    cases = body.get("cases") or []
+    if not isinstance(cases, list) or not cases:
+        return jsonify({"error": "cases deve ser uma lista não vazia"}), 400
+    if len(cases) > 20:
+        return jsonify({"error": "máximo de 20 casos por execução"}), 400
+
+    results = []
+    for idx, case in enumerate(cases, start=1):
+        if not isinstance(case, dict):
+            return jsonify({"error": f"case {idx} inválido"}), 400
+        question = (case.get("question") or case.get("pergunta") or "").strip()
+        context = (case.get("context") or case.get("contexto") or "").strip()
+        answer = (case.get("answer") or case.get("resposta") or "").strip()
+        if not question or not context or not answer:
+            return jsonify({"error": f"case {idx}: question, context e answer são obrigatórios"}), 400
+        case_id = str(case.get("id") or idx)[:80]
+        label = str(case.get("label") or case.get("nome") or f"Caso {idx}")[:160]
+        target = str(case.get("target") or "benchmark")[:64]
+        trace_id = f"bench-{uuid.uuid4().hex[:12]}"
+        verdict = obs_judge.run_response_eval(
+            trace_id, target, question, context, answer
+        )
+        if not verdict.get("ok"):
+            results.append({"case_id": case_id, "label": label, "trace_id": trace_id,
+                            "evaluation": verdict, "gate": {"status": "judge_unavailable", "passed": False}})
+            continue
+        gate = obs_quality.evaluate_verdict(verdict)
+        obs_db.insert_benchmark({
+            "suite": suite, "case_id": case_id, "label": label, "target": target,
+            "trace_id": trace_id, "judge_model": obs_judge.JUDGE_MODEL,
+            "prompt_version": obs_judge.PROMPT_VERSION,
+            "groundedness": verdict.get("groundedness"),
+            "relevance": verdict.get("relevance"),
+            "source_fidelity": verdict.get("source_fidelity"),
+            "completeness": verdict.get("completeness"),
+            "judge_score": verdict.get("judge_score"),
+            "hallucination": verdict.get("hallucination"),
+            "gate_status": gate["status"], "gate_failures": gate["failures"],
+        })
+        results.append({"case_id": case_id, "label": label, "trace_id": trace_id,
+                        "evaluation": verdict, "gate": gate})
+
+    successful = [r for r in results if r.get("evaluation", {}).get("ok")]
+    passed = sum(1 for r in successful if r.get("gate", {}).get("passed"))
+    return jsonify({
+        "suite": suite, "count": len(results), "evaluated": len(successful),
+        "passed": passed,
+        "pass_rate": round(passed / len(successful), 4) if successful else None,
+        "thresholds": obs_quality.thresholds(), "results": results,
+    })
+
+
 @app.route("/api/observability/errors")
 @login_required
 def observability_errors():
     return jsonify({"errors": obs_report.errors_recent(50)})
+
+
+@app.route("/security")
+@login_required
+def security_dashboard():
+    return render_template("security.html")
+
+
+@app.route("/api/security/summary")
+@login_required
+def security_summary():
+    from security import security_config
+    from security import audit as security_audit
+
+    secret_checks = {
+        "secret_key_default": SECRET_KEY in {"studyflow-dev-secret-change-me", "studyflow"},
+        "admin_password_default": os.getenv("APP_PASS", "studyflow") == "studyflow",
+        "env_file_present": Path(".env").exists(),
+        "oauth_secret_file_present": Path("client_secret.json").exists(),
+        "youtube_token_file_present": Path("youtube_token.json").exists(),
+        "session_cookie_secure": bool(app.config.get("SESSION_COOKIE_SECURE")),
+    }
+    risky_files = [name for name, present in (
+        (".env", secret_checks["env_file_present"]),
+        ("client_secret.json", secret_checks["oauth_secret_file_present"]),
+        ("youtube_token.json", secret_checks["youtube_token_file_present"]),
+    ) if present]
+    return jsonify({
+        "guardrails": security_config(),
+        "events": security_audit.summary(),
+        "recent": security_audit.recent_events(30),
+        "controls": {
+            "authentication": True,
+            "mfa_available": bool(auth_mfa.is_enabled()),
+            "csrf_html_forms": True,
+            "session_http_only": True,
+            "session_same_site": app.config.get("SESSION_COOKIE_SAMESITE"),
+            "security_headers": True,
+            "course_owner_checks": True,
+            "rag_prompt_guard": True,
+            "tutor_prompt_guard": True,
+            "output_secret_redaction": True,
+            "audit_trail": True,
+        },
+        "secrets": {
+            "checks": secret_checks,
+            "risky_files": risky_files,
+            "production_ready": not secret_checks["secret_key_default"] and not secret_checks["admin_password_default"] and not risky_files,
+            "note": "Arquivos sensíveis devem ser montados como secrets/volumes e nunca versionados no repositório de produção.",
+        },
+    })
+
+
+@app.route("/models")
+@login_required
+def models_dashboard():
+    return render_template("models.html")
+
+
+@app.route("/api/models/status")
+@login_required
+def models_status():
+    from ai_gateway import gateway_config, provider_status
+    rows = obs_db.query(
+        "SELECT provider,model,latency_ms,status,ts FROM traces "
+        "WHERE operation IN ('model_test','model_compare','rag_answer','tutor_answer') "
+        "ORDER BY ts DESC LIMIT 40"
+    )
+    return jsonify({
+        "gateway": gateway_config(),
+        "providers": provider_status(),
+        "recent_routes": rows,
+    })
+
+
+@app.route("/api/models/test", methods=["POST"])
+@login_required
+def models_test():
+    body = request.get_json(force=True, silent=True) or {}
+    provider = (body.get("provider") or "").strip().lower()
+    if provider not in ("gemini", "openai", "anthropic"):
+        return jsonify({"error": "provider inválido"}), 400
+    from ai_gateway import generate_text, AIGatewayError
+    trace_id = f"model-test-{uuid.uuid4().hex[:12]}"
+    try:
+        result = generate_text(
+            "Responda somente com a palavra OK.",
+            preferred_provider=provider, fallback_providers=[],
+            temperature=0, max_tokens=16, operation="model_test", trace_id=trace_id,
+        )
+        return jsonify({"ok": True, "trace_id": trace_id, **result.to_dict()})
+    except AIGatewayError as e:
+        return jsonify({"ok": False, "trace_id": trace_id, "provider": provider, "error": str(e)}), 502
+
+
+@app.route("/api/models/compare", methods=["POST"])
+@login_required
+def models_compare():
+    """Executa o MESMO prompt isoladamente nos providers selecionados.
+
+    Não há fallback aqui de propósito: um benchmark precisa medir cada modelo
+    individualmente. A execução é manual para não gerar custo sem intenção.
+    """
+    import time
+    from ai_gateway import generate_text, provider_status
+    from security import inspect_input
+
+    body = request.get_json(force=True, silent=True) or {}
+    prompt = (body.get("prompt") or "").strip()
+    context = (body.get("context") or "").strip()
+    evaluate = bool(body.get("evaluate")) and os.getenv("EVAL_ENABLED", "0") == "1"
+    requested = body.get("providers") or ["gemini", "openai", "anthropic"]
+    requested = [str(x).strip().lower() for x in requested if str(x).strip().lower() in ("gemini", "openai", "anthropic")]
+    if not prompt:
+        return jsonify({"error": "prompt é obrigatório"}), 400
+    if not requested:
+        return jsonify({"error": "selecione ao menos um provider"}), 400
+    try:
+        compare_max_tokens = max(32, min(int(body.get("max_tokens", 1024)), 4096))
+        compare_temperature = max(0.0, min(float(body.get("temperature", 0.2)), 2.0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "temperature/max_tokens inválidos"}), 400
+    guard = inspect_input(prompt)
+    if not guard.allowed:
+        return jsonify({"error": "Prompt bloqueado pelo AI Guard.", "security": guard.to_dict()}), 400
+
+    status_map = {x["provider"]: x for x in provider_status()}
+    comparison_id = f"cmp-{uuid.uuid4().hex[:12]}"
+    results = []
+    for provider in requested:
+        if not status_map.get(provider, {}).get("configured"):
+            results.append({"provider": provider, "status": "not_configured", "model": status_map.get(provider, {}).get("model")})
+            continue
+        trace_id = f"{comparison_id}-{provider}"
+        started = time.monotonic()
+        row = {"comparison_id": comparison_id, "provider": provider, "status": "error"}
+        try:
+            result = generate_text(
+                guard.sanitized, preferred_provider=provider, fallback_providers=[],
+                temperature=compare_temperature,
+                max_tokens=compare_max_tokens,
+                operation="model_compare", trace_id=trace_id,
+            )
+            row.update({
+                "model": result.model, "latency_ms": result.latency_ms,
+                "status": "ok", "response": result.text, "trace_id": trace_id,
+            })
+            if evaluate and context:
+                try:
+                    ev = obs_judge.run_response_eval(trace_id, "model_compare", prompt, context, result.text)
+                    row["evaluation"] = ev
+                    row["judge_score"] = ev.get("judge_score")
+                    row["groundedness"] = ev.get("groundedness")
+                    row["relevance"] = ev.get("relevance")
+                except Exception as ev_err:
+                    row["evaluation_error"] = str(ev_err)[:300]
+        except Exception as e:
+            row.update({
+                "model": status_map.get(provider, {}).get("model"),
+                "latency_ms": round((time.monotonic() - started) * 1000, 2),
+                "error": str(e)[:500],
+                "trace_id": trace_id,
+            })
+        obs_db.insert_model_comparison({
+            "comparison_id": comparison_id, "provider": provider, "model": row.get("model"),
+            "latency_ms": row.get("latency_ms"), "status": row.get("status"),
+            "response_text": row.get("response"), "error": row.get("error"),
+            "judge_score": row.get("judge_score"), "groundedness": row.get("groundedness"),
+            "relevance": row.get("relevance"),
+        })
+        results.append(row)
+    return jsonify({
+        "comparison_id": comparison_id, "evaluate": evaluate,
+        "evaluation_requested": bool(body.get("evaluate")),
+        "results": results,
+    })
+
+
+@app.route("/api/models/comparisons")
+@login_required
+def models_comparisons():
+    try:
+        limit = max(1, min(int(request.args.get("limit", 30)), 100))
+    except ValueError:
+        limit = 30
+    return jsonify({"runs": obs_db.query(
+        "SELECT * FROM model_comparisons ORDER BY ts DESC LIMIT ?", (limit,)
+    )})
+
+
+@app.route("/api/security/events")
+@login_required
+def security_events():
+    from security import audit as security_audit
+    try:
+        limit = max(1, min(200, int(request.args.get("limit", 50))))
+    except (TypeError, ValueError):
+        limit = 50
+    return jsonify({"events": security_audit.recent_events(limit)})
 
 
 @app.route("/rag")
@@ -1208,35 +1914,110 @@ def rag_query():
             "sources": [],
         }), 200
 
-    def _call_llm_openai(prompt):
-        from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=LLM_MODEL, temperature=0).invoke(prompt).content
+    # A resposta final do RAG passa pelo AI Gateway. Isso mantém retrieval e
+    # embeddings intactos, mas permite Gemini/OpenAI/Anthropic com fallback
+    # uniforme e tracing por tentativa.
+    _provider = os.getenv("RAG_LLM_PROVIDER") or os.getenv("AI_PRIMARY_PROVIDER") or "anthropic"
 
-    def _call_llm_anthropic(prompt):
-        from langchain_anthropic import ChatAnthropic
-        model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
-        return ChatAnthropic(model=model, temperature=0).invoke(prompt).content
+    rag_trace_id = f"rag-{uuid.uuid4().hex[:12]}"
 
-    # RAG_LLM_PROVIDER: "anthropic" (padrão, usa seu ANTHROPIC_API_KEY) ou
-    # "openai" — os embeddings continuam via OpenAI de qualquer forma (a
-    # Anthropic não tem API própria de embeddings), só a RESPOSTA final
-    # muda de modelo.
-    _provider = os.getenv("RAG_LLM_PROVIDER", "anthropic").strip().lower()
-    _call_llm = _call_llm_openai if _provider == "openai" else _call_llm_anthropic
-    _model_label = LLM_MODEL if _provider == "openai" else os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
+    from security import inspect_input, protect_output
+    from security import audit as security_audit
+    guard = inspect_input(pergunta)
+    security_audit.record_event(
+        event_type="ai_input", action="allowed" if guard.allowed else "blocked",
+        user_key=_trilhas_user_key(), target="rag_query", trace_id=rag_trace_id,
+        risk=guard.risk, reasons=guard.reasons, metadata={"video_id": video_id, "length": guard.length},
+    )
+    if not guard.allowed:
+        return jsonify({
+            "error": "A pergunta foi bloqueada pelo AI Guard por conter instruções potencialmente inseguras.",
+            "security": {"blocked": True, "risk": guard.risk, "reasons": guard.reasons, "trace_id": rag_trace_id},
+        }), 400
+    pergunta = guard.sanitized
+
+    gateway_meta = {}
 
     def llm_fn(prompt):
-        return traced_llm(
-            _provider, "rag_answer", _model_label, _call_llm, prompt,
-            trace_id="rag", input_text=prompt, timeout=60,
-            fallback="(não foi possível gerar a resposta)",
+        from ai_gateway import generate_text
+        result = generate_text(
+            prompt, preferred_provider=_provider, temperature=0, max_tokens=2048,
+            operation="rag_answer", trace_id=rag_trace_id,
         )
+        gateway_meta.update(result.to_dict(include_text=False))
+        return result.text
 
     try:
         result = answer(pergunta, embed, store, llm_fn, video_id=video_id)
+        result["trace_id"] = rag_trace_id
+        if gateway_meta:
+            result["model_route"] = gateway_meta
+        if result.get("answer"):
+            protected, redactions = protect_output(result["answer"])
+            result["answer"] = protected
+            if redactions:
+                security_audit.record_event(
+                    event_type="ai_output", action="redacted", user_key=_trilhas_user_key(),
+                    target="rag_query", trace_id=rag_trace_id, risk="high", reasons=redactions,
+                )
+                result["security"] = {"output_redacted": True, "reasons": redactions}
+        if os.getenv("EVAL_ENABLED", "0") == "1" and result.get("answer") and result.get("sources"):
+            try:
+                context = "\n\n".join(
+                    f"[{src.get('start', 0)}s] {src.get('trecho', '')}"
+                    for src in result.get("sources", [])
+                )
+                result["evaluation"] = obs_judge.run_response_eval(
+                    rag_trace_id, "rag_answer", pergunta, context, result["answer"]
+                )
+            except Exception as e:
+                app.logger.warning("Eval automático do RAG falhou: %s", e)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/rag/retrieve", methods=["POST"])
+@login_required
+def rag_retrieve_debug():
+    """Retrieval puro, sem chamada de LLM. Útil para demonstrar/debugar
+    Top-K, similaridade e proveniência de cada chunk na banca."""
+    body = request.get_json(force=True, silent=True) or {}
+    pergunta = (body.get("pergunta") or "").strip()
+    video_id = (body.get("video_id") or "").strip() or None
+    try:
+        top_k = max(1, min(int(body.get("top_k") or 5), 20))
+    except (TypeError, ValueError):
+        top_k = 5
+    if not pergunta:
+        return jsonify({"error": "pergunta é obrigatória"}), 400
+    from security import inspect_input
+    from security import audit as security_audit
+    retrieve_trace_id = f"retrieve-{uuid.uuid4().hex[:12]}"
+    guard = inspect_input(pergunta)
+    security_audit.record_event(
+        event_type="ai_input", action="allowed" if guard.allowed else "blocked",
+        user_key=_trilhas_user_key(), target="rag_retrieve", trace_id=retrieve_trace_id,
+        risk=guard.risk, reasons=guard.reasons, metadata={"video_id": video_id, "length": guard.length},
+    )
+    if not guard.allowed:
+        return jsonify({"error": "Consulta bloqueada pelo AI Guard.", "security": guard.to_dict(), "trace_id": retrieve_trace_id}), 400
+    pergunta = guard.sanitized
+    try:
+        from rag.store import get_store
+        from rag.query import search, format_sources
+        from cache.embeddings import embed
+        store = get_store()
+        if store is None:
+            return jsonify({"error": "RAG desligado ou pgvector indisponível", "sources": []}), 200
+        chunks = search(pergunta, embed, store, top_k=top_k, video_id=video_id)
+        return jsonify({
+            "query": pergunta, "top_k": top_k, "filter": video_id, "trace_id": retrieve_trace_id,
+            "returned": len(chunks), "sources": format_sources(chunks),
+        })
+    except Exception as e:
+        app.logger.exception("Falha no retrieval debug")
+        return jsonify({"error": str(e), "sources": []}), 500
 
 
 # ══════════ Módulo Curso · Material de apoio (PDF/PPTX/DOCX → RAG) ══════════
@@ -1247,7 +2028,7 @@ MATERIAL_MAX_BYTES = 20 * 1024 * 1024  # 20MB
 @app.route("/api/curso/material", methods=["POST"])
 @login_required
 def curso_upload_material():
-    from rag.document_extractor import extract_text, DocumentExtractionError, SUPPORTED_EXTENSIONS
+    from rag.document_extractor import extract_document, DocumentExtractionError, SUPPORTED_EXTENSIONS
     from rag.store import get_store
     from rag.index import index_document
 
@@ -1272,14 +2053,17 @@ def curso_upload_material():
         }), 200
 
     try:
-        text = extract_text(file.filename, content)
+        extracted = extract_document(file.filename, content)
+        text = extracted["text"]
     except DocumentExtractionError as e:
         return jsonify({"error": str(e)}), 400
 
     try:
         from cache.embeddings import embed
         doc_id = f"material:{uuid.uuid4().hex[:10]}_{file.filename}"
-        n_chunks = index_document(doc_id, text, embed, store)
+        n_chunks = index_document(doc_id, text, embed, store, source_name=file.filename,
+                                  source_type=extracted.get("source_type", "document"),
+                                  units=extracted.get("units"))
     except Exception as e:
         return jsonify({"error": f"Falha ao indexar: {e}"}), 500
 
@@ -1329,7 +2113,8 @@ def curso_index_url():
     try:
         from cache.embeddings import embed
         doc_id = f"material:url_{uuid.uuid4().hex[:10]}"
-        n_chunks = index_document(doc_id, text, embed, store)
+        n_chunks = index_document(doc_id, text, embed, store, source_name=url, source_type="url",
+                                  units=[{"text": text, "url": url}])
     except Exception as e:
         return jsonify({"error": f"Falha ao indexar: {e}"}), 500
 
@@ -1366,7 +2151,7 @@ def curso2_criar():
     persistido, status 'aguardando_aprovacao' — a geração pesada
     (vídeo/áudio) só acontece depois de aprovar (Fase 3/4, ainda não
     implementada)."""
-    from rag.document_extractor import extract_text, DocumentExtractionError, SUPPORTED_EXTENSIONS
+    from rag.document_extractor import extract_document, DocumentExtractionError, SUPPORTED_EXTENSIONS
     from rag.store import get_store
     from rag.index import index_document
     from curso.curriculum_agent import gerar_manifesto, CurriculumAgentError
@@ -1386,7 +2171,8 @@ def curso2_criar():
         return jsonify({"error": "Arquivo maior que 20MB — reduz o tamanho e tenta de novo."}), 400
 
     try:
-        text = extract_text(file.filename, content)
+        extracted = extract_document(file.filename, content)
+        text = extracted["text"]
     except DocumentExtractionError as e:
         app.logger.warning("Falha ao extrair texto do documento '%s': %s", file.filename, e)
         return jsonify({"error": "Não foi possível processar o documento enviado."}), 400
@@ -1419,7 +2205,9 @@ def curso2_criar():
         store = get_store()
         if store is not None:
             from cache.embeddings import embed
-            index_document(doc_id, text, embed, store)
+            index_document(doc_id, text, embed, store, source_name=file.filename,
+                           source_type=extracted.get("source_type", "document"),
+                           units=extracted.get("units"))
     except Exception as e:
         print(f"[curso2] indexação RAG falhou (curso segue sem provenance): {e}")
 
@@ -1487,16 +2275,20 @@ def curso2_detalhe(course_id):
 def curso2_editar_manifesto(course_id):
     """Tela de Revisar Estrutura: usuário edita módulos/aulas antes da
     geração pesada. Bloqueado se o curso já passou de 'aprovado'."""
-    from curso.store import atualizar_manifesto, CursoStoreError
+    from curso.store import atualizar_manifesto, get_curso, CursoStoreError
     body = request.get_json(silent=True) or {}
     manifest = body.get("manifesto")
     if not manifest:
         return jsonify({"error": "Envie o manifesto em 'manifesto'."}), 400
+    user_key = _trilhas_user_key()
     try:
-        atualizado = atualizar_manifesto(course_id, _trilhas_user_key(), manifest)
-    except CursoStoreError as e:
+        atualizar_manifesto(course_id, user_key, manifest)
+        atualizado = get_curso(course_id, user_key)
+    except CursoStoreError:
         app.logger.exception("Erro ao atualizar manifesto do curso '%s'.", course_id)
         return jsonify({"error": "Não foi possível atualizar o manifesto."}), 400
+    if not atualizado:
+        return jsonify({"error": "Manifesto salvo, mas o curso não pôde ser recarregado."}), 500
     return jsonify({"ok": True, "curso": atualizado})
 
 
@@ -1506,13 +2298,31 @@ def curso2_aprovar(course_id):
     """Checkpoint de aprovação — a partir daqui o manifest não pode mais
     ser editado. Geração pesada (vídeo/áudio) é Fase 3/4, ainda não
     implementada; por ora isto só trava a estrutura como definitiva."""
-    from curso.store import aprovar_curso, CursoStoreError
+    from curso.store import aprovar_curso, get_curso, CursoStoreError
+    user_key = _trilhas_user_key()
     try:
-        curso = aprovar_curso(course_id, _trilhas_user_key())
-    except CursoStoreError as e:
+        aprovar_curso(course_id, user_key)
+        curso = get_curso(course_id, user_key)
+    except CursoStoreError:
         app.logger.exception("Erro ao aprovar curso '%s'.", course_id)
         return jsonify({"error": "Não foi possível aprovar o curso."}), 400
+    if not curso:
+        return jsonify({"error": "Curso aprovado, mas não foi possível recarregar o registro."}), 500
     return jsonify({"ok": True, "curso": curso})
+
+
+@app.route("/api/curso2/<course_id>/licoes", methods=["GET"])
+@login_required
+def curso2_licoes_todas(course_id):
+    from curso.store import get_curso, list_lessons, CursoStoreError
+    curso = get_curso(course_id, _trilhas_user_key())
+    if not curso:
+        return jsonify({"error": "curso não encontrado", "licoes": []}), 404
+    try:
+        return jsonify({"licoes": list_lessons(course_id)})
+    except CursoStoreError:
+        app.logger.exception("Falha ao listar todas as lições do curso %s", course_id)
+        return jsonify({"error": "falha ao listar aulas", "licoes": []}), 500
 
 
 @app.route("/api/curso2/<course_id>/licoes_pendentes", methods=["GET"])
@@ -1623,6 +2433,128 @@ def curso2_detalhe_licao(course_id, lesson_id):
         return jsonify({"error": "aula não encontrada"}), 404
     conteudo = get_lesson_content(lesson_id)
     return jsonify({"aula": lesson, "conteudo": conteudo})
+
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/inclusao", methods=["GET", "PUT"])
+@login_required
+def curso2_inclusao_licao(course_id, lesson_id):
+    from curso.store import get_lesson, get_lesson_inclusion, save_lesson_inclusion, CursoStoreError
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    try:
+        if request.method == "PUT":
+            return jsonify({"ok": True, "inclusao": save_lesson_inclusion(lesson_id, request.get_json(silent=True) or {})})
+        return jsonify({"inclusao": get_lesson_inclusion(lesson_id)})
+    except CursoStoreError:
+        app.logger.exception("Falha ao atualizar seleção editorial da aula %s", lesson_id)
+        return jsonify({"error": "não foi possível salvar a seleção desta aula"}), 500
+
+
+def _curso2_cover_image(course_id: str, titulo: str) -> str:
+    """Gera uma capa própria do StudyFlow. Evita depender de scraping do Google
+    Images e ainda permite o usuário substituir a URL no modal."""
+    from PIL import Image, ImageDraw
+    import textwrap
+    from certificado import _font
+    out_dir = Path(app.root_path) / "static" / "images" / "course-covers"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"{course_id}.png"
+    img = Image.new("RGB", (1200, 675), (10, 11, 12))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, 12, 675], fill=(207, 255, 71))
+    d.text((70, 72), "GEORGINA · STUDYFLOW", font=_font(24, bold=True), fill=(207, 255, 71))
+    y = 165
+    for line in textwrap.wrap(titulo or "Meu curso", width=24)[:4]:
+        d.text((70, y), line, font=_font(58, bold=True), fill=(244, 243, 240))
+        y += 72
+    d.text((72, 585), "Conhecimento que transforma.", font=_font(24), fill=(150, 150, 146))
+    img.save(out, "PNG")
+    return out.relative_to(Path(app.root_path) / "static").as_posix()
+
+
+def _copy_course2_media(saved_id: str, lessons_snapshot: list[dict]) -> list[dict]:
+    import shutil
+    video_root = Path(app.root_path) / "static" / "videos" / "saved_courses" / saved_id / "curso2"
+    audio_root = Path(app.root_path) / "static" / "audios" / "saved_courses" / saved_id / "curso2"
+    video_root.mkdir(parents=True, exist_ok=True)
+    audio_root.mkdir(parents=True, exist_ok=True)
+    static_root = Path(app.root_path) / "static"
+    for idx, item in enumerate(lessons_snapshot, 1):
+        for field, root in (("video_url", video_root), ("audio_url", audio_root), ("podcast_url", audio_root)):
+            rel = item.get(field)
+            if not rel:
+                continue
+            src = (static_root / str(rel).lstrip("/")).resolve()
+            try:
+                src.relative_to(static_root.resolve())
+            except ValueError:
+                continue
+            if not src.is_file():
+                continue
+            dst = root / f"aula_{idx:02d}_{field}_{src.name}"
+            shutil.copy2(src, dst)
+            item[field] = dst.relative_to(static_root).as_posix()
+    return lessons_snapshot
+
+
+@app.route("/api/curso2/<course_id>/salvar", methods=["POST"])
+@login_required
+def curso2_salvar_no_catalogo(course_id):
+    from auth.prefs import get_pref, set_pref
+    from curso.store import (get_curso, list_lessons, get_lesson_content,
+                             get_lesson_inclusion, get_exercises, CursoStoreError)
+    import time
+    user_key = _trilhas_user_key()
+    curso = get_curso(course_id, user_key)
+    if not curso:
+        return jsonify({"error": "curso não encontrado"}), 404
+    body = request.get_json(silent=True) or {}
+    manifest = curso.get("manifest_json") or {}
+    titulo = (body.get("titulo") or manifest.get("title") or "Meu curso").strip()
+    autor = (body.get("autor") or "StudyFlow · Georgina").strip()
+    saved_id = "gen2-" + uuid.uuid4().hex[:12]
+    lessons_snapshot = []
+    try:
+        for lesson in list_lessons(course_id):
+            inc = get_lesson_inclusion(str(lesson["id"]))
+            content = get_lesson_content(str(lesson["id"])) or {}
+            exercises = get_exercises(str(lesson["id"])) if inc["include_exercise"] else []
+            lessons_snapshot.append({
+                "id": str(lesson["id"]), "titulo": lesson["titulo"], "objetivo": lesson.get("objetivo", ""),
+                "modulo": lesson.get("modulo_titulo", ""), "duracao_min": lesson.get("duracao_min", 0),
+                "include": inc,
+                "explicacao": content.get("explicacao", "") if inc["include_text"] else "",
+                "resumo": content.get("resumo", "") if inc["include_text"] else "",
+                "quiz": content.get("quiz_json") or [] if inc["include_quiz"] else [],
+                "flashcards": content.get("flashcards_json") or [] if inc["include_quiz"] else [],
+                "video_url": lesson.get("video_url") if inc["include_video"] else None,
+                "audio_url": lesson.get("audio_url") if inc["include_audio"] else None,
+                "podcast_url": content.get("podcast_url") if inc["include_podcast"] else None,
+                "exercicios": exercises,
+                "tutor_notes": inc.get("tutor_notes") or [],
+            })
+        lessons_snapshot = _copy_course2_media(saved_id, lessons_snapshot)
+    except CursoStoreError:
+        app.logger.exception("Falha ao compor curso2 %s", course_id)
+        return jsonify({"error": "não foi possível montar o curso final"}), 500
+
+    imagem = (body.get("imagem") or "").strip() or _curso2_cover_image(saved_id, titulo)
+    if imagem and not imagem.startswith(("http://", "https://", "/static/")):
+        imagem = "/static/" + imagem.lstrip("/")
+    curso_salvo = {
+        "id": saved_id, "titulo": titulo, "autor": autor, "imagem": imagem,
+        "categoria": "Gerados com IA", "nivel": manifest.get("difficulty") or "Personalizado",
+        "horas": round(sum((x.get("duracao_min") or 0) for x in lessons_snapshot) / 60, 1),
+        "desc": (body.get("descricao") or manifest.get("description") or "Curso criado com a Georgina.").strip(),
+        "origem": "documento", "course2_id": course_id, "manifest": manifest,
+        "lessons": lessons_snapshot, "salvo_em": time.strftime("%Y-%m-%d %H:%M"), "gerado": True,
+    }
+    cursos = get_pref(user_key, "cursos_salvos", default=[]) or []
+    cursos.insert(0, curso_salvo)
+    set_pref(user_key, "cursos_salvos", cursos)
+    return jsonify({"ok": True, "curso": curso_salvo}), 201
 
 
 @app.route("/api/curso2/<course_id>/licoes/<lesson_id>/fontes", methods=["GET"])
@@ -1867,6 +2799,7 @@ def curso2_tutor_perguntar(course_id, lesson_id):
     sentido enfileirar como job; a resposta do LLM é rápida o bastante
     pra um request normal, diferente de vídeo/áudio)."""
     from curso.provenance import buscar_chunks_relevantes
+    from rag.query import format_sources
     from curso.store import get_tutor_history, save_tutor_message, CursoStoreError
     from curso.tutor_agent import perguntar, TutorAgentError
 
@@ -1880,6 +2813,22 @@ def curso2_tutor_perguntar(course_id, lesson_id):
     if not pergunta:
         return jsonify({"error": "Envie a pergunta em 'pergunta'."}), 400
 
+    from security import inspect_input, protect_output
+    from security import audit as security_audit
+    tutor_trace_id = f"tutor-{uuid.uuid4().hex[:12]}"
+    guard = inspect_input(pergunta)
+    security_audit.record_event(
+        event_type="ai_input", action="allowed" if guard.allowed else "blocked",
+        user_key=user_key, target="tutor", trace_id=tutor_trace_id, risk=guard.risk,
+        reasons=guard.reasons, metadata={"course_id": course_id, "lesson_id": lesson_id, "length": guard.length},
+    )
+    if not guard.allowed:
+        return jsonify({
+            "error": "Pergunta bloqueada pelo AI Guard por conter instruções potencialmente inseguras.",
+            "security": {"blocked": True, "risk": guard.risk, "reasons": guard.reasons, "trace_id": tutor_trace_id},
+        }), 400
+    pergunta = guard.sanitized
+
     try:
         historico = get_tutor_history(lesson_id, user_key)
         source_doc_id = curso["manifest_json"].get("source_doc_id")
@@ -1888,8 +2837,26 @@ def curso2_tutor_perguntar(course_id, lesson_id):
         resposta = perguntar(
             pergunta, lesson["titulo"], conteudo["explicacao"], chunks_rag, historico,
         )
+        resposta, redactions = protect_output(resposta)
+        if redactions:
+            security_audit.record_event(
+                event_type="ai_output", action="redacted", user_key=user_key, target="tutor",
+                trace_id=tutor_trace_id, risk="high", reasons=redactions,
+                metadata={"course_id": course_id, "lesson_id": lesson_id},
+            )
         save_tutor_message(lesson_id, user_key, "aluno", pergunta)
         save_tutor_message(lesson_id, user_key, "tutor", resposta)
+
+        tutor_eval = None
+        if os.getenv("EVAL_ENABLED", "0") == "1":
+            try:
+                rag_text = "\n\n".join(c.get("text", "") for c in chunks_rag)
+                eval_context = conteudo["explicacao"] + ("\n\n" + rag_text if rag_text else "")
+                tutor_eval = obs_judge.run_response_eval(
+                    tutor_trace_id, "tutor", pergunta, eval_context, resposta
+                )
+            except Exception as e:
+                app.logger.warning("Eval automático do tutor falhou: %s", e)
     except (TutorAgentError, CursoStoreError):
         app.logger.exception("Falha ao processar pergunta do tutor", extra={
             "course_id": course_id,
@@ -1898,7 +2865,12 @@ def curso2_tutor_perguntar(course_id, lesson_id):
         })
         return jsonify({"error": "Não foi possível processar a pergunta no momento."}), 422
 
-    return jsonify({"resposta": resposta})
+    payload = {"resposta": resposta, "trace_id": tutor_trace_id, "sources": format_sources(chunks_rag)}
+    if 'redactions' in locals() and redactions:
+        payload["security"] = {"output_redacted": True, "reasons": redactions}
+    if tutor_eval is not None:
+        payload["evaluation"] = tutor_eval
+    return jsonify(payload)
 
 
 @app.route("/api/curso2/<course_id>/licoes/<lesson_id>/tutor_historico", methods=["GET"])
@@ -1929,6 +2901,127 @@ def curso2_checkpoint(course_id, lesson_id):
     if not quiz:
         return jsonify({"checkpoint": None})
     return jsonify({"checkpoint": quiz[0]})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/checkpoint/resultado", methods=["POST"])
+@login_required
+def curso2_checkpoint_resultado(course_id, lesson_id):
+    """Sprint B2 (calibração previsão-vs-realidade) — registra se o aluno
+    acertou o checkpoint. É a ÚNICA gravação de resultado de quiz que
+    existe no produto até agora (nem o Modo YouTube original salvava
+    isso) — usada como sinal de 'realidade' pra calibrar o ExerciseAgent
+    (curso/store.calibracao_exercicios). Frontend manda 1 pergunta/1
+    resposta hoje (o checkpoint é sempre 1 questão só), mas o registro já
+    é genérico (total_perguntas/acertos) pra se um dia existir quiz
+    completo de N perguntas, servir sem mudar o schema."""
+    from curso.store import get_lesson, registrar_tentativa_quiz, CursoStoreError
+
+    user_key = _trilhas_user_key()
+    lesson = get_lesson(lesson_id, user_key)
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+
+    body = request.get_json(silent=True) or {}
+    acertou = body.get("acertou")
+    if acertou is None:
+        return jsonify({"error": "Envie 'acertou' (true/false) no corpo."}), 400
+
+    try:
+        registrar_tentativa_quiz(
+            lesson_id, user_key, total_perguntas=1, acertos=1 if acertou else 0,
+        )
+    except CursoStoreError:
+        app.logger.exception("Falha ao registrar tentativa de quiz.")
+        return jsonify({"error": "não foi possível registrar o resultado do quiz"}), 422
+
+    return jsonify({"ok": True})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/quiz", methods=["GET"])
+@login_required
+def curso2_quiz_completo(course_id, lesson_id):
+    """Quiz completo (N perguntas) — o checkpoint acima usa só a
+    primeira pergunta do quiz_json pra um check rápido durante a leitura;
+    esta rota devolve o quiz inteiro, pro aluno fazer de propósito depois
+    de terminar a aula (ou o exercício). Mesma fonte de dado
+    (quiz_json), sem chamar LLM de novo."""
+    from curso.store import get_lesson, get_lesson_content
+
+    lesson = get_lesson(lesson_id, _trilhas_user_key())
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+    conteudo = get_lesson_content(lesson_id) or {}
+    quiz = conteudo.get("quiz_json") or []
+    if not quiz:
+        return jsonify({"error": "esta aula ainda não tem quiz gerado"}), 404
+    # Não manda resposta_correta pro cliente antes de responder — só
+    # depois de submeter é que a correção acontece (evita inspecionar o
+    # JSON no DevTools e "colar" a resposta certa).
+    perguntas_sem_gabarito = [
+        {"enunciado": q.get("enunciado", ""), "alternativas": q.get("alternativas", [])}
+        for q in quiz
+    ]
+    return jsonify({"perguntas": perguntas_sem_gabarito})
+
+
+@app.route("/api/curso2/<course_id>/licoes/<lesson_id>/quiz/responder", methods=["POST"])
+@login_required
+def curso2_quiz_responder(course_id, lesson_id):
+    """Corrige o quiz completo NO SERVIDOR (não confia em contagem que o
+    cliente mande) — compara cada resposta enviada contra o
+    resposta_correta guardado no quiz_json, calcula acertos, e registra
+    via registrar_tentativa_quiz (mesma função do checkpoint, já
+    genérica pra N perguntas — Sprint B2)."""
+    from curso.store import get_lesson, get_lesson_content, registrar_tentativa_quiz, CursoStoreError
+
+    user_key = _trilhas_user_key()
+    lesson = get_lesson(lesson_id, user_key)
+    if not lesson or str(lesson["course_id"]) != course_id:
+        return jsonify({"error": "aula não encontrada"}), 404
+
+    conteudo = get_lesson_content(lesson_id) or {}
+    quiz = conteudo.get("quiz_json") or []
+    if not quiz:
+        return jsonify({"error": "esta aula ainda não tem quiz gerado"}), 404
+
+    body = request.get_json(silent=True) or {}
+    respostas = body.get("respostas")
+    if not isinstance(respostas, list) or len(respostas) != len(quiz):
+        return jsonify({
+            "error": f"Envie 'respostas' com exatamente {len(quiz)} item(ns) (1 por pergunta)."
+        }), 400
+
+    resultados = []
+    acertos = 0
+    for pergunta, resposta_aluno in zip(quiz, respostas):
+        correta = pergunta.get("resposta_correta")
+        acertou = resposta_aluno == correta
+        if acertou:
+            acertos += 1
+        resultados.append({"correto": acertou, "resposta_correta": correta})
+
+    try:
+        registrar_tentativa_quiz(lesson_id, user_key, total_perguntas=len(quiz), acertos=acertos)
+    except CursoStoreError:
+        return jsonify({"error": "não foi possível registrar a tentativa de quiz"}), 422
+
+    return jsonify({"resultados": resultados, "acertos": acertos, "total": len(quiz)})
+
+
+@app.route("/api/curso2/<course_id>/calibracao", methods=["GET"])
+@login_required
+def curso2_calibracao(course_id):
+    """Sprint B3 — painel de calibração previsão-vs-realidade do Course
+    Engine, mesmo espírito do /obs do Growth (viral_score vs views
+    reais), agora pro ExerciseAgent (nota prevista vs quiz depois) e pro
+    TutorAgent (taxa de resolução aproximada)."""
+    from curso.store import calibracao_exercicios, calibracao_tutor, calibracao_dificuldade
+
+    return jsonify({
+        "exercicios": calibracao_exercicios(course_id=course_id),
+        "tutor": calibracao_tutor(course_id=course_id),
+        "dificuldade": calibracao_dificuldade(course_id=course_id),
+    })
 
 
 @app.route("/api/curso2/<course_id>/licoes/<lesson_id>/exercicios", methods=["GET"])
@@ -2152,9 +3245,147 @@ def feedback():
 
 
 # ── Health check (para load balancer / K8s) ──────────────────────────────
+
+# ── Case Mode · cockpit da avaliação GenAI ───────────────────────────────
+@app.route("/case")
+@login_required
+def case_dashboard():
+    return render_template("case.html")
+
+
+@app.route("/api/case/summary")
+@login_required
+def case_summary():
+    """Consolida evidências reais do case sem disparar chamadas pagas de LLM.
+
+    O endpoint agrega componentes já existentes. Falhas parciais viram estados
+    explícitos em vez de métricas fabricadas, preservando a defensabilidade da
+    demonstração para a banca.
+    """
+    from case_mode import requirement_matrix, coverage_summary, architecture_layers
+    from ai_gateway import gateway_config, provider_status
+    from security import security_config
+    from security import audit as security_audit
+
+    data = {
+        "case": {
+            "name": "StudyFlow",
+            "positioning": "Knowledge-to-Learning multimodal com IA generativa",
+            "business_problem": (
+                "Transformar conhecimento não estruturado de documentos, vídeos e materiais "
+                "técnicos em aprendizagem estruturada, personalizada, rastreável e mensurável."
+            ),
+        },
+        "coverage": coverage_summary(),
+        "requirements": requirement_matrix(),
+        "architecture": architecture_layers(),
+        "links": {
+            "product": "/curso", "rag": "/rag", "evaluation": "/obs",
+            "security": "/security", "models": "/models", "system": "/system",
+        },
+    }
+
+    try:
+        obs = obs_report.summary()
+        data["quality"] = {
+            "gate": obs.get("quality_gate", {}),
+            "evals": obs.get("evals", {}),
+            "totals": obs.get("totals", {}),
+            "finops": obs.get("finops", {}),
+            "rag": obs.get("rag", {}),
+            "benchmarks": obs_report.benchmark_summary(),
+        }
+    except Exception as exc:
+        data["quality"] = {"available": False, "error": str(exc)[:240]}
+
+    try:
+        health = production_health.snapshot(include_optional_http=True)
+        data["production"] = health
+    except Exception as exc:
+        data["production"] = {"ready": False, "status": "unknown", "error": str(exc)[:240]}
+
+    try:
+        data["models"] = {
+            "gateway": gateway_config(),
+            "providers": provider_status(),
+        }
+    except Exception as exc:
+        data["models"] = {"available": False, "error": str(exc)[:240]}
+
+    try:
+        data["security"] = {
+            "guardrails": security_config(),
+            "events": security_audit.summary(),
+            "controls": {
+                "authentication": True,
+                "csrf_html_forms": True,
+                "session_http_only": bool(app.config.get("SESSION_COOKIE_HTTPONLY")),
+                "session_same_site": app.config.get("SESSION_COOKIE_SAMESITE"),
+                "session_cookie_secure": bool(app.config.get("SESSION_COOKIE_SECURE")),
+                "security_headers": True,
+                "course_owner_checks": True,
+                "rag_prompt_guard": True,
+                "tutor_prompt_guard": True,
+                "output_secret_redaction": True,
+                "audit_trail": True,
+            },
+        }
+    except Exception as exc:
+        data["security"] = {"available": False, "error": str(exc)[:240]}
+
+    try:
+        from rag.store import get_store
+        st = get_store()
+        data.setdefault("quality", {}).setdefault("rag", {})["indexed_chunks"] = st.count() if st else None
+    except Exception:
+        data.setdefault("quality", {}).setdefault("rag", {})["indexed_chunks"] = None
+
+    return jsonify(data)
+
 @app.route("/healthz")
 def healthz():
-    return jsonify({"ok": True, "mode": config.RUN_MODE})
+    """Liveness: responde se o processo Flask está vivo; não testa dependências."""
+    return jsonify({"ok": True, "status": "alive", "mode": config.RUN_MODE})
+
+
+@app.route("/readyz")
+def readyz():
+    """Readiness: dependências obrigatórias do modo atual precisam estar saudáveis."""
+    data = production_health.snapshot(include_optional_http=False)
+    return jsonify(data), (200 if data["ready"] else 503)
+
+
+@app.route("/system")
+@login_required
+def system_dashboard():
+    return render_template("system.html")
+
+
+@app.route("/api/system/health")
+@login_required
+def system_health():
+    data = production_health.snapshot(include_optional_http=True)
+    # Enriquecimento puramente observacional; sem chamadas pagas de LLM.
+    try:
+        obs = obs_report.summary()
+        data["observability"] = {
+            "calls": obs.get("totals", {}).get("calls", 0),
+            "errors": obs.get("totals", {}).get("errors", 0),
+            "error_rate": obs.get("totals", {}).get("error_rate", 0),
+            "cost_usd": obs.get("totals", {}).get("cost_usd", 0),
+            "by_operation": obs.get("by_operation", {}),
+        }
+    except Exception:
+        logger.exception("Failed to build observability summary")
+        data["observability"] = {"error": "internal error"}
+    try:
+        from rag.store import get_store
+        st = get_store()
+        data["rag"] = {"indexed_chunks": st.count() if st else None}
+    except Exception:
+        logger.exception("Failed to collect RAG health info")
+        data["rag"] = {"indexed_chunks": None, "error": "internal error"}
+    return jsonify(data)
 
 
 if __name__ == "__main__":

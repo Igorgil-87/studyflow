@@ -4,15 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Study Flow · Observabilidade &amp; Custos</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     /* estilos específicos dessa página (cards de KPI, tabelas) — os
     tokens de cor/fonte (--bg, --surface, --accent etc.) já vêm do
     style.css compartilhado, não precisam ser redeclarados aqui. */
-    .obs-wrap{max-width:1100px}
+    .obs-wrap{max-width:1280px}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
     .card{background:var(--surface);border:1px solid var(--line);
       border-radius:var(--radius);padding:20px}
@@ -46,10 +44,26 @@
     .badge.ok{background:var(--accent-dim);color:var(--accent)}
     .badge.alert{background:rgba(255,100,100,0.15);color:#ff9b9b}
     .delta-bad{color:#ff9b9b}.delta-good{color:var(--accent)}.delta-flat{color:var(--text-2)}
-.tier-row{display:grid;grid-template-columns:70px 1fr 90px 90px;gap:12px;
-  align-items:center;padding:8px 0;font-size:13px}
+.tier-row{display:grid;grid-template-columns:70px 1fr 90px 90px;gap:12px;align-items:center;padding:8px 0;font-size:13px}
 .tier-row .tier-label{font-weight:700;color:var(--accent)}
 .tier-row .num{text-align:right;color:var(--text-2);font-size:12px}
+.perf-grid .tier-row{grid-template-columns:minmax(150px,1.35fr) repeat(5,minmax(105px,1fr));gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+.perf-grid .tier-row:last-child{border-bottom:0}.perf-grid .tier-row .tier-label{overflow-wrap:anywhere}.perf-grid .tier-row .num{line-height:1.35}
+.obs-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px}
+.obs-section-head h2{margin:0 0 5px}.obs-section-head p{margin:0;max-width:760px;color:var(--text-2);font-size:12.5px;line-height:1.55}
+.context-shell{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.8fr);gap:22px}
+.context-main{min-width:0}.context-side{border-left:1px solid var(--line);padding-left:22px}
+.context-meter{display:flex;height:18px;border-radius:999px;overflow:hidden;background:#0e0e0e;border:1px solid var(--line);margin:14px 0 18px}
+.context-meter>span{height:100%;min-width:0;transition:width .25s ease}.ctx-system{background:#d8ff45}.ctx-tools{background:#9fca35}.ctx-skills{background:#749927}.ctx-memory{background:#58751f}.ctx-conversation{background:#3d5417}.ctx-retrieved{background:#2c4010}.ctx-unattributed{background:#454545}.ctx-free{background:#1b1b1b}.ctx-reserve{background:repeating-linear-gradient(135deg,#2b2b2b,#2b2b2b 5px,#353535 5px,#353535 10px)}
+.context-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}
+.context-line{display:flex;justify-content:space-between;gap:18px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.055);font-size:12.5px}
+.context-line b{font-variant-numeric:tabular-nums}.context-line .muted{color:var(--text-2)}
+.context-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}.context-kpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.018)}.context-kpi small{display:block;color:var(--text-2);font-size:10px;text-transform:uppercase;letter-spacing:.05em}.context-kpi strong{display:block;margin-top:5px;font-size:18px;font-variant-numeric:tabular-nums}
+.context-alert{border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px;background:rgba(255,255,255,.018)}.context-alert strong{display:block;font-size:12.5px}.context-alert span{display:block;color:var(--text-2);font-size:11.5px;line-height:1.45;margin-top:4px}.context-alert.warning{border-color:rgba(255,190,70,.32)}.context-alert.critical{border-color:rgba(255,90,90,.38)}
+.pillars{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}.pillar{border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:10.5px;color:var(--text-2)}.pillar.active{border-color:rgba(216,255,69,.35);color:var(--accent);background:var(--accent-dim)}
+.perf-table-head{display:grid;grid-template-columns:minmax(150px,1.35fr) repeat(5,minmax(105px,1fr));gap:14px;padding:0 0 8px;border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3)}.perf-table-head span:not(:first-child){text-align:right}
+@media(max-width:900px){.context-shell{grid-template-columns:1fr}.context-side{border-left:0;border-top:1px solid var(--line);padding:18px 0 0}.perf-grid .tier-row,.perf-table-head{grid-template-columns:minmax(130px,1.3fr) repeat(2,minmax(95px,1fr))}.perf-grid .tier-row .num:nth-of-type(n+3),.perf-table-head span:nth-child(n+4){display:none}.context-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.context-stats{grid-template-columns:1fr}.context-kpis{grid-template-columns:1fr 1fr}.perf-grid .tier-row,.perf-table-head{grid-template-columns:minmax(120px,1fr) minmax(100px,.8fr)}.perf-grid .tier-row .num:nth-of-type(n+2),.perf-table-head span:nth-child(n+3){display:none}}
 .top-item{display:flex;justify-content:space-between;align-items:center;
   padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
 .top-item:last-child{border:0}
@@ -58,11 +72,13 @@
 .empty-hint{color:var(--text-2);font-size:12.5px;padding:8px 0}
   </style>
 </head>
-<body>
+<body data-module="neutral">
   <div class="grain"></div>
 
+  {% include 'partials/_mobile_header.html' %}
+
   <!-- ░░ SIDEBAR ░░ -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar" aria-label="Navegação principal">
     <div class="brand">
       <div class="brand-mark">◐</div>
       <span class="brand-name">Study<em>Flow</em></span>
@@ -84,14 +100,96 @@
   <div class="card full" style="margin-bottom:28px">
     <h2>🎯 A previsão da IA está batendo com a realidade?</h2>
     <p style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">
-      Compara o tier que a IA previu (S/A/B/C) com a média de views REAIS
-      de cada grupo. Se a IA estiver calibrada, S deveria ter mais view
-      que A, que deveria ter mais que B — nessa ordem.
+      Compara o tier que a IA previu (S/A/B/C) com a média de
+      <strong>retenção</strong> REAL de cada grupo. Se a IA estiver
+      calibrada, S deveria reter mais que A, que deveria reter mais
+      que B — nessa ordem. Usa retenção (não views brutas) como
+      critério principal porque, a partir de 24/08/2026, o YouTube
+      passou a contar "view" a partir do primeiro frame do vídeo, sem
+      exigir tempo mínimo assistido — o número de views por si só
+      infla em conteúdo novo por causa dessa mudança na régua deles,
+      não porque o vídeo ficou melhor. Retenção continua sendo o que
+      o próprio YouTube usa pra monetização/recomendação.
     </p>
     <div id="resumoPorTier">Carregando...</div>
 
     <h2 style="margin-top:24px">🏆 Top 5 publicações reais (todas as plataformas)</h2>
+    <p style="font-size:11.5px;color:var(--text-2);margin-bottom:10px">
+      Ordenado por views brutas (mede alcance/exposição, não qualidade
+      calibrada) — cuidado ao comparar vídeo do YouTube publicado antes
+      de 24/08/2026 com um publicado depois: a régua de contagem mudou
+      nessa data, então o número não é 100% comparável entre os dois.
+    </p>
     <div id="topPublicacoes">Carregando...</div>
+  </div>
+
+  <div class="card full" style="margin-bottom:28px">
+    <h2>📚 Calibração do Course Engine (Exercícios e Tutor IA)</h2>
+    <p style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">
+      Mesmo espírito do painel do Growth acima, agora pro Curso: a nota
+      que o ExerciseAgent deu bate com o desempenho real do aluno no
+      quiz da mesma aula, depois? E o Tutor IA está resolvendo dúvida de
+      verdade — o aluno não volta a perguntar sobre a mesma aula logo em
+      seguida?
+    </p>
+    <label style="font-size:12px;color:var(--text-2)">Curso:
+      <select id="calibCursoSelect" style="margin-left:6px"></select>
+    </label>
+    <h3 style="margin-top:18px;font-size:14px">Exercícios — nota prevista vs. quiz depois</h3>
+    <div id="calibExercicios">Selecione um curso.</div>
+    <h3 style="margin-top:18px;font-size:14px">Tutor IA — taxa de resolução (aproximada)</h3>
+    <div id="calibTutor">Selecione um curso.</div>
+    <h3 style="margin-top:18px;font-size:14px">Dificuldade de aula — prevista vs. acerto real no quiz</h3>
+    <p style="font-size:11px;color:var(--text-3);margin:2px 0 8px">Relação esperada é inversa: aula prevista como "alta" dificuldade deveria ter menor acerto real que "baixa".</p>
+    <div id="calibDificuldade">Selecione um curso.</div>
+  </div>
+
+  <div class="card full" style="margin-bottom:28px" id="contextObservabilityCard">
+    <div class="obs-section-head">
+      <div>
+        <h2>◉ Context Observability · Janela de contexto</h2>
+        <p>Contexto é um recurso computacional finito. Este painel mostra quanto da janela está sendo usado, o que conseguimos atribuir por origem, a reserva de compactação e sinais de desperdício — sem armazenar o conteúdo do prompt.</p>
+      </div>
+      <select id="contextTraceSelect" aria-label="Chamada de IA para analisar" style="min-width:250px;max-width:100%;background:var(--surface-2,#171717);color:var(--text-1);border:1px solid var(--line);border-radius:8px;padding:8px 10px">
+        <option>Carregando contexto...</option>
+      </select>
+    </div>
+    <div id="contextObsBody" class="context-shell">
+      <div class="empty-hint">Carregando snapshots de contexto...</div>
+    </div>
+    <div class="pillars" aria-label="Pilares de governança do agente">
+      <span class="pillar active">Context Observability</span>
+      <span class="pillar">Model Routing</span>
+      <span class="pillar">Agent FinOps</span>
+      <span class="pillar">Tool / MCP Governance</span>
+      <span class="pillar">Autonomy Control</span>
+    </div>
+  </div>
+
+  <div class="card full" style="margin-bottom:28px">
+    <div class="obs-section-head">
+      <div>
+        <h2>⏱ Performance do pipeline</h2>
+        <p>Tempo, CPU e memória por execução real. A leitura principal é por job; média histórica fica recolhida porque mistura vídeos de durações diferentes.</p>
+      </div>
+    </div>
+    <div id="perfConfig" class="empty-hint" style="margin-bottom:12px">Carregando configuração...</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 14px">
+      <label for="perfJobSelect" style="font-size:12px;color:var(--text-2)">Execução para comparar</label>
+      <select id="perfJobSelect" style="min-width:280px;max-width:100%;background:var(--surface-2,#171717);color:var(--text-1);border:1px solid var(--line);border-radius:8px;padding:8px 10px">
+        <option value="">Carregando execuções...</option>
+      </select>
+    </div>
+    <div class="perf-table-head"><span>Etapa</span><span>Tempo</span><span>RAM</span><span>CPU</span><span>Memória livre</span><span>Status</span></div>
+    <div id="perfJob" class="perf-grid" style="margin-bottom:18px">Carregando última execução...</div>
+    <details style="margin:12px 0 18px">
+      <summary style="cursor:pointer;font-size:12.5px;color:var(--text-2)">Ver média histórica (mistura vídeos diferentes)</summary>
+      <div id="perfEtapas" class="perf-grid" style="margin-top:10px">Carregando...</div>
+    </details>
+    <details style="margin-top:14px">
+      <summary style="cursor:pointer;font-size:12.5px;color:var(--text-2)">Ver execuções recentes</summary>
+      <div id="perfRecentes" class="perf-grid" style="margin-top:10px">Carregando...</div>
+    </details>
   </div>
 
   <div class="card full" style="margin-bottom:28px">
@@ -199,13 +297,39 @@
       <div class="value accent" id="totalcost">—</div></div>
   </div>
 
+  <!-- QUALITY GATES -->
+  <div class="grid">
+    <div class="card full">
+      <button class="refresh" onclick="loadQualityGate()">↻ Atualizar gate</button>
+      <h2>AI Quality Gate · critérios objetivos de aceite</h2>
+      <div class="sub">O gate só aprova quando há amostra mínima e todas as métricas configuradas atendem aos limites.</div>
+      <div id="qualitygate" style="margin-top:14px">Carregando...</div>
+      <table id="qualitytbl" style="margin-top:14px"><thead><tr>
+        <th>Métrica</th><th class="num">Atual</th><th class="num">Limite</th><th>Status</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- BENCHMARK CONTROLADO -->
+  <div class="grid">
+    <div class="card full">
+      <button class="refresh" onclick="loadBenchmarks()">↻ Atualizar benchmark</button>
+      <h2>Benchmark controlado · histórico</h2>
+      <div class="sub" id="benchmarksummary">Nenhum benchmark executado ainda.</div>
+      <table id="benchmarktbl" style="margin-top:14px"><thead><tr>
+        <th>Quando</th><th>Suíte</th><th>Caso</th><th class="num">Judge</th>
+        <th class="num">Ground.</th><th class="num">Fidel.</th><th>Alucina?</th><th>Gate</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
   <!-- LLM-AS-JUDGE detalhado -->
   <div class="grid">
     <div class="card full"><h2>LLM-as-Judge · avaliações recentes</h2>
       <table id="judgetbl"><thead><tr>
         <th>Quando</th><th>Alvo</th><th class="num">Judge</th><th class="num">Ground.</th>
-        <th class="num">Relev.</th><th class="num">Coer.</th><th>Alucina?</th>
-        <th>Racional</th></tr></thead><tbody></tbody></table>
+        <th class="num">Relev.</th><th class="num">Fidel.</th><th class="num">Completo</th>
+        <th>Alucina?</th><th>Prompt</th><th>Racional</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 
@@ -240,7 +364,7 @@
   <div class="foot">
     Dados de <code>output/observability.db</code> (SQLite). Os custos usam tokens
     estimados e tabela de preços aproximada — veja <code>obs/pricing.py</code>.
-    Para ativar a avaliação automática do quiz, rode com <code>EVAL_ENABLED=1</code>.
+    Para ativar avaliações automáticas de RAG/tutor/quiz, use <code>EVAL_ENABLED=1</code>. Os Quality Gates são configurados por <code>QUALITY_*</code>.
   </div>
 
 <script>
@@ -318,6 +442,8 @@ async function load(){
     <div class="row"><span>Groundedness</span><b>${e.avg_groundedness}</b></div>${bar(e.avg_groundedness)}
     <div class="row"><span>Relevance</span><b>${e.avg_relevance}</b></div>${bar(e.avg_relevance)}
     <div class="row"><span>Coherence</span><b>${e.avg_coherence}</b></div>${bar(e.avg_coherence)}
+    <div class="row"><span>Source fidelity</span><b>${e.avg_source_fidelity}</b></div>${bar(e.avg_source_fidelity)}
+    <div class="row"><span>Completeness</span><b>${e.avg_completeness}</b></div>${bar(e.avg_completeness)}
     <div class="row"><span>Judge score</span><b>${e.avg_judge_score}</b></div>${bar(e.avg_judge_score)}
     <div class="row"><span>Alucinação</span><b>${pct(e.hallucination_rate)}</b></div>`
     : '<div class="sub">Nenhum eval ainda. Rode com EVAL_ENABLED=1.</div>';
@@ -334,6 +460,55 @@ async function load(){
     <div class="row"><span>Total de chamadas</span><b>${t.calls||0}</b></div>`;
 }
 load();
+
+const QUALITY_LABELS = {
+  groundedness:'Groundedness', relevance:'Relevance', source_fidelity:'Source fidelity',
+  completeness:'Completeness', judge_score:'Judge score', hallucination_rate:'Alucinação'
+};
+async function loadQualityGate(){
+  try{
+    const q = await (await fetch('/api/observability/quality-gate')).json();
+    const box=document.getElementById('qualitygate');
+    let badge;
+    if(q.status==='pass') badge='<span class="badge ok">✓ PASS</span>';
+    else if(q.status==='fail') badge='<span class="badge alert">✕ FAIL</span>';
+    else badge='<span class="badge">dados insuficientes</span>';
+    box.innerHTML = `${badge} &nbsp; ${q.samples||0} avaliação(ões) consideradas` +
+      (q.failures?.length ? ` · falhas: <b>${q.failures.join(', ')}</b>` : '');
+    const tb=document.querySelector('#qualitytbl tbody'); tb.innerHTML='';
+    const th=q.thresholds||{}, mt=q.metrics||{}, ck=q.checks||{};
+    for(const key of ['groundedness','relevance','source_fidelity','completeness','judge_score','hallucination_rate']){
+      const actual=mt[key]; const lim=th[key]; const lower=key==='hallucination_rate';
+      const ok=ck[key];
+      const av=actual==null?'—':(actual*100).toFixed(1)+'%';
+      const lv=lim==null?'—':`${lower?'≤':'≥'} ${(lim*100).toFixed(1)}%`;
+      const st=actual==null?'—':(ok?'<span class="delta-good">PASS</span>':'<span class="delta-bad">FAIL</span>');
+      tb.innerHTML += `<tr><td>${QUALITY_LABELS[key]}</td><td class="num">${av}</td><td class="num">${lv}</td><td>${st}</td></tr>`;
+    }
+  }catch(e){ document.getElementById('qualitygate').textContent='Falha ao carregar quality gate.'; }
+}
+
+async function loadBenchmarks(){
+  try{
+    const d=await (await fetch('/api/observability/benchmarks?limit=30')).json();
+    const sm=d.summary||{};
+    document.getElementById('benchmarksummary').innerHTML = sm.count
+      ? `${sm.count} caso(s) registrados · aprovação <b>${pct(sm.pass_rate)}</b>`
+      : 'Nenhum benchmark executado ainda. Use POST /api/observability/benchmark para registrar uma suíte controlada.';
+    const tb=document.querySelector('#benchmarktbl tbody'); tb.innerHTML='';
+    for(const r of (d.runs||[])){
+      const when=r.ts?new Date(r.ts*1000).toLocaleString('pt-BR'):'—';
+      const gate=r.gate_status==='pass'?'<span class="delta-good">PASS</span>':'<span class="delta-bad">FAIL</span>';
+      const hal=r.hallucination?'<span class="delta-bad">sim</span>':'<span class="delta-good">não</span>';
+      tb.innerHTML += `<tr><td>${when}</td><td>${r.suite||'—'}</td><td>${r.label||r.case_id||'—'}</td>`+
+        `<td class="num">${Number(r.judge_score||0).toFixed(2)}</td><td class="num">${Number(r.groundedness||0).toFixed(2)}</td>`+
+        `<td class="num">${Number(r.source_fidelity||0).toFixed(2)}</td><td>${hal}</td><td>${gate}</td></tr>`;
+    }
+    if(!tb.innerHTML) tb.innerHTML='<tr><td colspan="8" class="sub">Sem benchmarks ainda.</td></tr>';
+  }catch(e){}
+}
+loadQualityGate();
+loadBenchmarks();
 
 async function loadLogs(){
   try{
@@ -370,10 +545,12 @@ async function loadJudge(){
         <td class="num">${(r.judge_score??0).toFixed(2)}</td>
         <td class="num">${(r.groundedness??0).toFixed(2)}</td>
         <td class="num">${(r.relevance??0).toFixed(2)}</td>
-        <td class="num">${(r.coherence??0).toFixed(2)}</td>
-        <td>${hal}</td><td class="sub">${(r.rationale||'').slice(0,90)}</td></tr>`;
+        <td class="num">${r.source_fidelity==null?'—':Number(r.source_fidelity).toFixed(2)}</td>
+        <td class="num">${r.completeness==null?'—':Number(r.completeness).toFixed(2)}</td>
+        <td>${hal}</td><td>${r.prompt_version||'—'}</td>
+        <td class="sub">${(r.rationale||'').slice(0,90)}</td></tr>`;
     }
-    if(!tb.innerHTML) tb.innerHTML='<tr><td colspan="8" class="sub">Nenhuma avaliação ainda. Rode com EVAL_ENABLED=1.</td></tr>';
+    if(!tb.innerHTML) tb.innerHTML='<tr><td colspan="10" class="sub">Nenhuma avaliação ainda. Rode com EVAL_ENABLED=1.</td></tr>';
   }catch(e){ /* */ }
 }
 
@@ -536,13 +713,13 @@ async function loadResumo(){
     if(!porTier.length){
       elTier.innerHTML = '<div class="empty-hint">Ainda sem dado suficiente — precisa de publicações com métrica já buscada (botões de "Atualizar métricas" acima/abaixo).</div>';
     } else {
-      const maxViews = Math.max(...porTier.map(t => t.media_views || 0));
+      const maxRetencao = Math.max(...porTier.map(t => t.media_retencao || 0));
       elTier.innerHTML = porTier.map(t => `
         <div class="tier-row">
           <span class="tier-label">Tier ${t.tier}</span>
-          ${bar(maxViews ? (t.media_views||0)/maxViews : 0)}
-          <span class="num">${Math.round(t.media_views||0)} views</span>
+          ${bar(maxRetencao ? (t.media_retencao||0)/maxRetencao : 0)}
           <span class="num">${t.media_retencao != null ? t.media_retencao.toFixed(0)+'% ret.' : '—'}</span>
+          <span class="num">${Math.round(t.media_views||0)} views</span>
         </div>
       `).join('');
     }
@@ -568,6 +745,248 @@ loadResumo();
 loadPublicacoes();
 loadPublicacoesIg();
 loadDrift();
+
+async function carregarCalibracaoCurso(courseId){
+  const elEx = document.getElementById('calibExercicios');
+  const elTutor = document.getElementById('calibTutor');
+  const elDif = document.getElementById('calibDificuldade');
+  if(!courseId){ elEx.innerHTML = elTutor.innerHTML = elDif.innerHTML = 'Selecione um curso.'; return; }
+  elEx.textContent = 'Carregando...'; elTutor.textContent = 'Carregando...'; elDif.textContent = 'Carregando...';
+  try{
+    const r = await fetch('/api/curso2/' + courseId + '/calibracao');
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'falha ao carregar');
+
+    elEx.innerHTML = (d.exercicios && d.exercicios.length)
+      ? d.exercicios.map(e => `
+          <div class="tier-row">
+            <span class="tier-label">Previsto: ${e.faixa_prevista}</span>
+            <span class="num">${Number(e.media_prevista).toFixed(0)}% previsto</span>
+            <span class="num">${Number(e.media_real).toFixed(0)}% real depois (n=${e.n})</span>
+          </div>`).join('')
+      : '<div class="empty-hint">Ainda não há dado suficiente (precisa de exercício respondido + quiz feito depois).</div>';
+
+    const t = d.tutor || {};
+    elTutor.innerHTML = t.total_perguntas
+      ? `<div class="tier-row"><span class="tier-label">${t.total_perguntas} pergunta(s) ao tutor</span>
+           <span class="num">${t.taxa_resolucao_pct}% resolvidas sem repetir a dúvida</span></div>`
+      : '<div class="empty-hint">Ainda não há pergunta registrada pro Tutor IA nesse curso.</div>';
+
+    const elDif = document.getElementById('calibDificuldade');
+    const comDado = (d.dificuldade || []).filter(x => x.n_tentativas_quiz > 0);
+    elDif.innerHTML = comDado.length
+      ? comDado.map(x => `
+          <div class="tier-row">
+            <span class="tier-label">Previsto: ${x.faixa_prevista}</span>
+            <span class="num">${Number(x.media_dificuldade_prevista).toFixed(0)} previsto</span>
+            <span class="num">${x.media_acerto_real != null ? Number(x.media_acerto_real).toFixed(0)+'% acerto real' : '—'} (${x.n_aulas} aula(s))</span>
+          </div>`).join('')
+      : '<div class="empty-hint">Ainda não há quiz respondido pras aulas desse curso.</div>';
+  } catch(e) {
+    elEx.innerHTML = elTutor.innerHTML = elDif.innerHTML = `<div class="empty-hint">Erro: ${e.message}</div>`;
+  }
+}
+
+(async function initCalibracaoCurso(){
+  const select = document.getElementById('calibCursoSelect');
+  try{
+    const r = await fetch('/api/curso2');
+    const d = await r.json();
+    const cursos = d.cursos || [];
+    if(!cursos.length){
+      select.innerHTML = '<option value="">Nenhum curso ainda</option>';
+      return;
+    }
+    select.innerHTML = cursos.map(c => `<option value="${c.id}">${(c.manifest_json && c.manifest_json.title) || c.id}</option>`).join('');
+    select.addEventListener('change', () => carregarCalibracaoCurso(select.value));
+    carregarCalibracaoCurso(select.value);
+  } catch(e) {
+    select.innerHTML = '<option value="">Erro ao carregar cursos</option>';
+  }
+})();
+
+function ctxEsc(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ctxPct(tokens, limit){return (tokens == null || !limit) ? null : (tokens/limit*100);}
+function ctxFmtTokens(n){if(n == null) return '—'; if(n >= 1000000) return (n/1000000).toFixed(1)+'M'; if(n >= 1000) return (n/1000).toFixed(1)+'k'; return String(n);}
+function ctxLine(label,tokens,limit,extra=''){
+  const pct=ctxPct(tokens,limit);
+  return `<div class="context-line"><span>${label}</span><b>${tokens==null?'<span class="muted">não instrumentado</span>':`${ctxFmtTokens(tokens)} · ${pct.toFixed(1)}%`}${extra}</b></div>`;
+}
+async function carregarContextObs(snapshotId=''){
+  const body=document.getElementById('contextObsBody');
+  const sel=document.getElementById('contextTraceSelect');
+  try{
+    const qs=new URLSearchParams(); if(snapshotId) qs.set('snapshot_id',snapshotId);
+    const r=await fetch('/api/observability/context?'+qs.toString(),{headers:{'Accept':'application/json'},credentials:'same-origin'});
+    const d=await r.json(); if(!r.ok||d.ok===false) throw new Error(d.error||`HTTP ${r.status}`);
+    if(!d.latest){
+      sel.innerHTML='<option>Sem snapshots ainda</option>'; sel.disabled=true;
+      body.innerHTML=`<div class="empty-hint">${ctxEsc(d.message||'Faça uma nova chamada de IA para iniciar a observabilidade de contexto.')}</div>`; return;
+    }
+    const x=d.latest, limit=x.context_limit||0;
+    const recent=d.recent||[];
+    sel.disabled=false;
+    sel.innerHTML=recent.map(i=>{
+      const when=new Date(i.ts*1000).toLocaleString('pt-BR');
+      return `<option value="${i.id}" ${String(i.id)===String(x.id)?'selected':''}>${when} · ${ctxEsc(i.operation||'LLM')} · ${ctxEsc(i.model||'—')} · ${i.used_pct??'—'}%</option>`;
+    }).join('');
+    sel.onchange=()=>carregarContextObs(sel.value);
+    const segs=[
+      ['system_tokens','ctx-system'],['tool_tokens','ctx-tools'],['skill_tokens','ctx-skills'],['memory_tokens','ctx-memory'],
+      ['conversation_tokens','ctx-conversation'],['retrieved_tokens','ctx-retrieved'],['unattributed_tokens','ctx-unattributed']
+    ].map(([k,c])=>x[k]!=null&&limit?`<span class="${c}" title="${k}" style="width:${Math.max(0,ctxPct(x[k],limit))}%"></span>`:'').join('');
+    const alerts=(d.alerts||[]).length ? d.alerts.map(a=>`<div class="context-alert ${ctxEsc(a.severity)}"><strong>⚠ ${ctxEsc(a.title)}</strong><span>→ ${ctxEsc(a.action)}</span></div>`).join('') : '<div class="context-alert"><strong>Sem alertas de contexto nesta chamada</strong><span>Os alertas aparecem apenas quando há sinal mensurável; não inferimos risco sem telemetria.</span></div>';
+    body.innerHTML=`
+      <div class="context-main">
+        <div style="display:flex;justify-content:space-between;gap:18px;align-items:end">
+          <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em">Context Window</div><div style="font-size:20px;font-weight:650;margin-top:3px">${ctxEsc(x.operation||'LLM call')}</div></div>
+          <div style="text-align:right"><div style="font-size:24px;font-weight:700;color:var(--accent)">${x.used_pct??0}% usado</div><div class="empty-hint">${ctxFmtTokens(x.used_tokens)} / ${ctxFmtTokens(limit)} tokens</div></div>
+        </div>
+        <div class="context-meter" aria-label="Distribuição da janela de contexto">${segs}<span class="ctx-free" style="width:${x.free_pct||0}%"></span><span class="ctx-reserve" style="width:${x.reserve_pct||0}%"></span></div>
+        <div class="context-stats">
+          <div>
+            ${ctxLine('System Prompt',x.system_tokens,limit)}
+            ${ctxLine('Tool Definitions',x.tool_tokens,limit)}
+            ${ctxLine('Skills',x.skill_tokens,limit)}
+            ${ctxLine('Memory',x.memory_tokens,limit)}
+          </div><div>
+            ${ctxLine('Conversation / Messages',x.conversation_tokens,limit)}
+            ${ctxLine('Retrieved Knowledge',x.retrieved_tokens,limit)}
+            ${ctxLine('Não atribuído',x.unattributed_tokens,limit)}
+            ${ctxLine('Free',x.free_tokens,limit)}
+            ${ctxLine('Compaction Reserve',x.reserve_tokens,limit)}
+          </div>
+        </div>
+        <div class="context-kpis">
+          <div class="context-kpi"><small>Cobertura de atribuição</small><strong>${x.attribution_coverage_pct?.toFixed?.(0)??x.attribution_coverage_pct}%</strong></div>
+          <div class="context-kpi"><small>Custo da chamada</small><strong>$${Number(x.cost_usd||0).toFixed(4)}</strong></div>
+          <div class="context-kpi"><small>Outcome técnico</small><strong>${x.status==='ok'?'YES':'NO'}</strong></div>
+          <div class="context-kpi"><small>Payload idêntico · 7d</small><strong>${x.duplicate_count_7d||0}×</strong></div>
+        </div>
+        <div class="empty-hint" style="margin-top:12px">${ctxEsc(x.provider||'—')} · ${ctxEsc(x.model||'—')} · limite configurado/modelo: ${ctxFmtTokens(limit)} · conteúdo do prompt não é persistido.</div>
+      </div>
+      <aside class="context-side">
+        <div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Context Alerts</div>
+        ${alerts}
+        <div class="empty-hint" style="margin-top:12px"><strong>Context Budget → Usage → Quality → Compaction → Cost → Outcome</strong><br>Qualidade/relevância só será exibida quando houver sinal de retrieval mensurável; não criamos um “efficiency score” artificial.</div>
+      </aside>`;
+  }catch(e){
+    sel.innerHTML='<option>Contexto indisponível</option>'; sel.disabled=true;
+    body.innerHTML=`<div class="empty-hint">Não foi possível carregar Context Observability: ${ctxEsc(e.message||e)}</div>`;
+  }
+}
+carregarContextObs();
+
+function perfFmtSeconds(ms){
+  if(ms == null) return '—';
+  const sec = ms / 1000;
+  if(sec >= 60){
+    const m = Math.floor(sec / 60);
+    const s = Math.round(sec % 60);
+    return `${m}m ${String(s).padStart(2,'0')}s`;
+  }
+  return `${sec.toFixed(1)}s`;
+}
+
+function perfShortJob(id){ return id ? id.slice(0,8) : '—'; }
+
+async function carregarPerfEtapas(jobId=''){
+  const el = document.getElementById('perfEtapas');
+  const cfgEl = document.getElementById('perfConfig');
+  const recentEl = document.getElementById('perfRecentes');
+  const jobEl = document.getElementById('perfJob');
+  const jobSelect = document.getElementById('perfJobSelect');
+  try{
+    const qs = new URLSearchParams({pipeline:'youtuber', limit:'80'});
+    if(jobId) qs.set('job_id', jobId);
+    const r = await fetch('/api/observability/pipeline-stages?' + qs.toString(), {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    });
+    const contentType = (r.headers.get('content-type') || '').toLowerCase();
+    let d = null;
+    if(contentType.includes('application/json')){
+      d = await r.json();
+    } else {
+      const body = await r.text();
+      const preview = body.replace(/\s+/g, ' ').slice(0, 120);
+      throw new Error(`HTTP ${r.status}: resposta não-JSON${preview ? ' · ' + preview : ''}`);
+    }
+    if(!r.ok || d?.ok === false) throw new Error(d?.error || `HTTP ${r.status}`);
+    const etapas = d.etapas || [];
+    const cfg = d.config || {};
+    cfgEl.innerHTML = `
+      Cache LLM: <strong>${cfg.cache_enabled ? (cfg.cache_semantic ? 'LIGADO · exato + semântico' : 'LIGADO · só exato') : 'DESLIGADO'}</strong> ·
+      RAG: <strong>${cfg.rag_enabled ? 'ligado (indexação em background)' : 'desligado'}</strong> ·
+      Whisper: <strong>${cfg.whisper_model || '—'}</strong> ·
+      Corte: <strong>${cfg.cut_workers || 1} worker</strong> · Vertical: <strong>${cfg.vertical_workers || 1} worker</strong> ·
+      Preset vertical: <strong>${cfg.vertical_preset || '—'}</strong> ·
+      Fast blur: <strong>${cfg.vertical_fast_blur ? 'ligado' : 'desligado'}</strong> ·
+      RAM medida: <strong>${cfg.rss_scope === 'process_tree' ? 'Python + subprocessos (ffmpeg)' : (cfg.rss_scope || '—')}</strong>`;
+
+    const jobs = d.jobs || [];
+    const selected = d.selected_job || {};
+    const selectedId = selected.job_id || '';
+    jobSelect.innerHTML = jobs.length
+      ? jobs.map(j => {
+          const when = j.fim_ts ? new Date(j.fim_ts * 1000).toLocaleString('pt-BR') : '';
+          const total = j.total_duration_ms != null ? perfFmtSeconds(j.total_duration_ms) : 'em andamento/sem total';
+          return `<option value="${j.job_id}" ${j.job_id === selectedId ? 'selected' : ''}>${when} · ${perfShortJob(j.job_id)} · ${total}</option>`;
+        }).join('')
+      : '<option value="">Nenhuma execução medida</option>';
+    jobSelect.disabled = !jobs.length;
+    jobSelect.onchange = () => carregarPerfEtapas(jobSelect.value);
+
+    const jobEtapas = selected.etapas || [];
+    jobEl.innerHTML = jobEtapas.length ? `
+      <div class="empty-hint" style="margin-bottom:8px">
+        <strong>Execução ${perfShortJob(selectedId)}</strong> · valores abaixo pertencem ao mesmo job. Etapas aninhadas (ex.: vertical e vertical_encode) se sobrepõem e não devem ser somadas entre si.
+      </div>
+      ${jobEtapas.map(e => `
+        <div class="tier-row">
+          <span class="tier-label">${e.stage}</span>
+          <span class="num"><strong>${perfFmtSeconds(e.total_duration_ms)}</strong>${e.n > 1 ? ` total em ${e.n} item(ns) · ${(e.media_duration_ms/1000).toFixed(1)}s/item` : ''}</span>
+          <span class="num">${e.media_peak_rss_mb != null ? Math.round(e.media_peak_rss_mb)+'MB RAM média (pico '+Math.round(e.max_peak_rss_mb)+'MB)' : '—'}</span>
+          <span class="num">${e.media_cpu_pct != null ? Math.round(e.media_cpu_pct)+'% CPU média (pico '+Math.round(e.max_peak_cpu_pct || 0)+'%)' : '—'}</span>
+          <span class="num">${e.min_available_mb != null ? 'mín. '+Math.round(e.min_available_mb)+'MB livres' : '—'}</span>
+          <span class="num">${e.n_erros ? e.n_erros+' erro(s)' : 'ok'}</span>
+        </div>`).join('')}`
+      : '<div class="empty-hint">Essa execução ainda não possui métricas persistidas.</div>';
+
+    el.innerHTML = etapas.length
+      ? etapas.map(e => `
+          <div class="tier-row">
+            <span class="tier-label">${e.pipeline} · ${e.stage}</span>
+            <span class="num">${(e.media_duration_ms/1000).toFixed(1)}s média (máx ${(e.max_duration_ms/1000).toFixed(1)}s)</span>
+            <span class="num">${e.media_peak_rss_mb != null ? Math.round(e.media_peak_rss_mb)+'MB árvore de processos (pico '+Math.round(e.max_peak_rss_mb)+'MB; '+(e.n_metricas_v2 || 0)+' amostra(s) v2)' : '—'}</span>
+            <span class="num">${e.media_cpu_pct != null ? Math.round(e.media_cpu_pct)+'% CPU média (pico '+Math.round(e.max_peak_cpu_pct || 0)+'%)' : '—'}</span>
+            <span class="num">${e.min_available_mb != null ? 'mín. '+Math.round(e.min_available_mb)+'MB livres no host' : '—'}</span>
+            <span class="num">${e.n} execução(ões)${e.n_erros ? ', ' + e.n_erros + ' erro(s)' : ''}</span>
+          </div>`).join('')
+      : '<div class="empty-hint">Ainda não há execução medida — rode um vídeo pelo módulo Youtuber para começar a acumular dados.</div>';
+
+    const recentes = selected.recentes?.length ? selected.recentes : (d.recentes || []);
+    recentEl.innerHTML = recentes.length
+      ? recentes.slice(0, 80).map(e => `
+          <div class="tier-row">
+            <span class="tier-label">${e.stage}${e.detail ? ' · ' + e.detail : ''}</span>
+            <span class="num">${perfFmtSeconds(e.duration_ms)}</span>
+            <span class="num">${e.peak_rss_mb != null ? Math.round(e.peak_rss_mb)+(e.measurement_version >= 2 ? 'MB tree RSS' : 'MB Python RSS (v1)') : '—'}</span>
+            <span class="num">${e.avg_cpu_pct != null ? Math.round(e.avg_cpu_pct)+'% CPU' : '—'}</span>
+            <span class="num">${e.min_available_mb != null ? Math.round(e.min_available_mb)+'MB livres mín.' : '—'}</span>
+            <span class="num">${e.status || '—'}</span>
+          </div>`).join('')
+      : '<div class="empty-hint">Sem execuções recentes.</div>';
+  } catch(e) {
+    const msg = e && e.message ? e.message : 'erro desconhecido';
+    el.innerHTML = `<div class="empty-hint">Não foi possível carregar a performance: ${msg}</div>`;
+    jobEl.innerHTML = `<div class="empty-hint">Não foi possível carregar a execução: ${msg}</div>`;
+    cfgEl.textContent = 'Configuração de performance indisponível.';
+    recentEl.innerHTML = '<div class="empty-hint">As métricas podem continuar sendo gravadas. Atualize esta página após corrigir/reiniciar o serviço.</div>';
+    console.error('[StudyFlow][obs][performance]', e);
+  }
+}
+carregarPerfEtapas();
 </script>
 </main>
 </body>

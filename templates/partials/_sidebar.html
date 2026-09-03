@@ -19,35 +19,55 @@
   Automações, Observabilidade, Configurações), que não pertencem a
   nenhum módulo de conteúdo.
 #}
+<button class="mobile-nav-close" id="mobileNavClose" type="button" aria-label="Fechar menu">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</button>
+
 <div class="user-menu">
-  <button class="user-menu-trigger" id="userMenuTrigger" type="button">
+  <button class="user-menu-trigger" id="userMenuTrigger" type="button" aria-haspopup="true" aria-controls="userMenuDropdown" aria-expanded="false">
     <span class="user-menu-avatar">{{ (session.get('user', 'U') or 'U')[0]|upper }}</span>
     <span class="user-menu-name">{{ session.get('user', 'Conta') }}</span>
     <svg class="user-menu-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
   </button>
-  <div class="user-menu-dropdown" id="userMenuDropdown" hidden>
-    <a href="/configuracoes" class="user-menu-item">
+  <div class="user-menu-dropdown" id="userMenuDropdown" role="menu" hidden>
+    <a href="/configuracoes" class="user-menu-item" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
     </a>
-    <a href="/obs" class="user-menu-item">
+    <a href="/obs" class="user-menu-item" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-4 4 3 5-7"/></svg>
       Observabilidade &amp; Custos
     </a>
-    <a href="/planejamento" class="user-menu-item">
+    <a href="/security" class="user-menu-item" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      Responsible AI &amp; Security
+    </a>
+    <a href="/models" class="user-menu-item" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 9h8M8 15h8M12 9v6"/></svg>
+      AI Gateway &amp; Modelos
+    </a>
+    <a href="/system" class="user-menu-item" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h4M7 13h7M17 9h.01M17 13h.01"/></svg>
+      Production Health
+    </a>
+    <a href="/case" class="user-menu-item" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 15l3-3 2 2 3-5"/><path d="M8 8h3"/></svg>
+      GenAI Case Cockpit
+    </a>
+    <a href="/planejamento" class="user-menu-item" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Planejamento
     </a>
-    <a href="/crescimento" class="user-menu-item">
+    <a href="/crescimento" class="user-menu-item" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       Growth
     </a>
-    <a href="/automacoes" class="user-menu-item">
+    <a href="/automacoes" class="user-menu-item" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Automações
     </a>
     <div class="user-menu-divider"></div>
-    <a href="/logout" class="user-menu-item">
+    <a href="/logout" class="user-menu-item" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sair
     </a>
@@ -59,70 +79,92 @@
     var dropdown = document.getElementById('userMenuDropdown');
     if (!trigger || trigger.dataset.bound) return;
     trigger.dataset.bound = '1';
+    function setUserMenu(open) {
+      dropdown.hidden = !open;
+      trigger.setAttribute('aria-expanded', String(open));
+    }
     trigger.addEventListener('click', function (e) {
       e.stopPropagation();
-      dropdown.hidden = !dropdown.hidden;
+      setUserMenu(dropdown.hidden);
     });
-    document.addEventListener('click', function () { dropdown.hidden = true; });
+    dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () { setUserMenu(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !dropdown.hidden) {
+        setUserMenu(false);
+        trigger.focus();
+      }
+    });
   })();
 </script>
 
-<nav class="nav">
-  <div class="nav-section">
+<nav class="nav" aria-label="Áreas do StudyFlow">
+  <div class="nav-section nav-section-primary">
     <div class="nav-section-label">Principal</div>
-    <a class="nav-item{{ ' active' if active == 'home' else '' }}" href="/">
+    <a class="nav-item{{ ' active' if active == 'home' else '' }}" href="/"{{ ' aria-current="page"' if active == 'home' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
-      Dashboard
+      <span class="nav-item-copy"><strong>Início</strong></span>
     </a>
   </div>
 
-  {% if modulo_group == 'curso' %}
-  <div class="nav-section">
-    <div class="nav-section-label">Curso</div>
-    <a class="nav-item{{ ' active' if active == 'curso' else '' }}" href="/curso">
+  <div class="nav-section{{ ' is-current' if active in ['curso','catalogo','trilhas','certificados','eventos'] else '' }}">
+    <div class="nav-section-head">
+      <div class="nav-section-label">Aprender</div>
+      <span class="nav-section-brand">com Georgina</span>
+    </div>
+    <a class="nav-item{{ ' active' if active == 'curso' else '' }}" href="/curso"{{ ' aria-current="page"' if active == 'curso' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
-      Módulo Curso
+      <span class="nav-item-copy"><strong>Criar plano de estudo</strong></span>
     </a>
-    <a class="nav-item{{ ' active' if active == 'catalogo' else '' }}" href="/catalogo">
+    <a class="nav-item{{ ' active' if active == 'catalogo' else '' }}" href="/catalogo"{{ ' aria-current="page"' if active == 'catalogo' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
-      Catálogo
+      <span class="nav-item-copy"><strong>Cursos</strong></span>
     </a>
-    <a class="nav-item{{ ' active' if active == 'trilhas' else '' }}" href="/trilhas">
+    <a class="nav-item{{ ' active' if active == 'trilhas' else '' }}" href="/trilhas"{{ ' aria-current="page"' if active == 'trilhas' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg></span>
-      Trilhas
+      <span class="nav-item-copy"><strong>Trilhas</strong></span>
     </a>
-    <a class="nav-item{{ ' active' if active == 'certificados' else '' }}" href="/certificados">
+    <a class="nav-item{{ ' active' if active == 'certificados' else '' }}" href="/certificados"{{ ' aria-current="page"' if active == 'certificados' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></span>
-      Certificados
+      <span class="nav-item-copy"><strong>Certificados</strong></span>
     </a>
-    <a class="nav-item{{ ' active' if active == 'eventos' else '' }}" href="/eventos">
+    <a class="nav-item{{ ' active' if active == 'eventos' else '' }}" href="/eventos"{{ ' aria-current="page"' if active == 'eventos' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
-      Eventos
+      <span class="nav-item-copy"><strong>Eventos</strong></span>
     </a>
   </div>
-  {% elif modulo_group == 'criador' %}
-  <div class="nav-section">
-    <div class="nav-section-label">Criador</div>
-    <a class="nav-item{{ ' active' if active == 'estudio' else '' }}" href="/estudio">
+
+  <div class="nav-section{{ ' is-current' if active == 'estudio' else '' }}">
+    <div class="nav-section-head">
+      <div class="nav-section-label">Criar</div>
+      <span class="nav-section-brand">com Marcos Cezar</span>
+    </div>
+    <a class="nav-item{{ ' active' if active == 'estudio' else '' }}" href="/estudio"{{ ' aria-current="page"' if active == 'estudio' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span>
-      Módulo Criador
+      <span class="nav-item-copy"><strong>Estúdio de criação</strong><small>Vídeo e imagens</small></span>
     </a>
   </div>
-  {% elif modulo_group == 'youtuber' %}
-  <div class="nav-section">
-    <div class="nav-section-label">Youtuber</div>
-    <a class="nav-item{{ ' active' if active == 'youtuber' else '' }}" href="/youtuber">
-      <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 0-3.77-2.7C13.62 4 12 4 12 4s-1.62 0-3.82.04a4.83 4.83 0 0 0-3.77 2.7A26.18 26.18 0 0 0 4 12a26.18 26.18 0 0 0 .41 5.31 4.83 4.83 0 0 0 3.77 2.7C10.38 20 12 20 12 20s1.62 0 3.82-.04a4.83 4.83 0 0 0 3.77-2.7A26.18 26.18 0 0 0 20 12a26.18 26.18 0 0 0-.41-5.31zM10 15.5v-7l6 3.5-6 3.5z"/></svg></span>
-      Módulo Youtuber
-    </a>
-    <a class="nav-item{{ ' active' if active == 'trends' else '' }}" href="/trends">
+
+  <div class="nav-section{{ ' is-current' if active in ['trends','youtuber','rag','crescimento'] else '' }}">
+    <div class="nav-section-head">
+      <div class="nav-section-label">Crescer</div>
+      <span class="nav-section-brand">conteúdo &amp; audiência</span>
+    </div>
+    <a class="nav-item{{ ' active' if active == 'trends' else '' }}" href="/trends"{{ ' aria-current="page"' if active == 'trends' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-      Trends
+      <span class="nav-item-copy"><strong>Tendências</strong></span>
     </a>
-    <a class="nav-item{{ ' active' if active == 'rag' else '' }}" href="/rag">
+    <a class="nav-item{{ ' active' if active == 'youtuber' else '' }}" href="/youtuber"{{ ' aria-current="page"' if active == 'youtuber' else '' }}>
+      <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 0-3.77-2.7C13.62 4 12 4 12 4s-1.62 0-3.82.04a4.83 4.83 0 0 0-3.77 2.7A26.18 26.18 0 0 0 4 12a26.18 26.18 0 0 0 .41 5.31 4.83 4.83 0 0 0 3.77 2.7C10.38 20 12 20 12 20s1.62 0 3.82-.04a4.83 4.83 0 0 0 3.77-2.7A26.18 26.18 0 0 0 20 12a26.18 26.18 0 0 0-.41-5.31zM10 15.5v-7l6 3.5-6 3.5z"/></svg></span>
+      <span class="nav-item-copy"><strong>Produção de vídeo</strong><small>cortes e análise</small></span>
+    </a>
+    <a class="nav-item{{ ' active' if active == 'rag' else '' }}" href="/rag"{{ ' aria-current="page"' if active == 'rag' else '' }}>
       <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-      Pergunte ao vídeo
+      <span class="nav-item-copy"><strong>Pergunte ao vídeo</strong></span>
+    </a>
+    <a class="nav-item{{ ' active' if active == 'crescimento' else '' }}" href="/crescimento"{{ ' aria-current="page"' if active == 'crescimento' else '' }}>
+      <span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+      <span class="nav-item-copy"><strong>Desempenho</strong></span>
     </a>
   </div>
-  {% endif %}
 </nav>

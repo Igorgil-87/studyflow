@@ -32,6 +32,10 @@ from obs.tracing import traced_llm
 from . import embeddings, store
 
 CACHE_ENABLED = os.getenv("CACHE_ENABLED", "0") == "1"
+# Já existia nos .env.example, mas antes não era respeitado pelo código.
+# Permite começar pelo cache exato (zero chamada de embedding em miss) e só
+# habilitar a camada semântica quando fizer sentido operacionalmente.
+CACHE_SEMANTIC = os.getenv("CACHE_SEMANTIC", "1") == "1"
 SIM_THRESHOLD = float(os.getenv("CACHE_SIM_THRESHOLD", "0.95"))
 
 if CACHE_ENABLED:
@@ -115,7 +119,7 @@ def smart_call(
     entry = store.get_exact(namespace, h)
     query_emb = None
     # 2) semântico
-    if entry is None:
+    if entry is None and CACHE_SEMANTIC:
         query_emb = embeddings.embed(cache_key)
         if query_emb is not None:
             entry = store.search_semantic(namespace, query_emb, SIM_THRESHOLD)
