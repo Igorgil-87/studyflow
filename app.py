@@ -3002,8 +3002,8 @@ def curso2_quiz_responder(course_id, lesson_id):
 
     try:
         registrar_tentativa_quiz(lesson_id, user_key, total_perguntas=len(quiz), acertos=acertos)
-    except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 422
+    except CursoStoreError:
+        return jsonify({"error": "não foi possível registrar a tentativa de quiz"}), 422
 
     return jsonify({"resultados": resultados, "acertos": acertos, "total": len(quiz)})
 
