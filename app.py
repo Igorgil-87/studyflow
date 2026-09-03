@@ -22,6 +22,7 @@ Rotas (inalteradas para o frontend):
 """
 
 import json
+import logging
 import os
 import uuid
 from pathlib import Path
@@ -50,6 +51,8 @@ from tools import cookies_config
 from production import health as production_health
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
@@ -3372,14 +3375,16 @@ def system_health():
             "cost_usd": obs.get("totals", {}).get("cost_usd", 0),
             "by_operation": obs.get("by_operation", {}),
         }
-    except Exception as exc:
-        data["observability"] = {"error": str(exc)[:240]}
+    except Exception:
+        logger.exception("Failed to build observability summary")
+        data["observability"] = {"error": "internal error"}
     try:
         from rag.store import get_store
         st = get_store()
         data["rag"] = {"indexed_chunks": st.count() if st else None}
-    except Exception as exc:
-        data["rag"] = {"indexed_chunks": None, "error": str(exc)[:160]}
+    except Exception:
+        logger.exception("Failed to collect RAG health info")
+        data["rag"] = {"indexed_chunks": None, "error": "internal error"}
     return jsonify(data)
 
 

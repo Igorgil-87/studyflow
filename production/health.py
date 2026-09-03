@@ -5,10 +5,13 @@ paid LLM endpoints; providers are reported as configured/unconfigured only.
 """
 from __future__ import annotations
 
+import logging
 import os
 import time
 import urllib.request
 from typing import Callable
+
+logger = logging.getLogger(__name__)
 
 
 def _result(name: str, ok: bool, latency_ms: float = 0.0, detail: str = "", required: bool = True) -> dict:
@@ -27,8 +30,9 @@ def _timed(name: str, fn: Callable[[], str], *, required: bool = True) -> dict:
     try:
         detail = fn() or "ok"
         return _result(name, True, (time.perf_counter() - started) * 1000, detail, required)
-    except Exception as exc:
-        return _result(name, False, (time.perf_counter() - started) * 1000, str(exc)[:240], required)
+    except Exception:
+        logger.exception("Health check failed: %s", name)
+        return _result(name, False, (time.perf_counter() - started) * 1000, "internal error", required)
 
 
 def check_redis(required: bool | None = None) -> dict:
@@ -129,8 +133,9 @@ def queue_metrics() -> dict:
             "failed": len(FailedJobRegistry(queue_name, connection=conn)),
             "workers": len(Worker.all(connection=conn)), "ok": True,
         }
-    except Exception as exc:
-        return {"mode": "redis", "queue": os.getenv("QUEUE_NAME", "studyflow"), "queued": None, "started": None, "failed": None, "workers": None, "ok": False, "error": str(exc)[:240]}
+    except Exception:
+        logger.exception("Failed to collect queue metrics")
+        return {"mode": "redis", "queue": os.getenv("QUEUE_NAME", "studyflow"), "queued": None, "started": None, "failed": None, "workers": None, "ok": False, "error": "internal error"}
 
 
 def snapshot(include_optional_http: bool = True) -> dict:
