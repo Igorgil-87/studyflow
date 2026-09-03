@@ -28,21 +28,26 @@ jobs:
 
       - name: "[DIAGNÓSTICO TEMPORÁRIO] Investigar o langchain_core"
         run: |
-          echo "== onde o pip acha que instalou langchain-core =="
-          pip show langchain-core || echo "pip show falhou"
+          echo "== python resolve langchain_core pra onde (import direto) =="
+          python3 -c "import langchain_core; print('arquivo:', langchain_core.__file__); print('path:', langchain_core.__path__)" || echo "IMPORT DIRETO FALHOU"
           echo
-          echo "== python resolve langchain_core pra onde =="
-          python3 -c "import langchain_core; print('arquivo:', langchain_core.__file__); print('path:', langchain_core.__path__)" || echo "IMPORT FALHOU (isso é o próprio bug acontecendo aqui)"
+          echo "== onde existem copias de langchain_core no sistema (sem travar em erro de permissao) =="
+          find / -maxdepth 6 -iname "langchain_core*" -not -path "*/node_modules/*" 2>/dev/null || true
           echo
-          echo "== conteudo real da pasta instalada =="
-          python3 -c "import site; print(site.getsitepackages())"
-          find / -maxdepth 6 -iname "langchain_core*" -not -path "*/node_modules/*" 2>/dev/null
-          echo
-          echo "== sys.path completo =="
+          echo "== sys.path completo (python -c simples) =="
           python3 -c "import sys; [print(p) for p in sys.path]"
           echo
-          echo "== esse langchain_core tem __init__.py de verdade? =="
-          python3 -c "import importlib.util; spec = importlib.util.find_spec('langchain_core'); print('spec encontrado:', spec); print('origin:', spec.origin if spec else None); print('submodule_search_locations:', spec.submodule_search_locations if spec else None)"
+          echo "== TESTE DECISIVO: reproduz exatamente como o pytest importa, isolado, so o 1o arquivo que falha =="
+          python3 -m pytest tests/test_curriculum_agent.py -v --collect-only 2>&1 || echo "FALHOU EM COLLECT-ONLY ISOLADO (rootdir=/home/runner/.../studyflow)"
+          echo
+          echo "== sys.path DE DENTRO do pytest (via conftest inline) =="
+          python3 -m pytest tests/test_curriculum_agent.py --collect-only -q -p no:cacheprovider --co 2>&1 | head -30 || true
+          echo
+          echo "== o pytest.ini tem alguma config de rootdir/testpaths que mude o sys.path? =="
+          cat pytest.ini 2>/dev/null || echo "sem pytest.ini"
+          echo
+          echo "== existe conftest.py na raiz ou em tests/, e o que ele faz? =="
+          find . -maxdepth 2 -iname "conftest.py" -exec echo "--- {} ---" \; -exec cat {} \;
 
       - name: Lint (ruff) — não bloqueia ainda, só avisa
         continue-on-error: true
