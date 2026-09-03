@@ -374,11 +374,21 @@ def api_catalogo():
 def _safe_video_source(rel_path: str) -> Path | None:
     if not rel_path or not isinstance(rel_path, str):
         return None
-    rel = rel_path.lstrip("/")
+
+    rel = rel_path.replace("\\", "/").lstrip("/")
     if rel.startswith("static/"):
         rel = rel[len("static/"):]
+    if not rel:
+        return None
+
+    rel_obj = Path(rel)
+    if rel_obj.is_absolute():
+        return None
+    if any(part in ("..", ".", "") for part in rel_obj.parts):
+        return None
+
     base = (Path(app.root_path) / "static" / "videos").resolve()
-    candidate = (Path(app.root_path) / "static" / rel).resolve()
+    candidate = (Path(app.root_path) / "static" / rel_obj).resolve()
     try:
         candidate.relative_to(base)
     except ValueError:
