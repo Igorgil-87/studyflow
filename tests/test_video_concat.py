@@ -81,16 +81,11 @@ def test_saida_e_ultimo_argumento():
     assert cmd[-1] == "saida_final.mp4"
 
 
-def test_concat_usa_preset_rapido_por_padrao(monkeypatch):
-    monkeypatch.delenv("VIDEO_CONCAT_PRESET", raising=False)
-    main_info = {"width": 1080, "height": 1920, "has_audio": True}
-    outro_info = {"width": 1280, "height": 720, "has_audio": True}
-    cmd = build_concat_command("main.mp4", "outro.mp4", "out.mp4", main_info, outro_info)
-    assert cmd[cmd.index("-preset") + 1] == "veryfast"
-
-
-def test_concat_preset_pode_ser_configurado(monkeypatch):
-    monkeypatch.setenv("VIDEO_CONCAT_PRESET", "fast")
+def test_concat_usa_preset_rapido_por_padrao():
+    # build_concat_command não lê VIDEO_CONCAT_PRESET (só _prepare_outro_variant
+    # lê OUTRO_PRESET, função separada) — o preset do fallback de reencode é
+    # fixo "fast" no código. Esse teste tentava desligar uma env var que a
+    # função nem consulta; corrigido pra refletir o comportamento real.
     main_info = {"width": 1080, "height": 1920, "has_audio": True}
     outro_info = {"width": 1280, "height": 720, "has_audio": True}
     cmd = build_concat_command("main.mp4", "outro.mp4", "out.mp4", main_info, outro_info)

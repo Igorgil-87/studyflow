@@ -39,10 +39,13 @@ def test_modo_crop_usa_vf_simples():
     assert "crop=1080:1920" in cmd[idx + 1]
 
 
-def test_preset_padrao_e_medium():
+def test_preset_padrao_e_fast():
+    # Performance Sprint 2 (ver docstring de tools/vertical_export.py):
+    # padrão é "fast", não "medium" — esse teste ficou desatualizado
+    # depois da mudança e só foi corrigido agora.
     cmd = build_vertical_command("in.mp4", "out.mp4")
     idx = cmd.index("-preset")
-    assert cmd[idx + 1] == "medium"
+    assert cmd[idx + 1] == "fast"
 
 
 def test_preset_customizado_fast():
