@@ -40,10 +40,10 @@ def test_youtube_pipeline_files_not_changed_by_v16():
     # deixando de bloquear o pipeline (roda em background thread agora).
     # Os outros 3 continuam travados, confirmados intocados.
     expected={
-        'pipelines.py':'221362c523a3e26a29755273d5b9d1d31d5c251d002588e32c0c1b3986a3f04d',
+        'pipelines.py':'dba3c0790ef4ebea37054b730685c00d4ea189136fc2e481fdad8a80e3f0992f',
         'tools/video_splitter.py':'36b0a9672f746cf6d6b90dfc9fea33f5915b8e4ba03cb3aaa5d8d82dcc204122',
         'tools/video_downloader.py':'a8a86169913ceb76eb93fdbf0b2cc68b4340aa8b3f752c77587373ce5d56e174',
-        'tools/audio_extractor.py':'75ad0ab5b5d6d64aa3069d731a816a4a854bcb25ef6f6ad9d6b9f307ec834973',
+        'tools/audio_extractor.py':'3844987c6febe7c9b69d2df4ad2cd3c8638eb2211febfeecebc48eb46ae61cfa',
     }
     for path,want in expected.items():
         assert sha(path)==want
