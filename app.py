@@ -2927,8 +2927,9 @@ def curso2_checkpoint_resultado(course_id, lesson_id):
         registrar_tentativa_quiz(
             lesson_id, user_key, total_perguntas=1, acertos=1 if acertou else 0,
         )
-    except CursoStoreError as e:
-        return jsonify({"error": str(e)}), 422
+    except CursoStoreError:
+        app.logger.exception("Falha ao registrar tentativa de quiz.")
+        return jsonify({"error": "não foi possível registrar o resultado do quiz"}), 422
 
     return jsonify({"ok": True})
 
