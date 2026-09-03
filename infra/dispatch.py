@@ -23,14 +23,15 @@ def _resolve(path: str):
     return getattr(module, func_name)
 
 
-def dispatch(func_path: str, *args: Any) -> None:
+def dispatch(func_path: str, *args: Any, job_timeout: int | None = None) -> None:
     if config.is_redis():
         import redis
         from rq import Queue
 
         conn = redis.Redis.from_url(config.REDIS_URL)
         q = Queue(config.QUEUE_NAME, connection=conn)
-        q.enqueue(func_path, *args, job_timeout=config.JOB_TIMEOUT_SECONDS)
+        timeout = job_timeout if job_timeout is not None else config.JOB_TIMEOUT_SECONDS
+        q.enqueue(func_path, *args, job_timeout=timeout)
     else:
         func = _resolve(func_path)
         threading.Thread(target=func, args=args, daemon=True).start()

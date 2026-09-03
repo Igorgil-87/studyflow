@@ -11,6 +11,7 @@ anthropic==0.34.0             # tools/claude_copy_client.py — texto de impacto
 
 # ─── YouTube download ─────────────────────────────────────
 yt-dlp[default]>=2026.7.4     # inclui yt-dlp-ejs; runtime JS (Deno) vem no Dockerfile
+bgutil-ytdlp-pot-provider==1.3.1  # PO Token provider plugin recomendado pelo guia oficial do yt-dlp
 
 # ─── Áudio e vídeo ────────────────────────────────────────
 moviepy==1.0.3
