@@ -1,0 +1,134 @@
+<section class="case-act space-y-5" data-case-act-view="engine" id="act-engine" hidden data-subtab-scope>
+  <section class="lux-card p-6 sm:p-8">
+    <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+      <div><div class="micro text-lime-300">Ato 04 · AI Engine &amp; Trust</div><h2 class="mt-2 text-3xl font-bold tracking-tight">Inferência não é uma chamada de modelo. É uma cadeia de confiança.</h2></div>
+      <div class="case-subtabs" data-subtabs><button class="case-subtab is-active" data-subtab="rag">A · RAG Grounded</button><button class="case-subtab" data-subtab="routing">B · Routing &amp; Training</button><button class="case-subtab" data-subtab="agents">C · Agents &amp; Protocols</button><button class="case-subtab" data-subtab="context">D · Context &amp; Security</button></div>
+    </div>
+  </section>
+
+  {% set rag_caps=[('15','Document Extraction','rag/document_extractor.py'),('16','Chunking','rag/chunker.py'),('17','Hybrid Search','rag/hybrid.py'),('18','Vector Search','pgvector'),('19','Reranking','rag/reranker.py'),('20','Query Rewriting','rag/query_rewriter.py'),('21','Query Expansion','rag/query_expansion.py'),('22','HyDE','rag/hyde.py'),('23','Parent-Child Retrieval','rag/parent_child.py'),('24','Contextual Retrieval','rag/contextual.py'),('25','GraphRAG','rag/graphrag.py')] %}
+  {% set route_caps=[('26','Model Gateway','ai_gateway/gateway.py'),('27','Model Registry','ai_gateway/model_registry.py'),('28','Dynamic Router','ai_gateway/router.py'),('29','Model Cascade','model_cascade/cascade.py'),('30','Fine-tuning','model_adaptation/'),('31','SFT','training_runtime/runtime.py'),('32','LoRA','model_adaptation/'),('33','QLoRA','model_adaptation/'),('34','DPO','model_adaptation/'),('35','Dataset Engineering','dataset_engineering/lab.py'),('36','Synthetic Data','obs/synthetic_data.py')] %}
+  {% set agent_caps=[('37','AI Agent','agents/'),('38','Planning','agents/planning.py'),('39','Agent Harness','agent_harness/runtime.py'),('40','Supervisor','supervisor/'),('41','Controlled Agent Swarm','swarm/control.py'),('42','Self-Correction','obs/self_correction.py'),('43','Tool Calling','skills/ + tools'),('44','MCP','mcp_server/server.py'),('45','A2A Protocol','a2a/fabric.py')] %}
+  {% set context_caps=[('46','Context Window','context_intelligence/'),('47','Context Budgeting','context_intelligence/'),('48','Context Observability','obs/context_observability.py'),('49','Persistent Memory','obs/memory.py'),('50','Memory Consolidation','memory_consolidation/engine.py'),('51','AI Security Gateway','ai_security/gateway.py'),('52','Guardrails','security/guards.py'),('53','Zero Trust','agent_gateway/'),('54','Immutable Audit Trail','security/audit.py'),('55','Browser Sandbox','browser_agent/')] %}
+  {% for key,label,caps,accent in [('rag','RAG Grounded',rag_caps,'text-lime-300'),('routing','Roteamento & Training',route_caps,'text-emerald-300'),('agents','Agentes & Protocolos',agent_caps,'text-purple-300'),('context','Contexto & Segurança',context_caps,'text-rose-300')] %}
+  <section class="case-subpanel lux-card p-6" data-subpanel="{{key}}" {% if key!='rag' %}hidden{% endif %}>
+    <div class="flex items-center justify-between"><div><div class="micro {{accent}}">Sub-painel {{label}}</div><h3 class="mt-1 text-xl font-semibold">{{label}}</h3></div><span class="font-mono text-[10px] text-neutral-600">{{caps|length}} CAPABILITIES</span></div>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{% for n,name,path in caps %}<div class="cap-card"><span class="micro {{accent}}">{{n}}</span><h4 class="mt-3 font-semibold">{{name}}</h4><p class="cap-path">{{path}}</p></div>{% endfor %}</div>
+  </section>{% endfor %}
+
+  <section class="lux-card p-6 sm:p-8" id="architecture-diagrams">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div><div class="micro text-lime-300">Architecture Lab · Mermaid</div><h3 class="mt-2 text-2xl font-semibold tracking-tight">Diagramas arquiteturais &amp; mapa mental</h3><p class="mt-2 max-w-3xl text-xs leading-5 text-neutral-500">A visão visual da plataforma foi preservada dentro do Blueprint: plataforma, RAG, runtime de agentes, Creator OS e mapa mental.</p></div>
+      <div class="case-diagram-tabs" role="tablist" aria-label="Diagramas de arquitetura">
+        <button type="button" class="case-diagram-tab is-active" data-case-diagram="platform">Platform</button>
+        <button type="button" class="case-diagram-tab" data-case-diagram="rag">RAG</button>
+        <button type="button" class="case-diagram-tab" data-case-diagram="agent">Agent Runtime</button>
+        <button type="button" class="case-diagram-tab" data-case-diagram="creator">Creator OS</button>
+        <button type="button" class="case-diagram-tab" data-case-diagram="mindmap">Mind Map</button>
+      </div>
+    </div>
+    <div class="mt-6 grid gap-4 xl:grid-cols-[1fr_360px]">
+      <div class="case-diagram-canvas"><div id="caseDiagramRender" class="min-h-[430px]"></div></div>
+      <aside class="rounded-2xl border border-white/[0.07] bg-black/30 p-4"><div class="micro">Source · Mermaid</div><pre id="caseDiagramSource" class="mt-4 max-h-[430px] overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-5 text-neutral-500"></pre></aside>
+    </div>
+  </section>
+
+  <template id="diagram-platform">flowchart LR
+    USER[Usuário] --> WEB[StudyFlow Web]
+    WEB --> API[Flask API]
+    API --> GW[AI Gateway]
+    API --> RAG[RAG Engine]
+    API --> CREATOR[Creator OS]
+    API --> CTRL[Control Plane]
+    GW --> MODELS[Cloud + Local Models]
+    RAG --> PG[(Postgres + pgvector)]
+    CREATOR --> MEDIA[Whisper + FFmpeg + MPT]
+    CTRL --> TRUST[Security + Evals + FinOps + SRE]
+    TRUST --> AUDIT[(Evidence + Audit)]</template>
+
+  <template id="diagram-rag">flowchart LR
+    DOC[Documentos / Web / YouTube] --> EX[Extraction]
+    EX --> CH[Chunking]
+    CH --> IDX[(Vector + Metadata Index)]
+    Q[Query] --> RW[Rewrite + Expansion]
+    RW --> HY[Hybrid Search]
+    IDX --> HY
+    HY --> GR[GraphRAG optional]
+    GR --> RR[Reranker]
+    RR --> PC[Parent / Child]
+    PC --> CTX[Context Budget]
+    CTX --> LLM[LLM]
+    LLM --> CIT[Citations + Evidence]</template>
+
+  <template id="diagram-agent">flowchart LR
+    TASK[Task] --> PLAN[Planner]
+    PLAN --> SUP[Supervisor]
+    SUP --> HAR[Agent Harness]
+    HAR --> SK[Skills Registry]
+    SK --> TG[Tool Governance]
+    TG --> MCP[MCP]
+    TG --> A2A[A2A Fabric]
+    HAR --> SW[Controlled Swarm]
+    SW --> VER[Verifier]
+    VER -->|retry bounded| SUP
+    VER --> OUT[Outcome]
+    OUT --> AUD[Audit + Observability]</template>
+
+  <template id="diagram-creator">flowchart LR
+    RAW[Conhecimento Bruto] --> GEO[Georgina · RAG + Síntese]
+    GEO --> INTEL[Content Intelligence]
+    INTEL --> SCORE[Scoring Swarm]
+    SCORE --> JUDGE[Viral Judge]
+    JUDGE --> MARCOS[Marcos Cezar · Estúdio]
+    MARCOS --> PACK[Packaging Intelligence]
+    PACK --> BRAIN[Platform Brain]
+    BRAIN --> SHORTS[Shorts]
+    BRAIN --> FEED[Feed / Carrossel]
+    BRAIN --> THUMB[Thumbnails]
+    SHORTS --> LOOP[Performance + Learning Loop]
+    FEED --> LOOP
+    THUMB --> LOOP</template>
+
+  <template id="diagram-mindmap">mindmap
+    root((StudyFlow))
+      Propósito Humano
+        Filho
+          Aprender programação e IA
+          Canal de história
+        Georgina
+          Sabedoria
+          Estudo
+          RAG Grounded
+        Marcos Cezar
+          Invenção
+          Criatividade
+          Creator Studio
+      Produto
+        Learning
+          Cursos
+          Quiz
+          Tutor
+        Creator OS
+          Cortes
+          Thumbnails
+          Carrosséis
+      AI Engine
+        Model Gateway
+        RAG
+        Context
+        Memory
+        Agents
+        MCP
+        A2A
+      Trust
+        Evals
+        Security
+        Lineage
+        Drift
+      Operations
+        Observability
+        FinOps
+        SLO
+        Failure Lab
+        Readiness Gate</template>
+</section>

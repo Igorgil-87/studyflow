@@ -1,0 +1,340 @@
+<div id="evidenceVault" class="fixed inset-0 z-[100] hidden bg-[#09090b]/96 backdrop-blur-2xl" aria-hidden="true">
+  <div class="mx-auto flex h-full w-full max-w-[1600px] flex-col px-4 py-4 sm:px-6">
+    <header class="mb-3 flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-neutral-900/55 p-3 shadow-2xl sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div class="micro text-lime-300">Evidence Vault · arquivo técnico preservado</div>
+        <div class="mt-1 text-sm font-semibold text-white">Diagramas, mapa mental, evidências, código, SRE e defesa técnica da versão anterior.</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="legacyViewSelect" class="rounded-xl border border-white/[0.08] bg-[#0c0c0f] px-3 py-2 font-mono text-[10px] text-neutral-300 outline-none">
+          <option value="story">Presentation Story</option>
+          <option value="genesis">Genesis</option>
+          <option value="evolution">Evolution</option>
+          <option value="architecture">Architecture & Mind Map</option>
+          <option value="deepdive">Architecture Deep Dive</option>
+          <option value="matrix">AI Matrix</option>
+          <option value="capabilities">Capabilities</option>
+          <option value="atlas">Code Atlas</option>
+          <option value="evidence">Evidence Matrix</option>
+          <option value="runtime">Runtime Evidence</option>
+          <option value="readiness">Readiness</option>
+          <option value="cockpit">Defense Cockpit</option>
+          <option value="dependency">Dependency Graph</option>
+          <option value="changeimpact">Change Impact</option>
+          <option value="tradeoffs">Trade-offs</option>
+          <option value="debt">Weaknesses</option>
+          <option value="sourceexplorer">Source Explorer</option>
+          <option value="journeys">Execution Journeys</option>
+          <option value="techstory">Technical Story</option>
+          <option value="warroom">Question War Room</option>
+          <option value="board">Review Board</option>
+          <option value="simulator">Decision Simulator</option>
+          <option value="failurelab">Failure Lab</option>
+          <option value="slo">SLO & Reliability</option>
+          <option value="incidents">Incident Center</option>
+          <option value="prodgate">Production Gate</option>
+          <option value="demo">Live Demo</option>
+          <option value="commanddeck">Command Deck</option>
+          <option value="rehearsal">Final Rehearsal</option>
+          <option value="certification">Certification</option>
+          <option value="documentation">Docs as Code</option>
+        </select>
+        <button type="button" onclick="closeEvidenceVault()" class="rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-white/[0.08] hover:text-white">Fechar ×</button>
+      </div>
+    </header>
+    <div class="min-h-0 flex-1 overflow-auto rounded-2xl border border-white/[0.06] bg-black/20 p-3 sm:p-5" id="legacyEvidenceStage">
+      <div class="hidden" id="legacyCaseNav" aria-hidden="true"><button type="button" data-view="story">Presentation Story</button><button type="button" data-view="genesis">Genesis</button><button type="button" data-view="evolution">Evolution</button><button type="button" data-view="architecture">Architecture & Mind Map</button><button type="button" data-view="deepdive">Architecture Deep Dive</button><button type="button" data-view="matrix">AI Matrix</button><button type="button" data-view="capabilities">Capabilities</button><button type="button" data-view="atlas">Code Atlas</button><button type="button" data-view="evidence">Evidence Matrix</button><button type="button" data-view="runtime">Runtime Evidence</button><button type="button" data-view="readiness">Readiness</button><button type="button" data-view="cockpit">Defense Cockpit</button><button type="button" data-view="dependency">Dependency Graph</button><button type="button" data-view="changeimpact">Change Impact</button><button type="button" data-view="tradeoffs">Trade-offs</button><button type="button" data-view="debt">Weaknesses</button><button type="button" data-view="sourceexplorer">Source Explorer</button><button type="button" data-view="journeys">Execution Journeys</button><button type="button" data-view="techstory">Technical Story</button><button type="button" data-view="warroom">Question War Room</button><button type="button" data-view="board">Review Board</button><button type="button" data-view="simulator">Decision Simulator</button><button type="button" data-view="failurelab">Failure Lab</button><button type="button" data-view="slo">SLO & Reliability</button><button type="button" data-view="incidents">Incident Center</button><button type="button" data-view="prodgate">Production Gate</button><button type="button" data-view="demo">Live Demo</button><button type="button" data-view="commanddeck">Command Deck</button><button type="button" data-view="rehearsal">Final Rehearsal</button><button type="button" data-view="certification">Certification</button><button type="button" data-view="documentation">Docs as Code</button></div>
+  <section class="doc-view" id="view-rehearsal">
+    <div class="doc-reh-hero"><div class="doc-kicker">V149 · Expert Certification Final Rehearsal</div><h1>This is the<br><span>dress rehearsal.</span></h1><p>Genesis → architecture → code → challenge → failure → evidence → weakness → verdict → finale</p><button class="doc-deck-start" id="rehStart">START REHEARSAL <span>→</span></button></div>
+    <div class="doc-reh-stats"><strong id="rehScenes">—</strong><span>scenes</span><strong id="rehMinutes">—</strong><span>minutes</span><p id="rehRule"></p></div>
+    <div id="rehProgress" class="doc-reh-progress"></div>
+    <div class="doc-reh-layout"><aside class="doc-panel"><div class="doc-kicker">Run of show</div><div id="rehList"></div></aside><article class="doc-panel doc-reh-stage"><div class="doc-reh-head"><span id="rehType">SCENE</span><span id="rehTime">— MIN</span></div><h2 id="rehTitle">Press Start Rehearsal</h2><section><div class="doc-kicker">Director cue</div><p id="rehPrompt">—</p></section><section class="doc-reh-say"><div class="doc-kicker">What you say</div><blockquote id="rehSay">—</blockquote></section><section><div class="doc-kicker">Evidence to open</div><p id="rehProof">—</p><button class="doc-btn" id="rehOpen">Open evidence surface</button></section><section class="doc-reh-interrupt"><div class="doc-kicker">Evaluator interrupts</div><h3 id="rehInterrupt">—</h3><button class="doc-btn" id="rehReveal">Reveal response strategy</button><div id="rehAnswer" hidden><div class="doc-kicker">Boundary → Decision → Evidence → Trade-off</div><p></p></div></section><div class="doc-actions"><button class="doc-btn" id="rehPrev">← Previous</button><button class="doc-btn" id="rehNext">Next scene →</button></div></article></div>
+    <div class="doc-reh-finale"><div class="doc-kicker">Director's final note</div><blockquote id="rehFinish"></blockquote></div>
+  </section>
+  <section class="doc-view" id="view-debt">
+    <div class="doc-debt-hero"><div class="doc-kicker">V148 · Expert Weakness & Technical Debt Register</div><h1>A mature architecture<br><span>knows where it is weak.</span></h1><p>Weakness → risk → current control → target architecture → exit criterion → evidence</p></div>
+    <div class="doc-panel doc-callout"><strong>Evidence boundary</strong><p id="debtBoundary" class="doc-small"></p></div>
+    <div class="doc-debt-stats"><div><strong id="debtCount">—</strong><span>known debts</span></div><div><strong id="debtHigh">—</strong><span>high priority</span></div><div><strong id="debtMedium">—</strong><span>medium priority</span></div><p id="debtPrinciple"></p></div>
+    <div class="doc-debt-layout"><aside class="doc-panel"><input id="debtQuery" class="doc-input" placeholder="Filter weakness, domain, risk…"><div id="debtList"></div></aside><article class="doc-panel doc-debt-stage"><div class="doc-debt-head"><span id="debtDomain">DOMAIN</span><span id="debtSeverity">SEVERITY</span></div><h2 id="debtTitle">Select a known weakness</h2><section><div class="doc-kicker">What is weak / incomplete</div><p id="debtWeakness">—</p></section><section class="doc-story-block doc-story-pressure"><div class="doc-kicker">Why it matters</div><p id="debtRisk">—</p></section><section><div class="doc-kicker">Current control</div><p id="debtCurrent">—</p></section><section class="doc-story-block doc-story-transition"><div class="doc-kicker">Target architecture</div><p id="debtTarget">—</p></section><section class="doc-debt-exit"><div class="doc-kicker">Definition of done / exit criterion</div><p id="debtExit">—</p></section><section><div class="doc-kicker">Repository evidence</div><div id="debtEvidence">—</div></section></article></div>
+  </section>
+  <section class="doc-view" id="view-tradeoffs">
+    <div class="doc-trade-hero"><div class="doc-kicker">V147 · Architecture Trade-off Ledger</div><h1>Every “yes”<br><span>also means “no”.</span></h1><p>An architecture decision is incomplete until you can explain the alternative, the cost you accepted and what would make you reverse it.</p></div>
+    <div class="doc-trade-summary"><strong id="tradeCount">12</strong><span>decisions</span><strong id="tradeDomains">—</strong><span>domains</span><p id="tradePrinciple"></p></div>
+    <div class="doc-trade-layout"><aside class="doc-panel"><input id="tradeQuery" class="doc-input" placeholder="Filter decision, domain, alternative…"><div id="tradeList"></div></aside><article class="doc-panel doc-trade-stage"><div class="doc-trade-head"><span id="tradeDomain">DOMAIN</span><span>ARCHITECTURE JUDGMENT</span></div><h2 id="tradeDecision">Select a decision</h2><div class="doc-trade-choice"><div><span>CHOSEN</span><strong id="tradeChosen">—</strong></div><div><span>NOT CHOSEN</span><strong id="tradeAlternative">—</strong></div></div><section><div class="doc-kicker">Why this decision</div><p id="tradeWhy">—</p></section><section class="doc-story-block doc-story-pressure"><div class="doc-kicker">Cost I knowingly accepted</div><p id="tradeCost">—</p></section><section class="doc-story-block doc-story-transition"><div class="doc-kicker">What would make me change my mind?</div><p id="tradeChange">—</p></section><section><div class="doc-kicker">Signal I would monitor</div><p id="tradeSignal">—</p></section><section><div class="doc-kicker">Code evidence</div><div id="tradeEvidence">—</div></section></article></div>
+  </section>
+  <section class="doc-view" id="view-evolution">
+    <div class="doc-evo-hero"><div class="doc-kicker">V146 · Engineering Evolution Timeline</div><h1>Every capability<br><span>had to earn its place.</span></h1><p>Problem → decision → capability → code → risk → next pressure</p></div>
+    <div class="doc-panel doc-callout"><strong>Evidence boundary</strong><p id="evoBoundary" class="doc-small"></p></div>
+    <div id="evoRail" class="doc-evo-rail"></div>
+    <div class="doc-evo-layout"><article class="doc-panel doc-evo-stage"><div class="doc-evo-head"><span id="evoEra">ERA</span><span id="evoNumber">01 / 10</span></div><h2 id="evoTitle">Select a phase</h2><section><div class="doc-kicker">Engineering pressure</div><p id="evoTrigger">—</p></section><div class="doc-evo-arrow">↓</div><section><div class="doc-kicker">Decision</div><p id="evoDecision">—</p></section><div class="doc-evo-arrow">↓</div><section class="doc-evo-cap"><div class="doc-kicker">Capability acquired</div><h3 id="evoCapability">—</h3></section><div class="doc-evo-arrow">↓</div><section><div class="doc-kicker">Repository evidence</div><div id="evoEvidence">—</div></section><div class="doc-grid-2"><section class="doc-story-block doc-story-pressure"><div class="doc-kicker">New risk created</div><p id="evoRisk">—</p></section><section class="doc-story-block doc-story-transition"><div class="doc-kicker">Pressure that creates the next phase</div><p id="evoNext">—</p></section></div><div class="doc-actions"><button class="doc-btn" id="evoNextBtn">Next pressure →</button></div></article></div>
+    <div class="doc-evo-finale"><div class="doc-kicker">Engineering thesis</div><blockquote id="evoFinale"></blockquote><button class="doc-deck-start" data-deck-view="commanddeck">ENTER DEFENSE <span>→</span></button></div>
+  </section>
+  <section class="doc-view" id="view-genesis">
+    <div class="doc-genesis-hero"><div class="doc-kicker">V145 · The Genesis of StudyFlow</div><h1>Before the architecture,<br><span>there was a reason.</span></h1><p id="genesisOpening">Before I show you the architecture, I need to explain why StudyFlow exists.</p><button class="doc-deck-start" id="genesisStart">BEGIN THE STORY <span>→</span></button></div>
+    <div class="doc-genesis-arc" id="genesisArc">Family → YouTube → Cuts → Knowledge → Creation → Skills → Complexity → AI Engineering → Production</div>
+    <div class="doc-genesis-layout"><aside class="doc-panel"><div class="doc-kicker">Origin story</div><div id="genesisActs"></div></aside><article class="doc-panel doc-genesis-stage"><div class="doc-story-acthead"><span id="genesisAct">ACT 0</span><span>ORIGIN → ENGINEERING</span></div><h2 id="genesisTitle">It started with my son</h2><h3 id="genesisSubtitle">Before architecture, there was a reason.</h3><div class="doc-story-block"><div class="doc-kicker">What you say</div><p id="genesisSay">—</p></div><div class="doc-genesis-idea" id="genesisIdea">—</div><div class="doc-actions"><button class="doc-btn" id="genesisNext">Next act →</button><button class="doc-btn" id="genesisOpen">Open supporting surface</button></div></article></div>
+    <div class="doc-genesis-family"><div class="doc-genesis-person"><span>GEORGINA</span><h3>Learning</h3><p>Study · dedication · depth · knowledge</p></div><div class="doc-genesis-center">STUDYFLOW<br><small>learn · create · teach</small></div><div class="doc-genesis-person"><span>MARCOS CEZAR</span><h3>Creativity</h3><p>Experimentation · invention · possibility</p></div></div>
+    <div class="doc-panel doc-callout"><strong>Important boundary</strong><p id="genesisBoundary" class="doc-small"></p></div>
+    <div class="doc-genesis-pivot"><div class="doc-kicker">The pivot into the technical defense</div><blockquote id="genesisThesis"></blockquote><p id="genesisPivot"></p><button class="doc-deck-start" data-deck-view="commanddeck">ENTER THE COMMAND DECK <span>→</span></button></div>
+  </section>
+  <section class="doc-view" id="view-commanddeck">
+    <div class="doc-deck-hero"><div class="doc-kicker">V144 · Certification Command Deck</div><h1>StudyFlow</h1><h2>Expert AI Engineering Defense</h2><p id="deckOpening">The problem is not making AI work. The problem is making AI defensible.</p><button class="doc-deck-start" data-deck-view="story">START THE DEFENSE <span>→</span></button></div>
+    <div class="doc-deck-stats"><div><strong id="deckActs">10</strong><span>story acts</span></div><div><strong id="deckMinutes">—</strong><span>minutes</span></div><div><strong id="deckQuestions">18</strong><span>pressure questions</span></div><div><strong id="deckJourneys">6</strong><span>code journeys</span></div></div>
+    <div class="doc-deck-rule"><div class="doc-kicker">Presenter rule</div><p id="deckRule">Control the depth. Never dump the documentation; reveal evidence as the conversation earns it.</p></div>
+    <div class="doc-kicker doc-inc-gap">Choose your move</div><div id="deckModes" class="doc-deck-grid"></div>
+    <div class="doc-panel doc-deck-emergency"><div><div class="doc-kicker">Interrupted?</div><strong>BOUNDARY → DECISION → EVIDENCE → TRADE-OFF</strong><p id="deckEmergency"></p></div><button class="doc-btn" data-deck-view="warroom">Open War Room</button></div>
+    <div class="doc-deck-finale"><span>FINAL THESIS</span><blockquote id="deckClosing">The artifact is not the answer. The engineering discipline is.</blockquote></div>
+  </section>
+  <section class="doc-view" id="view-journeys">
+    <div class="doc-title"><div><div class="doc-kicker">V143 · Code Anatomy & Execution Journey</div><h2>Follow the request through the code.</h2><p>Six curated engineering journeys connect entry points, decisions, real functions/classes, evidence boundaries, failure behavior and trade-offs.</p></div></div>
+    <div class="doc-panel doc-callout"><strong>Trace boundary</strong><p class="doc-small">These are repository-grounded code narratives built from real modules and symbols. They are not captured runtime distributed traces.</p></div>
+    <div class="doc-journey-tabs" id="journeyTabs"></div>
+    <div class="doc-panel doc-journey-stage"><div class="doc-journey-head"><div><div class="doc-kicker">Execution anatomy</div><h2 id="journeyTitle">Select a journey</h2><p id="journeyHook"></p></div></div><div class="doc-mermaid-box"><pre class="mermaid" id="journeyMermaid">flowchart LR
+ A["Select a journey"]</pre></div><div id="journeySteps" class="doc-journey-steps"></div><div class="doc-grid-2"><section class="doc-story-block doc-story-pressure"><div class="doc-kicker">Failure boundary</div><p id="journeyFailure">—</p></section><section class="doc-story-block"><div class="doc-kicker">Trade-off</div><p id="journeyTradeoff">—</p></section></div></div>
+  </section>
+  <section class="doc-view" id="view-techstory">
+    <div class="doc-tech-hero"><div class="doc-kicker">V142 · Technical Storytelling Deep Dive</div><h1>One architecture.<br><span>Three depths.</span></h1><p>Move from executive meaning to architectural decision to the exact StudyFlow source code without breaking the story.</p><div class="doc-tech-arc">Models → RAG → Context → Memory → Agents → Protocols → Evaluation → Security → LLMOps → Production</div></div>
+    <div class="doc-tech-layout"><aside class="doc-panel"><div class="doc-kicker">Technical chapters</div><div id="techChapters"></div></aside><article class="doc-panel doc-tech-stage"><div class="doc-tech-head"><span id="techOrder">CHAPTER</span><span id="techDomain">DOMAIN</span></div><h2 id="techTitle">Select a chapter.</h2><blockquote id="techHook">—</blockquote><div class="doc-depth-tabs"><button class="active" data-depth="executive">Executive</button><button data-depth="architect">Architect</button><button data-depth="source">Source Code</button></div><div id="techDepthContent" class="doc-tech-content">Choose a chapter to begin.</div><div class="doc-story-block"><div class="doc-kicker">Concepts you should be ready to explain</div><div id="techConcepts">—</div></div><div class="doc-story-block"><div class="doc-kicker">Trade-off</div><p id="techTradeoff">—</p></div><div class="doc-story-block doc-story-transition"><div class="doc-kicker">Narrative bridge</div><p id="techBridge">—</p></div></article></div>
+  </section>
+  <section class="doc-view" id="view-warroom">
+    <div class="doc-title"><div><div class="doc-kicker">V141 · Expert Question War Room</div><h2>Prepare for the question that breaks the script.</h2><p>18 evaluator questions across foundations, architecture, code, RAG, agents, protocols, security, evaluation, operations and evidence integrity.</p></div><div class="doc-war-count"><strong id="warCount">18</strong><span>questions</span></div></div>
+    <div class="doc-panel doc-callout"><strong>Answer pattern</strong><p class="doc-small">Boundary → Decision → Evidence → Trade-off → likely follow-up. Never fabricate implementation or runtime proof.</p></div>
+    <div class="doc-war-filters"><input class="doc-search" id="warQuery" placeholder="Search: RAG, MCP, prompt injection, fine-tuning…"><select id="warDifficulty"><option value="">All levels</option><option value="hard">Hard</option><option value="expert">Expert</option><option value="hostile">Hostile</option></select><button class="doc-btn" id="warSearch">Search</button><button class="doc-btn" id="warRandom">Random pressure question</button></div>
+    <div class="doc-war-layout"><aside class="doc-panel"><div class="doc-kicker">Evaluator questions</div><div id="warQuestions"></div></aside><article class="doc-panel doc-war-answer"><div class="doc-war-head"><span id="warDomain">DOMAIN</span><span id="warLevel">LEVEL</span></div><h2 id="warQuestion">Select a question.</h2><div class="doc-story-block"><div class="doc-kicker">Executive answer · first 15 seconds</div><p id="warExecutive">—</p></div><div class="doc-story-block"><div class="doc-kicker">Technical deep dive</div><p id="warDeep">—</p></div><div class="doc-story-block"><div class="doc-kicker">Code evidence</div><div id="warSources">—</div></div><div class="doc-story-block"><div class="doc-kicker">Trade-off you must admit</div><p id="warTradeoff">—</p></div><div class="doc-story-block doc-story-pressure"><div class="doc-kicker">Expect the follow-up</div><strong id="warFollowup">—</strong></div></article></div>
+  </section>
+  <section class="doc-view" id="view-story">
+    <div class="doc-story-hero"><div class="doc-kicker">V140 · Expert AI Engineering Defense</div><h1>The problem is not making AI work.<br><span>The problem is making AI defensible.</span></h1><p>A cinematic, evidence-first presentation path through the complete StudyFlow engineering case.</p><div class="doc-actions"><button class="doc-btn" id="storyStart">Start presentation</button><button class="doc-btn" id="storyNext">Next act →</button></div></div>
+    <div class="doc-story-progress"><span id="storyProgressBar"></span></div>
+    <div class="doc-story-layout"><aside class="doc-panel"><div class="doc-kicker">Storyline</div><div id="storyActs"></div></aside><article class="doc-panel doc-story-stage"><div class="doc-story-acthead"><span id="storyAct">PROLOGUE</span><span id="storyTime">— min</span></div><h2 id="storyTitle">Select Start presentation</h2><h3 id="storySubtitle"></h3><div class="doc-story-block"><div class="doc-kicker">What you say</div><p id="storySay">The presentation script will appear here.</p></div><div class="doc-story-block"><div class="doc-kicker">What you prove on screen</div><div id="storyProve"></div></div><div class="doc-story-block doc-story-transition"><div class="doc-kicker">Transition line</div><p id="storyTransition">—</p></div><div class="doc-story-block doc-story-pressure"><div class="doc-kicker">If the evaluator interrupts here</div><strong id="storyQuestion">—</strong><p id="storyAnswer">—</p></div><div class="doc-actions"><button class="doc-btn" id="storyOpenEvidence">Open evidence for this act</button></div></article></div>
+    <div class="doc-story-finale"><div class="doc-kicker">Closing thesis</div><blockquote>The artifact is not the answer. <strong>The engineering discipline is.</strong></blockquote></div>
+  </section>
+  <section class="doc-view" id="view-changeimpact">
+    <div class="doc-title"><div><div class="doc-kicker">V139 · Change Impact & Architecture Review</div><h2>Assess a change before merge.</h2><p>Select the change type and target module to generate a repository-grounded review plan: blast radius, risk factors, mandatory evidence and merge checklist.</p></div></div>
+    <div class="doc-panel doc-callout"><strong>Review boundary</strong><p class="doc-small">This is a deterministic architecture-review aid. It does not modify code and does not claim measured production impact.</p></div>
+    <div class="doc-change-controls"><select id="changeType"></select><input class="doc-search" id="changeModule" placeholder="Optional module override, e.g. rag/reranker.py"><button class="doc-btn" id="changeAssess">Assess change</button></div>
+    <div class="doc-change-hero"><div><div class="doc-kicker">Review decision</div><strong id="changeDecision">NO ASSESSMENT</strong></div><div><div class="doc-kicker">Blast radius</div><strong id="changeBlast">—</strong></div><div><div class="doc-kicker">Target</div><strong id="changeTarget">—</strong></div></div>
+    <div class="doc-grid-2"><section class="doc-panel"><div class="doc-kicker">Risk factors</div><div id="changeRisks" class="doc-small">—</div><div class="doc-kicker doc-inc-gap">Mandatory evidence</div><div id="changeEvidence" class="doc-small">—</div></section><section class="doc-panel"><div class="doc-kicker">Merge checklist</div><div id="changeChecklist" class="doc-small">—</div></section></div>
+    <div class="doc-panel doc-inc-gap"><div class="doc-kicker">Affected architecture</div><div id="changeArchitecture" class="doc-small">—</div><p class="doc-small doc-failure-principle" id="changePrinciple"></p></div>
+  </section>
+  <section class="doc-view" id="view-dependency">
+    <div class="doc-title"><div><div class="doc-kicker">V138 · Architecture Dependency Graph & Blast Radius</div><h2>Understand what a change can touch before it ships.</h2><p>Static import relationships + capability ownership expose dependencies, direct consumers, second-order impact and review controls.</p></div></div>
+    <div class="doc-panel doc-callout"><strong>Impact boundary</strong><p class="doc-small">Blast radius is a static engineering heuristic derived from repository structure. It prioritizes review and testing; it is not measured production impact.</p></div>
+    <div class="doc-source-search"><input class="doc-search" id="dependencyQuery" placeholder="Try: gateway, rag, swarm, memory, finops…"><button class="doc-btn" id="dependencySearch">Analyze architecture</button></div>
+    <div class="doc-dep-layout"><aside class="doc-panel"><div class="doc-kicker">Components</div><div id="dependencyResults"><div class="doc-empty">Search for a component or capability.</div></div></aside><article class="doc-panel"><div class="doc-dep-head"><div><div class="doc-kicker">Blast radius</div><h2 id="dependencyTitle">Select a component</h2></div><div class="doc-dep-score"><strong id="dependencyScore">—</strong><span id="dependencyLevel">NO DATA</span></div></div><div class="doc-mermaid-box"><pre class="mermaid" id="dependencyMermaid">flowchart LR
+  A["Select a component"]</pre></div><div class="doc-grid-2"><section><div class="doc-kicker">Direct callers</div><div id="dependencyCallers" class="doc-small">—</div><div class="doc-kicker doc-inc-gap">Dependencies</div><div id="dependencyDeps" class="doc-small">—</div></section><section><div class="doc-kicker">Affected capabilities</div><div id="dependencyCaps" class="doc-small">—</div><div class="doc-kicker doc-inc-gap">Recommended controls</div><div id="dependencyControls" class="doc-small">—</div></section></div><p class="doc-small doc-failure-principle" id="dependencyPrinciple"></p></article></div>
+  </section>
+  <section class="doc-view" id="view-sourceexplorer">
+    <div class="doc-title"><div><div class="doc-kicker">V137 · Evidence Drill-Down & Source Explorer</div><h2>From architectural claim to the exact symbol.</h2><p>Search capability, file, function or class. Inspect bounded source snippets and related tests without exposing arbitrary repository files.</p></div></div>
+    <div class="doc-panel doc-callout"><strong>Safe source boundary</strong><p class="doc-small">Only allowlisted Python modules already present in the code atlas are readable. No arbitrary path traversal, .env, secret, credential or configuration-file reader is exposed.</p></div>
+    <div class="doc-source-search"><input class="doc-search" id="sourceQuery" placeholder="Try: gateway, reranker, memory, swarm, finops…"><button class="doc-btn" id="sourceSearch">Search evidence</button></div>
+    <div class="doc-source-layout"><aside class="doc-panel"><div class="doc-kicker">Results</div><div id="sourceResults"><div class="doc-empty">Search the implementation atlas.</div></div></aside><article class="doc-panel"><div class="doc-kicker" id="sourceLevel">CODE EVIDENCE</div><h2 id="sourceTitle">Select a symbol</h2><div id="sourceMeta" class="doc-small">Code proves implementation—not runtime execution.</div><pre class="doc-source-code" id="sourceCode">No source selected.</pre><div class="doc-grid-2"><section><div class="doc-kicker">Capabilities</div><div id="sourceCapabilities" class="doc-small">—</div></section><section><div class="doc-kicker">Related tests</div><div id="sourceTests" class="doc-small">—</div></section></div></article></div>
+  </section>
+  <section class="doc-view" id="view-cockpit">
+    <div class="doc-title"><div><div class="doc-kicker">V136 · AI Architecture Defense Cockpit</div><h2>One screen to defend the system.</h2><p>Jump from claim → architecture → test → runtime → reliability → incident → release evidence without searching the project during the presentation.</p></div><div class="doc-actions"><button class="doc-btn" id="cockpitFocus" type="button">Presentation focus</button></div></div>
+    <div class="doc-panel doc-callout"><strong>Evidence discipline</strong><p class="doc-small">The cockpit aggregates existing evidence. It never promotes instrumentation into observed runtime proof and never converts missing evidence into a positive claim.</p></div>
+    <div class="doc-cockpit-paths" id="cockpitPaths"></div>
+    <div class="doc-cockpit-layout"><div><div class="doc-kicker">Defense zones</div><div class="doc-cockpit-zones" id="cockpitZones"></div></div><aside class="doc-panel"><div class="doc-kicker">Evidence ladder</div><div id="cockpitLadder"></div><div class="doc-kicker doc-inc-gap">30-second defense rule</div><p class="doc-small">Answer the architecture question, open the strongest evidence, state the failure mode, then name the trade-off. Do not oversell the proof level.</p></aside></div>
+  </section>
+  <section class="doc-view" id="view-prodgate">
+    <div class="doc-title"><div><div class="doc-kicker">V135 · AI Production Readiness Gate</div><h2>Evidence before release.</h2><p>Security, evaluation, reliability, failure handling, incident response, observability, FinOps, governance and rollback converge into a release recommendation.</p></div><div class="doc-actions"><button class="doc-btn" data-gate-demo="ready">Demo GO</button><button class="doc-btn" data-gate-demo="conditional">Demo Conditional</button><button class="doc-btn" data-gate-demo="blocked">Demo No-Go</button><button class="doc-btn" id="gateEvaluate">Evaluate</button></div></div>
+    <div class="doc-panel doc-callout"><strong>Approval boundary</strong><p class="doc-small">This produces an engineering readiness recommendation. It does not grant organizational approval to deploy. Critical missing evidence is a hard blocker and cannot be averaged away.</p></div>
+    <div class="doc-prodgate-hero"><div><div class="doc-kicker">Decision</div><strong id="gateDecision">NO EVIDENCE</strong></div><div><div class="doc-kicker">Weighted readiness</div><strong id="gateScore">0%</strong></div><div><div class="doc-kicker">Critical blockers</div><strong id="gateBlockers">—</strong></div></div>
+    <div class="doc-prodgate-grid" id="gateCards"></div>
+    <div class="doc-title"><div><div class="doc-kicker">Decision explanation</div><h2>Release conditions</h2></div></div>
+    <div class="doc-panel" id="gateExplanation"><div class="doc-empty">Set evidence states or load a demonstration profile.</div></div>
+  </section>
+  <section class="doc-view" id="view-incidents">
+    <div class="doc-title"><div><div class="doc-kicker">V134 · Incident Command Center</div><h2>Detect. Contain. Diagnose. Recover. Verify. Learn.</h2><p>Runbook-driven incident rehearsal for AI systems, connected to reliability, runtime evidence, security, RAG, agents and FinOps.</p></div></div>
+    <div class="doc-panel doc-callout"><strong>Rehearsal boundary</strong><p class="doc-small">Incidents created here are simulated. No external provider, pager, ticketing system or production workload is changed.</p></div>
+    <div class="doc-incident-layout"><aside class="doc-panel"><div class="doc-kicker">Runbooks</div><div id="incidentRunbooks"></div></aside><article class="doc-panel"><div class="doc-incident-head"><div><div class="doc-kicker" id="incidentDomain">Incident rehearsal</div><h2 id="incidentTitle">Choose a runbook</h2></div><span class="doc-chip gap" id="incidentSeverity">—</span></div><div id="incidentBody" class="doc-empty">Select a runbook and start a controlled rehearsal.</div></article></div>
+  </section>
+  <section class="doc-view" id="view-slo">
+    <div class="doc-title"><div><div class="doc-kicker">V133 · SLO & Reliability Engineering</div><h2>Turn telemetry into explicit reliability commitments.</h2><p>SLI → target → window → error budget → burn rate → operating response. Demo metrics are explicitly synthetic.</p></div><div class="doc-actions"><button class="doc-btn" id="sloDemo" type="button">Load synthetic demo</button><button class="doc-btn" id="sloEvaluate" type="button">Evaluate inputs</button></div></div>
+    <div class="doc-panel doc-callout"><strong>Evidence boundary</strong><p class="doc-small">The SLO model is executable, but StudyFlow does not claim enterprise production compliance without real production telemetry. V129 runtime events can support status/latency evidence; the built-in values below are rehearsal data.</p></div>
+    <div class="doc-slo-grid" id="sloCards"></div>
+    <div class="doc-title"><div><div class="doc-kicker">Reliability posture</div><h2 id="sloOverall">NO DATA</h2><p id="sloSummary">Enter observations or load the synthetic demo.</p></div></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>SLI</th><th>Observed</th><th>Target</th><th>Status</th><th>Error budget</th><th>Burn rate</th></tr></thead><tbody id="sloRows"></tbody></table></div>
+  </section>
+  <section class="doc-view" id="view-failurelab">
+    <div class="doc-title"><div><div class="doc-kicker">V132 · Production Failure Lab</div><h2>Inject controlled failures. Observe the safety contract.</h2><p>Side-effect-free simulations for provider, RAG, agent, cache, tool-contract and telemetry failures. No external provider is called.</p></div><div class="doc-actions"><button class="doc-btn" id="failureRunAll" type="button">Run all simulations</button></div></div>
+    <div class="doc-kpis" id="failureKpis"></div>
+    <div class="doc-panel doc-callout"><strong>Evidence boundary</strong><p class="doc-small">This lab demonstrates deterministic failure-control contracts. It does not claim to prove the resilience of OpenAI, Anthropic, a network, or any external provider.</p></div>
+    <div class="doc-failure-grid" id="failureScenarioGrid"></div>
+    <div class="doc-title"><div><div class="doc-kicker">Latest simulation</div><h2 id="failureResultTitle">Select a failure scenario</h2></div></div>
+    <div class="doc-panel" id="failureResult"><div class="doc-empty">Run a scenario to inspect fault → detection → recovery.</div></div>
+  </section>
+  <section class="doc-view" id="view-simulator">
+    <div class="doc-title"><div><div class="doc-kicker">V131 · Architecture Decision Simulator</div><h2>Choose under pressure. Reveal consequences after committing.</h2><p>Incident-style architecture scenarios covering RAG, agents, providers, cost, security, evaluation, memory and protocols.</p></div><div class="doc-actions"><a class="doc-btn" href="/api/case/decision-simulator.md">Export scenarios</a><button class="doc-btn" id="simRandom" type="button">Random scenario</button></div></div>
+    <div class="doc-sim-layout">
+      <aside class="doc-panel doc-sim-list"><div class="doc-toolbar"><input id="simSearch" class="doc-search" placeholder="Search scenario or domain..."></div><div id="simDomainFilters" class="doc-board-filters"></div><div id="simScenarioList"></div></aside>
+      <article class="doc-panel doc-sim-stage">
+        <div class="doc-sim-head"><div><div class="doc-kicker" id="simDomain">Scenario</div><h2 id="simScenario">Loading…</h2></div><span class="doc-chip gap" id="simSeverity">HIGH</span></div>
+        <div class="doc-kicker">Constraints</div><div id="simConstraints" class="doc-sim-constraints"></div>
+        <div class="doc-kicker doc-sim-choice-title">Choose your architecture decision before revealing the rubric</div><div id="simOptions" class="doc-sim-options"></div>
+        <div class="doc-sim-actions"><button class="doc-btn" id="simReveal" type="button" disabled>Reveal consequences</button><button class="doc-btn" id="simNext" type="button">Next scenario →</button></div>
+        <div id="simResult" class="doc-sim-result hidden">
+          <div class="doc-sim-grade"><div><div class="doc-kicker">Decision assessment</div><strong id="simGrade">—</strong></div><div id="simImpact" class="doc-small"></div></div>
+          <div class="doc-grid-2"><section><div class="doc-kicker">Why</div><p id="simWhy" class="doc-small"></p></section><section><div class="doc-kicker">Expert choice</div><p id="simExpertChoice" class="doc-small"></p></section></div>
+          <div class="doc-grid-2 doc-board-bottom"><section><div class="doc-kicker">Trade-offs</div><div id="simTradeoffs"></div></section><section><div class="doc-kicker">Evidence to open</div><div id="simEvidence"></div></section></div>
+          <section class="doc-board-follow"><div class="doc-kicker">Board follow-up</div><p id="simFollowup" class="doc-small"></p></section>
+        </div>
+      </article>
+    </div>
+    <div class="doc-title"><div><div class="doc-kicker">Decision history</div><h2>Your local architecture choices</h2><p>Stored only in this browser.</p></div><button class="doc-btn" id="simClearHistory" type="button">Clear history</button></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Time</th><th>Scenario</th><th>Choice</th><th>Grade</th></tr></thead><tbody id="simHistoryRows"></tbody></table></div>
+  </section>
+  <section class="doc-view" id="view-board">
+    <div class="doc-title"><div><div class="doc-kicker">V130 · Expert Architecture Review Board</div><h2>Practice difficult architecture questions before the certification</h2><p>Deterministic rehearsal rubric: required points, expert depth, red flags, evidence and follow-up questions. Not an official Santander scoring model.</p></div><div class="doc-actions"><a class="doc-btn" href="/api/case/review-board.md">Export question bank</a><button class="doc-btn" id="boardRandom" type="button">Random question</button></div></div>
+
+    <div class="doc-board-layout">
+      <aside class="doc-panel doc-board-list">
+        <div class="doc-toolbar"><input id="boardSearch" class="doc-search" placeholder="Search question or domain..."></div>
+        <div id="boardDomainFilters" class="doc-board-filters"></div>
+        <div id="boardQuestionList"></div>
+      </aside>
+
+      <article class="doc-panel doc-board-stage">
+        <div class="doc-board-head"><div><div class="doc-kicker" id="boardDomain">Architecture Review</div><h2 id="boardQuestion">Loading question…</h2><p class="doc-small" id="boardWhy"></p></div><span class="doc-chip strong" id="boardLevel">EXPERT</span></div>
+
+        <div class="doc-board-answer">
+          <label for="boardAnswer"><span class="doc-kicker">Your answer</span></label>
+          <textarea id="boardAnswer" placeholder="Answer aloud first. Then write the structure you used. The tool does not send this answer to an LLM."></textarea>
+        </div>
+
+        <div class="doc-board-actions">
+          <button class="doc-btn" id="boardReveal" type="button">Reveal rubric</button>
+          <button class="doc-btn" id="boardReset" type="button">Reset score</button><button class="doc-btn" id="boardSave" type="button">Save attempt</button>
+          <button class="doc-btn" id="boardNext" type="button">Next question →</button>
+        </div>
+
+        <div id="boardRubric" class="doc-board-rubric hidden">
+          <div class="doc-grid-2">
+            <section><div class="doc-kicker">Required engineering points</div><div id="boardRequired"></div></section>
+            <section><div class="doc-kicker">Expert depth</div><div id="boardExpert"></div></section>
+          </div>
+          <div class="doc-grid-2 doc-board-bottom">
+            <section><div class="doc-kicker">Red flags</div><div id="boardRedFlags"></div></section>
+            <section><div class="doc-kicker">Evidence to open</div><div id="boardEvidence"></div></section>
+          </div>
+          <section class="doc-board-follow"><div class="doc-kicker">Likely follow-up</div><div id="boardFollowups"></div></section>
+        </div>
+
+        <div class="doc-board-score">
+          <div><div class="doc-kicker">Rehearsal score</div><strong id="boardScore">—</strong><span id="boardGrade">NOT SCORED</span></div>
+          <div class="doc-board-score-note" id="boardScoreNote">Reveal the rubric and mark the points you actually covered. Scoring is self-assessment, not semantic grading.</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="doc-title"><div><div class="doc-kicker">Practice history</div><h2>Local rehearsal attempts</h2><p>Stored only in this browser via localStorage.</p></div><button class="doc-btn" id="boardClearHistory" type="button">Clear history</button></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Time</th><th>Question</th><th>Domain</th><th>Score</th><th>Grade</th></tr></thead><tbody id="boardHistoryRows"></tbody></table></div>
+  </section>
+  <section class="doc-view" id="view-demo">
+    <div class="doc-demo-hero doc-panel">
+      <div>
+        <div class="doc-kicker">V126 · Certification Storytelling</div>
+        <h1>AI Engineer Expert · Live Defense Mode</h1>
+        <p>Guided 15–20 minute narrative: problem → architecture → models → RAG → agents → trust → operations → evidence.</p>
+      </div>
+      <div class="doc-demo-controls">
+        <button class="doc-btn" id="startDemo" type="button">Start presentation</button>
+        <button class="doc-btn" id="prevDemo" type="button">← Previous</button>
+        <button class="doc-btn" id="nextDemo" type="button">Next →</button>
+        <button class="doc-btn" id="exitDemo" type="button">Exit focus</button>
+      </div>
+    </div>
+
+    <div class="doc-demo-progress"><div id="demoProgressBar"></div></div>
+    <div class="doc-demo-meta"><span id="demoStepLabel">Step —</span><span id="demoTimeLabel">— min</span><span id="demoTotalLabel">—</span></div>
+
+    <div class="doc-demo-layout">
+      <article class="doc-panel doc-demo-slide">
+        <div class="doc-kicker" id="demoSlideKicker">Certification narrative</div>
+        <h2 id="demoSlideTitle">Loading presentation…</h2>
+        <p class="doc-demo-message" id="demoSlideMessage"></p>
+        <div class="doc-demo-columns">
+          <div>
+            <div class="doc-kicker">Talking points</div>
+            <div id="demoTalkingPoints"></div>
+          </div>
+          <div>
+            <div class="doc-kicker">Evidence to show</div>
+            <div id="demoProof"></div>
+          </div>
+        </div>
+        <div class="doc-demo-open"><a class="doc-btn" id="demoOpenLive" href="/case">Open live evidence</a></div>
+      </article>
+
+      <aside class="doc-panel doc-demo-coach">
+        <div class="doc-kicker">Evaluator Q&A</div>
+        <div id="demoQuestions"></div>
+        <div class="doc-kicker" style="margin-top:16px">Defense rules</div>
+        <div id="demoPrinciples"></div>
+      </aside>
+    </div>
+
+    <div class="doc-title"><div><div class="doc-kicker">All steps</div><h2>Presentation runbook</h2></div></div>
+    <div class="doc-demo-step-grid" id="demoStepGrid"></div>
+  </section>
+
+  <section class="doc-view active" id="view-overview">
+    <div class="doc-hero"><div class="doc-panel"><div class="doc-kicker">AI Engineering Expert · Evidence-first</div><h1>StudyFlow Architecture & Engineering Case</h1><p id="problem">Knowledge-to-Learning multimodal: transforma conhecimento não estruturado em experiências de aprendizagem e conteúdo com RAG, agentes, modelos, evaluation, Responsible AI e observabilidade.</p><div class="doc-actions"><a class="doc-btn" href="/rag">RAG</a><a class="doc-btn" href="/obs">Observability</a><a class="doc-btn" href="/security">Security</a><a class="doc-btn" href="/models">Models</a><a class="doc-btn" href="/system">Production</a><a class="doc-btn" href="/creator-os">Creator OS</a></div></div><div class="doc-panel"><div class="doc-kicker">Repository evidence</div><div class="doc-metrics"><div class="doc-metric"><strong data-doc-metric="evidence">—</strong><span>capabilities evidenced</span></div><div class="doc-metric"><strong data-doc-metric="python_modules">—</strong><span>Python modules</span></div><div class="doc-metric"><strong data-doc-metric="functions">—</strong><span>functions</span></div><div class="doc-metric"><strong data-doc-metric="routes">—</strong><span>Flask routes</span></div></div><p class="doc-small" style="margin-top:12px">The documentation catalog is generated from the repository AST. No LLM call is needed to prove where functions live.</p></div></div>
+    <div class="doc-title"><div><div class="doc-kicker">Live evidence</div><h2>Runtime & case readiness</h2><p>Metrics are observational; unavailable data remains explicit.</p></div><button class="doc-btn" id="refreshBtn">Refresh</button></div>
+    <div class="doc-grid-3"><div class="doc-panel"><div class="doc-kicker">Coverage</div><h2 id="coverage">—</h2><div class="doc-coverage-bar"><span id="coverageBar" style="width:0"></span></div><div id="coverageDetail" class="doc-small"></div></div><div class="doc-panel"><div class="doc-kicker">Quality Gate</div><h2 id="qualityGate">—</h2><div id="qualityDetail" class="doc-small"></div></div><div class="doc-panel"><div class="doc-kicker">Production</div><h2 id="production">—</h2><div id="productionDetail" class="doc-small"></div></div></div>
+    <div class="doc-title"><div><div class="doc-kicker">Requirement → implementation → evidence</div><h2>Certification coverage</h2></div><span id="matrixStatus" class="doc-chip">—</span></div><div id="requirements" class="doc-grid-2"></div>
+  </section>
+  <section class="doc-view" id="view-architecture"><div class="doc-title"><div><div class="doc-kicker">Architecture</div><h2>Interactive diagrams + source</h2><p>Mermaid sources and local SVG fallbacks; PlantUML sources live in the repository.</p></div></div><div class="doc-panel"><div class="doc-diagram-tabs"><button class="active" data-diagram="platform">Platform</button><button data-diagram="rag">RAG</button><button data-diagram="agent">Agent Runtime</button><button data-diagram="creator">Creator OS</button><button data-diagram="mindmap">Mind Map</button></div><div class="doc-diagram" id="diagramRender"></div></div><div class="doc-grid-2" style="margin-top:10px"><div class="doc-panel"><div class="doc-kicker">Mermaid / Markmap-ready source</div><pre class="doc-source" id="diagramSource"></pre></div><div class="doc-panel"><div class="doc-kicker">PlantUML · System Context</div><pre class="doc-source" id="plantumlSource"></pre></div></div><div class="doc-panel" style="margin-top:10px"><div class="doc-kicker">PlantUML · Deployment</div><pre class="doc-source" id="plantumlDeployment"></pre></div></section>
+  <section class="doc-view" id="view-matrix"><div class="doc-title"><div><div class="doc-kicker">AI Engineering Matrix</div><h2>What is covered, partial, conceptual or intentionally out of scope</h2></div></div><div class="doc-search"><input id="areaSearch" placeholder="Search: RAG, context, security, training..."></div><div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Area</th><th>Coverage</th><th>Engineering position</th><th>Evidence</th></tr></thead><tbody id="areaRows"></tbody></table></div></section>
+  <section class="doc-view" id="view-capabilities"><div class="doc-title"><div><div class="doc-kicker">Capability Map</div><h2>Capability → code → symbol → live route</h2><p id="capCount"></p></div></div><div class="doc-search"><input id="capSearch" placeholder="Search capability, file, symbol or domain..."></div><div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Domain</th><th>Capability</th><th>Status</th><th>File evidence</th><th>Main symbols</th><th>Demo</th></tr></thead><tbody id="capRows"></tbody></table></div></section>
+  <section class="doc-view" id="view-evidence">
+    <div class="doc-title"><div><div class="doc-kicker">Certification Evidence Matrix</div><h2>Concept → implementation → test → runtime evidence → risk → trade-off</h2><p>This is the defense matrix: every capability is scored by independent proof dimensions instead of being marked “done” from code alone.</p></div><div class="doc-actions"><a class="doc-btn" href="/api/case/evidence-matrix.md">Export Markdown</a></div></div>
+    <div class="doc-kpis" id="evidenceKpis"></div>
+    <div class="doc-toolbar">
+      <input id="evidenceSearch" class="doc-search" placeholder="Search capability, file, symbol, test, risk...">
+      <select id="evidenceCategory"><option value="">All categories</option></select>
+      <select id="evidenceGrade"><option value="">All proof grades</option><option>EXPERT_EVIDENCE</option><option>STRONG_EVIDENCE</option><option>PARTIAL_EVIDENCE</option><option>DOCUMENTATION_GAP</option></select>
+    </div>
+    <div class="doc-table-wrap doc-evidence-matrix-wrap">
+      <table class="doc-table doc-evidence-table">
+        <thead><tr><th>Capability</th><th>Implementation</th><th>Tests</th><th>Runtime / Observability</th><th>Risk & Trade-off</th><th>Proof</th></tr></thead>
+        <tbody id="evidenceRows"></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="doc-view" id="view-runtime">
+    <div class="doc-title"><div><div class="doc-kicker">V129 · Runtime Evidence Hardening</div><h2>Instrumentation contract → live events → latency → failures</h2><p>Operational evidence only. Raw prompts, documents, arguments, secrets and chain-of-thought are intentionally excluded.</p></div><div class="doc-actions"><button class="doc-btn" id="refreshRuntimeEvidence" type="button">Refresh evidence</button></div></div>
+    <div class="doc-kpis" id="runtimeKpis"></div>
+    <div class="doc-panel doc-callout"><strong>Privacy boundary</strong><p class="doc-small" id="runtimePrivacy">Runtime evidence records status and timing, never content.</p></div>
+    <div class="doc-title"><div><div class="doc-kicker">Instrumented capabilities</div><h2>16 former HIGH gaps now emit runtime evidence</h2></div></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Capability</th><th>Instrumentation</th><th>Runtime state</th><th>Events</th><th>Latency</th></tr></thead><tbody id="runtimeCoverageRows"></tbody></table></div>
+    <div class="doc-title"><div><div class="doc-kicker">Latest events</div><h2>What actually executed?</h2></div></div>
+    <div class="doc-toolbar"><input id="runtimeSearch" class="doc-search" placeholder="Filter capability, operation or status..."></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Time</th><th>Capability</th><th>Operation</th><th>Status</th><th>Duration</th><th>Safe metadata</th></tr></thead><tbody id="runtimeEventRows"></tbody></table></div>
+  </section>
+  <section class="doc-view" id="view-readiness">
+    <div class="doc-title"><div><div class="doc-kicker">V129 · Runtime Evidence Hardening</div><h2>Evidence Readiness · What can still weaken the defense?</h2><p>Internal engineering heuristic — not an official Santander certification grade.</p></div><div class="doc-actions"><a class="doc-btn" href="/api/case/readiness.md">Export report</a></div></div>
+    <div class="doc-readiness-hero doc-panel"><div><div class="doc-kicker">Internal readiness</div><strong id="readinessScore">—</strong><span id="readinessStatus">—</span></div><div id="readinessCounts" class="doc-kpis"></div></div>
+    <div class="doc-panel doc-callout"><strong>Scoring boundary</strong><p class="doc-small" id="readinessDisclaimer">This score measures evidence completeness inside StudyFlow. It does not predict or reproduce Santander's official evaluation rubric.</p></div>
+    <div class="doc-title"><div><div class="doc-kicker">Priority queue</div><h2>Fix these before the presentation</h2></div></div><div id="readinessTopActions" class="doc-grid-2"></div>
+    <div class="doc-toolbar"><input id="readinessSearch" class="doc-search" placeholder="Search capability, missing evidence, action..."><select id="readinessPriority"><option value="">All priorities</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option></select></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Priority</th><th>Capability</th><th>Readiness</th><th>Missing evidence</th><th>Recommended action</th></tr></thead><tbody id="readinessRows"></tbody></table></div>
+  </section>
+  <section class="doc-view" id="view-deepdive">
+    <div class="doc-title"><div><div class="doc-kicker">Architecture Deep Dive</div><h2>Subsystem → components → code → I/O → failure modes → controls</h2><p>Use this view during the expert defense when the evaluator asks “where is it?” or “how does it fail?”.</p></div></div>
+    <div class="doc-deep-layout">
+      <aside class="doc-panel doc-subsystem-list" id="subsystemList"></aside>
+      <div class="doc-panel" id="subsystemDetail"></div>
+    </div>
+    <div class="doc-title"><div><div class="doc-kicker">C4 Architecture</div><h2>From system context to code evidence</h2></div></div>
+    <div class="doc-grid-2" id="c4Grid"></div>
+    <div class="doc-title"><div><div class="doc-kicker">Architecture Decision Records</div><h2>Why the architecture looks like this</h2><p>Expert-level certification should defend trade-offs, not only components.</p></div></div>
+    <div class="doc-grid-2" id="adrGrid"></div>
+    <div class="doc-title"><div><div class="doc-kicker">Threat Model</div><h2>Risk surface → controls → evidence</h2></div></div>
+    <div class="doc-table-wrap"><table class="doc-table"><thead><tr><th>Threat</th><th>Surface</th><th>Controls</th><th>Demo</th></tr></thead><tbody id="threatRows"></tbody></table></div>
+  </section>
+  <section class="doc-view" id="view-atlas"><div class="doc-title"><div><div class="doc-kicker">Code Atlas</div><h2>Where every Python component lives</h2><p>AST-generated inventory of modules, functions, classes, lines and docstrings.</p></div></div><div class="doc-search"><input id="atlasSearch" placeholder="Search file or function: rerank, gateway, memory, trace..."></div><div class="doc-atlas"><div class="doc-panel doc-module-list" id="moduleList"></div><div class="doc-panel" id="moduleDetail"></div></div><div class="doc-title"><div><div class="doc-kicker">API Surface</div><h2>Flask route inventory</h2></div></div><div class="doc-search"><input id="routeSearch" placeholder="Search route or endpoint function..."></div><div class="doc-panel" id="routeRows" style="max-height:520px;overflow:auto"></div></section>
+  <section class="doc-view" id="view-certification"><div class="doc-title"><div><div class="doc-kicker">Expert Defense Map</div><h2>Questions the evaluator should be able to ask</h2><p>Each pillar points to concrete code, runtime screens or documentation.</p></div></div><div class="doc-grid-3" id="certGrid"></div><div class="doc-panel doc-callout" style="margin-top:10px"><strong>Presentation principle:</strong><p class="doc-small">Do not defend the project as a collection of buzzwords. Defend engineering decisions: why this architecture, which trade-off, where the code is, how it is evaluated, what can fail, how it is governed, and what evidence proves the claim.</p></div></section>
+  <section class="doc-view" id="view-documentation"><div class="doc-title"><div><div class="doc-kicker">Docs as Code</div><h2>Mintlify-style experience, MkDocs Material foundation</h2><p>The live `/case` cockpit is integrated with the app; the same repository also contains a versionable static documentation site.</p></div></div><div class="doc-grid-3"><div class="doc-panel"><div class="doc-kicker">Live cockpit</div><h3>/case</h3><p class="doc-small">Evidence-first portal for the certification demo. Searchable capability map, architecture and code atlas.</p></div><div class="doc-panel"><div class="doc-kicker">Static docs</div><h3>MkDocs Material</h3><p class="doc-small">`mkdocs.yml` + Markdown + full-text search. Build without coupling the docs dependency to the application runtime.</p></div><div class="doc-panel"><div class="doc-kicker">Diagrams</div><h3>Mermaid + PlantUML</h3><p class="doc-small">Versioned `.mmd` and `.puml` source under `docs/case/architecture/`, plus local SVG fallbacks for offline demos.</p></div></div><div class="doc-panel" style="margin-top:10px"><div class="doc-kicker">Build documentation</div><pre class="doc-source">python -m venv .venv-docs\nsource .venv-docs/bin/activate\npip install -r requirements-docs.txt\nmkdocs serve -a 127.0.0.1:8000\n\n# production static output\nmkdocs build --strict</pre></div><div class="doc-title"><div><div class="doc-kicker">Repository documentation</div><h2>Key files</h2></div></div><div class="doc-grid-2"><div class="doc-panel"><div class="doc-evidence">docs/case/index.md<br>docs/case/CAPABILITY_MAP.md<br>docs/case/AREA_COVERAGE.md<br>docs/case/CODE_ATLAS.md<br>docs/case/CERTIFICATION_GUIDE.md<br>docs/case/ARCHITECTURE_DIAGRAMS.md</div></div><div class="doc-panel"><div class="doc-evidence">docs/case/ARCHITECTURE.md<br>docs/case/TRADEOFFS.md<br>docs/case/REQUIREMENTS_MATRIX.md<br>docs/case/REPRODUCIBILITY.md<br>docs/case/DEMO_SCRIPT.md<br>docs/case/NEXT_STEPS.md</div></div></div></section>
+    </div>
+  </div>
+</div>

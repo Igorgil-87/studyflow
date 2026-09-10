@@ -1,0 +1,15 @@
+<section class="case-act space-y-5" data-case-act-view="creator" id="act-creator" hidden>
+  <section class="lux-card p-6 sm:p-8"><div class="micro text-purple-300">Ato 03 · Creator OS &amp; Multimodal</div><h2 class="mt-2 text-3xl font-bold tracking-tight">Conhecimento entra bruto. Produto sai publicável.</h2><div class="mt-7 grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] md:items-center"><div class="cap-card"><span class="micro">Input</span><h3 class="mt-3 font-semibold">Conhecimento Bruto</h3><p class="mt-2 text-xs text-neutral-500">Apostilas · YouTube · Web</p></div><div class="hidden text-neutral-700 md:block">→</div><div class="cap-card border-lime-300/15"><span class="micro text-lime-300">Georgina</span><h3 class="mt-3 font-semibold">RAG &amp; Síntese</h3><p class="mt-2 text-xs text-neutral-500">Estrutura, grounding e aprendizagem.</p></div><div class="hidden text-neutral-700 md:block">→</div><div class="cap-card border-purple-400/15"><span class="micro text-purple-300">Marcos Cezar</span><h3 class="mt-3 font-semibold">Estúdio Visual</h3><p class="mt-2 text-xs text-neutral-500">Hooks, roteiro, render e packaging.</p></div><div class="hidden text-neutral-700 md:block">→</div><div class="cap-card"><span class="micro">Output</span><h3 class="mt-3 font-semibold">Redes</h3><p class="mt-2 text-xs text-neutral-500">Cortes · Thumbnails · Carrosséis</p></div></div></section>
+  {% set creator_caps = [
+    ('06','Content Intelligence','Editor analítico de potencial de retenção.','creator_os/'),
+    ('07','Scoring Swarm','Banca de jurados: hook, curiosidade, emoção e retenção.','creator_os/'),
+    ('08','Viral Judge','Editor-chefe com nota consolidada antes do render.','creator_os/'),
+    ('09','Packaging Intelligence','Títulos, capas e framing orientados a clique.','creator_os/'),
+    ('10','Platform Brain','Adaptação cirúrgica por plataforma: Shorts vs Feed.','creator_os/'),
+    ('11','Performance Intelligence','Lê performance pós-publicação e fecha o ciclo.','creator_os/'),
+    ('12','Learning Loop','Transforma resultado observado em próxima decisão.','creator_os/'),
+    ('13','Experiment Engine','Testes A/B de cópias, hooks e formatos.','creator_os/'),
+    ('14','Local Models + vLLM','Inferência open-weight soberana + serving local de alta vazão.','local_ai/provider.py · Local Model Lab')
+  ] %}
+  <section><div class="mb-3 flex items-end justify-between"><div><div class="micro">Grid operacional</div><h3 class="mt-1 text-lg font-semibold">Creator AI &amp; modelos locais</h3></div><span class="font-mono text-[10px] text-purple-300">09 CAPABILITIES</span></div><div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{% for n,name,desc,path in creator_caps %}<article class="cap-card"><span class="micro text-purple-300">{{n}} · Creator OS</span><h4 class="mt-3 font-semibold">{{name}}</h4><p class="mt-2 text-xs leading-5 text-neutral-500">{{desc}}</p><p class="cap-path">{{path}}</p></article>{% endfor %}</div></section>
+</section>

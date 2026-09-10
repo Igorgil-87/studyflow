@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" fill="none" width="100%" height="100%">
+  <defs>
+    <style>
+      @keyframes sfFloat3D {
+        0%, 100% {
+          transform: translateY(0px) rotateX(0deg) rotateY(0deg);
+        }
+        50% {
+          transform: translateY(-8px) rotateX(2deg) rotateY(-2deg);
+        }
+      }
+
+      @keyframes sfCircuitPulse {
+        0%, 100% {
+          filter: drop-shadow(0 0 4px #39ff14) drop-shadow(0 0 10px rgba(57,255,20,0.5));
+          opacity: 0.85;
+        }
+        50% {
+          filter: drop-shadow(0 0 8px #68ff4f) drop-shadow(0 0 22px rgba(57,255,20,0.95));
+          opacity: 1;
+        }
+      }
+
+      @keyframes sfEnergyRun {
+        0% {
+          stroke-dashoffset: 2200;
+        }
+        100% {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      .sf-glyph-root {
+        transform-origin: 300px 300px;
+        animation: sfFloat3D 5s ease-in-out infinite;
+      }
+
+      .sf-neon-ambient {
+        animation: sfCircuitPulse 2.8s ease-in-out infinite;
+      }
+
+      .sf-energy-particle {
+        stroke-dasharray: 260 620;
+        animation: sfEnergyRun 3.2s linear infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .sf-glyph-root, .sf-neon-ambient, .sf-energy-particle {
+          animation: none !important;
+        }
+      }
+    </style>
+
+    <!-- Superfícies Metálicas Dark Titanium -->
+    <linearGradient id="sfDarkTopFacet" x1="160" y1="120" x2="420" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#343842" />
+      <stop offset="50%" stop-color="#202228" />
+      <stop offset="100%" stop-color="#141519" />
+    </linearGradient>
+
+    <linearGradient id="sfDarkLateralFacet" x1="180" y1="200" x2="440" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1b1c21" />
+      <stop offset="70%" stop-color="#101114" />
+      <stop offset="100%" stop-color="#08090a" />
+    </linearGradient>
+
+    <!-- Chanfro Reflexivo nas Arestas -->
+    <linearGradient id="sfChiseledBevel" x1="120" y1="100" x2="480" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Feixe Elétrico Neon Laser -->
+    <linearGradient id="sfBeamLaser" x1="100" y1="100" x2="500" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#39ff14" />
+      <stop offset="45%" stop-color="#a3ff85" />
+      <stop offset="60%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <g class="sf-glyph-root">
+    
+    <!-- 1. Volume 3D Isométrico Lapidado (Facetas Chanfradas em Grafite) -->
+    <g stroke="url(#sfChiseledBevel)" stroke-width="1.2" stroke-linejoin="round">
+      <!-- Bloco Superior: Haste e Ângulos de 45 Graus -->
+      <path d="M 285 85 L 415 160 L 415 210 L 320 265 L 245 220 L 330 170 L 260 130 Z" fill="url(#sfDarkTopFacet)" />
+      <path d="M 415 160 L 440 175 L 440 225 L 415 210 Z" fill="url(#sfDarkLateralFacet)" />
+      
+      <!-- Ponta Superior Cortada em Diamante -->
+      <path d="M 245 220 L 320 265 L 290 315 L 220 245 Z" fill="#181a1f" />
+      <path d="M 290 315 L 320 265 L 340 290 Z" fill="#262931" />
+      
+      <!-- Bloco Inferior: Dobra Inversa e Base -->
+      <path d="M 315 515 L 185 440 L 185 390 L 280 335 L 355 380 L 270 430 L 340 470 Z" fill="url(#sfDarkTopFacet)" />
+      <path d="M 185 440 L 160 425 L 160 375 L 185 390 Z" fill="url(#sfDarkLateralFacet)" />
+      
+      <!-- Ponta Inferior Lapidada -->
+      <path d="M 355 380 L 280 335 L 310 285 L 380 355 Z" fill="#181a1f" />
+      <path d="M 310 285 L 280 335 L 260 310 Z" fill="#262931" />
+
+      <!-- Núcleo de Transição Isométrica Central -->
+      <path d="M 245 220 L 320 265 L 280 335 L 355 380 L 310 405 L 220 350 Z" fill="#111215" opacity="0.95" />
+    </g>
+
+    <!-- 2. Circuitos de Contorno Neon Estático (Brilho Esmeralda/Lima) -->
+    <g class="sf-neon-ambient" stroke="#39ff14" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round">
+      <!-- Rastro Perimetral Superior -->
+      <path d="M 260 130 L 285 85 L 415 160 L 440 175 L 440 225 L 415 210 L 320 265" />
+      <path d="M 260 130 L 330 170 L 245 220 L 290 315" />
+      <!-- Rastro Perimetral Inferior -->
+      <path d="M 340 470 L 315 515 L 185 440 L 160 425 L 160 375 L 185 390 L 280 335" />
+      <path d="M 340 470 L 270 430 L 355 380 L 310 285" />
+    </g>
+
+    <!-- 3. Feixe Dinâmico de Alta Energia (Partícula Contínua em Movimento) -->
+    <g stroke="url(#sfBeamLaser)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+      <path class="sf-energy-particle" 
+            d="M 285 85 L 415 160 L 440 175 L 440 225 L 415 210 L 320 265 L 290 315 L 245 220 L 330 170 L 260 130 L 285 85 M 315 515 L 185 440 L 160 425 L 160 375 L 185 390 L 280 335 L 310 285 L 355 380 L 270 430 L 340 470 L 315 515" />
+    </g>
+
+  </g>
+</svg>

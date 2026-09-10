@@ -1,165 +1,211 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="{{ html_lang }}" class="h-full bg-neutral-950">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudyFlow · Entrar</title>
+  <meta name="color-scheme" content="dark">
+  <title>{{ tr("login.title") }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+            mono: ['SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
   <style>
-    :root{
-      --bg:#050507; --card:rgba(18,19,24,0.62); --line:rgba(255,255,255,0.10);
-      --accent:#d4ff4f; --text:#f4f3f0; --muted:#9b9a96; --input:rgba(255,255,255,0.06);
+    html, body { min-height: 100%; background: #0a0a0a; }
+    body { margin: 0; }
+    [hidden] { display: none !important; }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #f5f5f5;
+      -webkit-box-shadow: 0 0 0 1000px rgba(10, 10, 10, .96) inset;
+      caret-color: #f5f5f5;
+      transition: background-color 9999s ease-out 0s;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{min-height:100vh; background:var(--bg); color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;
-      display:flex; align-items:center; justify-content:center; overflow:hidden;}
-    #bgvideo{position:fixed; inset:0; width:100%; height:100%; object-fit:cover;
-      z-index:-2; filter:brightness(0.45) saturate(1.1);}
-    .bg-fallback{position:fixed; inset:0; z-index:-3;
-      background:radial-gradient(1200px 600px at 70% 20%, rgba(50,90,120,0.35), transparent 60%),
-        radial-gradient(900px 500px at 20% 80%, rgba(120,90,180,0.25), transparent 60%), #050507;}
-    .overlay{position:fixed; inset:0; z-index:-1;
-      background:radial-gradient(circle at 50% 40%, rgba(5,5,7,0.25), rgba(5,5,7,0.88));}
-    .grid-lines{position:fixed; inset:0; z-index:-1; opacity:0.06;
-      background-image:linear-gradient(var(--accent) 1px,transparent 1px),
-                       linear-gradient(90deg,var(--accent) 1px,transparent 1px);
-      background-size:48px 48px;
-      -webkit-mask-image:radial-gradient(circle at 50% 45%, black, transparent 70%);
-      mask-image:radial-gradient(circle at 50% 45%, black, transparent 70%);}
-    .card{width:min(92vw,430px); padding:38px 34px;
-      background:var(--card); border:1px solid var(--line); border-radius:24px;
-      backdrop-filter:blur(24px) saturate(1.2); -webkit-backdrop-filter:blur(24px) saturate(1.2);
-      box-shadow:0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
-      animation:rise .6s cubic-bezier(.2,.8,.2,1);}
-    @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-    .brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:6px}
-    .brand-logo{width:40px;height:40px;border-radius:11px;background:var(--accent);
-      display:flex;align-items:center;justify-content:center}
-    .brand-logo svg{width:22px;height:22px}
-    .brand-name{font-size:22px;font-weight:700;letter-spacing:-.5px}
-    .brand-name span{color:var(--accent)}
-    .subtitle{text-align:center;color:var(--muted);font-size:13.5px;margin:10px 0 24px}
-    .social{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
-    .social a{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;
-      border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.04);
-      color:var(--text);text-decoration:none;font-size:14px;font-weight:600;
-      transition:background .15s ease,transform .15s ease;}
-    .social a:hover{background:rgba(255,255,255,0.10);transform:translateY(-1px)}
-    .social svg{width:18px;height:18px}
-    .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:16px 0}
-    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
-    .field{margin-bottom:14px}
-    .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;
-      font-weight:500;letter-spacing:.2px}
-    .field input{width:100%;padding:13px 15px;border-radius:12px;background:var(--input);
-      border:1px solid var(--line);color:var(--text);font-size:14.5px;outline:none;
-      transition:border .15s ease,background .15s ease;}
-    .field input::placeholder{color:rgba(155,154,150,0.7)}
-    .field input:focus{border-color:var(--accent);background:rgba(255,255,255,0.09)}
-    /* corrige o autofill do navegador (que deixava o campo branco) */
-    input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus{
-      -webkit-text-fill-color:var(--text);
-      -webkit-box-shadow:0 0 0 1000px rgba(26,27,33,0.95) inset;
-      caret-color:var(--text); transition:background-color 9999s ease;}
-    .btn-primary{width:100%;padding:14px;margin-top:4px;border:none;border-radius:12px;
-      background:var(--accent);color:#06080a;font-size:15px;font-weight:700;cursor:pointer;
-      transition:filter .15s ease,transform .15s ease;}
-    .btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
-    .toggle{text-align:center;margin-top:18px;color:var(--muted);font-size:13px}
-    .toggle a{color:var(--accent);text-decoration:none;font-weight:600;cursor:pointer}
-    .error{background:rgba(255,100,100,.12);border:1px solid rgba(255,100,100,.4);
-      color:#ff9b9b;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:16px}
-    .hidden{display:none}
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
   </style>
 </head>
-<body>
-  <div class="bg-fallback"></div>
-  <video id="bgvideo" autoplay muted loop playsinline onerror="this.style.display='none'">
+<body class="min-h-screen overflow-x-hidden bg-neutral-950 text-neutral-100 antialiased selection:bg-lime-300 selection:text-neutral-950 isolate">
+  <div class="fixed inset-0 -z-30 bg-neutral-950" aria-hidden="true"></div>
+
+  <video id="bgvideo" autoplay muted loop playsinline class="fixed inset-0 w-full h-full object-cover pointer-events-none -z-20 opacity-[0.88]" onerror="this.style.display='none'" aria-hidden="true">
     <source src="{{ url_for('static', filename='video/login-bg.mp4') }}" type="video/mp4">
   </video>
-  <div class="overlay"></div>
-  <div class="grid-lines"></div>
 
-  <div class="card">
-    <div class="brand">
-      <div class="brand-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#06080a" stroke-width="2.5">
-          <circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="#06080a"/>
-        </svg>
+  <!-- Video protection: lighter globally, stronger only behind the login card -->
+  <div class="fixed inset-0 -z-10 bg-neutral-950/30" aria-hidden="true"></div>
+  <div class="fixed inset-0 -z-10 pointer-events-none" aria-hidden="true" style="background:radial-gradient(ellipse at center,rgba(10,10,10,.78) 0%,rgba(10,10,10,.62) 25%,rgba(10,10,10,.34) 52%,rgba(10,10,10,.12) 78%,rgba(10,10,10,.05) 100%);"></div>
+  <div class="fixed inset-0 -z-10 pointer-events-none" aria-hidden="true" style="background:linear-gradient(to bottom,rgba(10,10,10,.48) 0%,rgba(10,10,10,.08) 25%,rgba(10,10,10,.08) 72%,rgba(10,10,10,.58) 100%);"></div>
+
+  <main class="relative min-h-screen flex flex-col px-5 py-6 sm:px-6 sm:py-8">
+    <div class="absolute top-6 inset-x-6 flex items-center justify-between z-20 max-w-5xl mx-auto gap-3">
+      <a href="/blueprint" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-900/60 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white text-xs font-mono transition-all backdrop-blur-md shadow-lg group" aria-label="Blueprint e arquitetura técnica">
+        <span class="text-neutral-400 group-hover:text-lime-400 transition-colors" aria-hidden="true">⌘</span>
+        <span class="hidden sm:inline">Blueprint &amp; Arquitetura</span>
+        <span class="sm:hidden">Blueprint</span>
+        <span class="text-[10px] text-neutral-500">v2.4 ↗</span>
+      </a>
+
+      <div class="inline-flex items-center p-1 rounded-full bg-neutral-900/60 border border-white/10 backdrop-blur-md gap-0.5 text-[11px] font-mono text-neutral-400 shadow-lg" role="group" aria-label="{{ tr('language.label') }}">
+        <button type="button" data-lang="pt" aria-pressed="{{ 'true' if locale == 'pt' else 'false' }}" class="px-2.5 py-0.5 rounded-full font-semibold transition-all {% if locale == 'pt' %}bg-white text-black{% else %}hover:text-white{% endif %}">PT</button>
+        <button type="button" data-lang="en" aria-pressed="{{ 'true' if locale == 'en' else 'false' }}" class="px-2.5 py-0.5 rounded-full font-semibold transition-all {% if locale == 'en' %}bg-white text-black{% else %}hover:text-white{% endif %}">EN</button>
+        <button type="button" data-lang="es" aria-pressed="{{ 'true' if locale == 'es' else 'false' }}" class="px-2.5 py-0.5 rounded-full font-semibold transition-all {% if locale == 'es' %}bg-white text-black{% else %}hover:text-white{% endif %}">ES</button>
       </div>
-      <div class="brand-name">Study<span>Flow</span></div>
-    </div>
-    <div class="subtitle" id="subtitle">Inteligência de conteúdo com IA</div>
-
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
-
-    <div class="social">
-      <a href="/auth/google">
-        <svg viewBox="0 0 24 24"><path fill="#fff" d="M21.35 11.1H12v3.2h5.35c-.23 1.4-1.62 4.1-5.35 4.1-3.22 0-5.85-2.66-5.85-5.95S8.78 6.5 12 6.5c1.83 0 3.06.78 3.76 1.45l2.56-2.47C16.7 3.9 14.6 3 12 3 6.98 3 3 6.98 3 12s3.98 9 9 9c5.2 0 8.64-3.65 8.64-8.8 0-.6-.07-1.05-.16-1.5z"/></svg>
-        Continuar com Google
-      </a>
-      <a href="/auth/linkedin">
-        <svg viewBox="0 0 24 24"><path fill="#fff" d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.34 18.34v-8H5.67v8h2.67zM7 9.16a1.55 1.55 0 1 0 0-3.1 1.55 1.55 0 0 0 0 3.1zm11.34 9.18v-4.39c0-2.35-1.25-3.44-2.92-3.44-1.35 0-1.95.74-2.29 1.26v-1.08h-2.67v8h2.67v-4.47c0-1.18.83-1.4 1.18-1.4.69 0 1.36.42 1.36 1.65v4.22h2.67z"/></svg>
-        Continuar com LinkedIn
-      </a>
-      <a href="/auth/instagram">
-        <svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85C2.38 3.92 3.9 2.38 7.15 2.23 8.42 2.17 8.8 2.16 12 2.16zM12 7.4a4.6 4.6 0 1 0 0 9.2 4.6 4.6 0 0 0 0-9.2zm0 7.58a2.98 2.98 0 1 1 0-5.96 2.98 2.98 0 0 1 0 5.96zm4.8-7.76a1.08 1.08 0 1 0 0 2.16 1.08 1.08 0 0 0 0-2.16z"/></svg>
-        Continuar com Instagram
-      </a>
     </div>
 
-    <div class="divider">ou com e-mail</div>
+    <section class="flex flex-1 items-center justify-center pt-20 pb-4" aria-labelledby="login-title">
+      <div class="max-w-sm w-full mx-auto p-8 rounded-3xl bg-neutral-950/72 border border-white/10 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.72)] relative z-10 flex flex-col my-auto">
+        <header class="mb-6">
+          <div class="w-8 h-8 rounded-xl bg-lime-400 text-neutral-950 font-bold flex items-center justify-center text-xs mx-auto mb-3 shadow-[0_0_20px_rgba(212,255,79,0.25)]" aria-hidden="true"><img src="{{ url_for('static', filename='img/logo-animated.svg') }}" alt="" style="width:100%;height:100%;display:block;object-fit:contain"></div>
+          <h1 id="login-title" class="text-xl font-bold tracking-tight text-white text-center">StudyFlow</h1>
+          <p id="subtitle" class="text-xs text-neutral-400 text-center mt-1 leading-relaxed">{{ tr("login.subtitle") }}</p>
+        </header>
 
-    <form method="POST" action="/login" id="loginForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="field">
-        <label for="li-user">E-mail</label>
-        <input id="li-user" type="text" name="username" placeholder="voce@email.com" autocomplete="username" required>
-      </div>
-      <div class="field">
-        <label for="li-pass">Senha</label>
-        <input id="li-pass" type="password" name="password" placeholder="Sua senha" autocomplete="current-password" required>
-      </div>
-      <button class="btn-primary" type="submit">Entrar</button>
-    </form>
+        {% if error %}
+        <div class="mb-4 rounded-xl border border-red-400/20 bg-red-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-red-200" role="alert">
+          {{ error }}
+        </div>
+        {% endif %}
 
-    <form method="POST" action="/signup" id="signupForm" class="hidden">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="field">
-        <label for="su-name">Nome</label>
-        <input id="su-name" type="text" name="name" placeholder="Como devemos te chamar">
-      </div>
-      <div class="field">
-        <label for="su-email">E-mail</label>
-        <input id="su-email" type="email" name="email" placeholder="voce@email.com" autocomplete="email" required>
-      </div>
-      <div class="field">
-        <label for="su-pass">Senha</label>
-        <input id="su-pass" type="password" name="password" placeholder="Mínimo 6 caracteres" minlength="6" autocomplete="new-password" required>
-      </div>
-      <button class="btn-primary" type="submit">Criar conta</button>
-    </form>
+        <div class="flex flex-col">
+          <a href="/auth/google" class="w-full h-10 flex items-center justify-center gap-2.5 rounded-xl bg-neutral-800/50 hover:bg-neutral-800/90 border border-neutral-700/60 text-xs font-medium text-neutral-200 transition-all shadow-sm mb-2.5 focus:outline-none focus:ring-2 focus:ring-white/30">
+            <svg class="w-4 h-4 text-neutral-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.35 11.1H12v3.2h5.35c-.23 1.4-1.62 4.1-5.35 4.1-3.22 0-5.85-2.66-5.85-5.95S8.78 6.5 12 6.5c1.83 0 3.06.78 3.76 1.45l2.56-2.47C16.7 3.9 14.6 3 12 3 6.98 3 3 6.98 3 12s3.98 9 9 9c5.2 0 8.64-3.65 8.64-8.8 0-.6-.07-1.05-.16-1.5z"/></svg>
+            <span>{{ tr("login.google") }}</span>
+          </a>
+          <a href="/auth/linkedin" class="w-full h-10 flex items-center justify-center gap-2.5 rounded-xl bg-neutral-800/50 hover:bg-neutral-800/90 border border-neutral-700/60 text-xs font-medium text-neutral-200 transition-all shadow-sm mb-2.5 focus:outline-none focus:ring-2 focus:ring-white/30">
+            <svg class="w-4 h-4 text-neutral-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.34 18.34v-8H5.67v8h2.67zM7 9.16a1.55 1.55 0 1 0 0-3.1 1.55 1.55 0 0 0 0 3.1zm11.34 9.18v-4.39c0-2.35-1.25-3.44-2.92-3.44-1.35 0-1.95.74-2.29 1.26v-1.08h-2.67v8h2.67v-4.47c0-1.18.83-1.4 1.18-1.4.69 0 1.36.42 1.36 1.65v4.22h2.67z"/></svg>
+            <span>{{ tr("login.linkedin") }}</span>
+          </a>
+          <a href="/auth/instagram" class="w-full h-10 flex items-center justify-center gap-2.5 rounded-xl bg-neutral-800/50 hover:bg-neutral-800/90 border border-neutral-700/60 text-xs font-medium text-neutral-200 transition-all shadow-sm mb-2.5 focus:outline-none focus:ring-2 focus:ring-white/30">
+            <svg class="w-4 h-4 text-neutral-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85C2.38 3.92 3.9 2.38 7.15 2.23 8.42 2.17 8.8 2.16 12 2.16zm0 5.24a4.6 4.6 0 1 0 0 9.2 4.6 4.6 0 0 0 0-9.2zm0 7.58a2.98 2.98 0 1 1 0-5.96 2.98 2.98 0 0 1 0 5.96zm4.8-7.76a1.08 1.08 0 1 0 0 2.16 1.08 1.08 0 0 0 0-2.16z"/></svg>
+            <span>{{ tr("login.instagram") }}</span>
+          </a>
+        </div>
 
-    <div class="toggle" id="toggle">
-      Não tem conta? <a onclick="toMode('signup')">Criar agora</a>
-    </div>
-  </div>
+        <div class="relative flex py-3 items-center text-[10px] uppercase font-mono tracking-widest text-neutral-500" aria-hidden="true">
+          <div class="flex-grow border-t border-neutral-800"></div>
+          <span class="flex-shrink mx-3">{{ tr("login.email_divider") }}</span>
+          <div class="flex-grow border-t border-neutral-800"></div>
+        </div>
+
+        <form method="POST" action="/login" id="loginForm" class="space-y-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="lang" value="{{ locale }}">
+
+          <div>
+            <label for="li-user" class="sr-only">{{ tr("login.email") }}</label>
+            <input id="li-user" type="text" name="username" placeholder="{{ tr('login.email_placeholder') }}" autocomplete="username" required class="w-full px-3.5 py-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 text-xs text-neutral-100 placeholder:text-neutral-600 outline-none transition-all font-sans">
+          </div>
+          <div>
+            <label for="li-pass" class="sr-only">{{ tr("login.password") }}</label>
+            <input id="li-pass" type="password" name="password" placeholder="{{ tr('login.password_placeholder') }}" autocomplete="current-password" required class="w-full px-3.5 py-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 text-xs text-neutral-100 placeholder:text-neutral-600 outline-none transition-all font-sans">
+          </div>
+          <button type="submit" class="w-full h-10 rounded-xl bg-white text-neutral-950 hover:bg-neutral-200 text-xs font-semibold tracking-wide transition-all shadow-md mt-3 focus:outline-none focus:ring-2 focus:ring-white/40">{{ tr("login.submit") }}</button>
+        </form>
+
+        <form method="POST" action="/signup" id="signupForm" class="space-y-3" hidden>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="lang" value="{{ locale }}">
+
+          <div>
+            <label for="su-name" class="sr-only">{{ tr("login.name") }}</label>
+            <input id="su-name" type="text" name="name" placeholder="{{ tr('login.name_placeholder') }}" autocomplete="name" class="w-full px-3.5 py-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 text-xs text-neutral-100 placeholder:text-neutral-600 outline-none transition-all font-sans">
+          </div>
+          <div>
+            <label for="su-email" class="sr-only">{{ tr("login.email") }}</label>
+            <input id="su-email" type="email" name="email" placeholder="{{ tr('login.email_placeholder') }}" autocomplete="email" required class="w-full px-3.5 py-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 text-xs text-neutral-100 placeholder:text-neutral-600 outline-none transition-all font-sans">
+          </div>
+          <div>
+            <label for="su-pass" class="sr-only">{{ tr("login.password") }}</label>
+            <input id="su-pass" type="password" name="password" placeholder="{{ tr('login.password_new') }}" minlength="6" autocomplete="new-password" required class="w-full px-3.5 py-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 text-xs text-neutral-100 placeholder:text-neutral-600 outline-none transition-all font-sans">
+          </div>
+          <button type="submit" class="w-full h-10 rounded-xl bg-white text-neutral-950 hover:bg-neutral-200 text-xs font-semibold tracking-wide transition-all shadow-md mt-3 focus:outline-none focus:ring-2 focus:ring-white/40">{{ tr("login.signup") }}</button>
+        </form>
+
+        <div class="text-xs text-neutral-400 text-center mt-4" id="toggle">
+          <span id="toggleLead">{{ tr("login.no_account") }}</span>
+          <button type="button" id="toggleAction" class="font-medium text-white hover:underline cursor-pointer ml-1">{{ tr("login.create_now") }}</button>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const login = document.getElementById('loginForm');
-    const signup = document.getElementById('signupForm');
-    const toggle = document.getElementById('toggle');
-    const subtitle = document.getElementById('subtitle');
-    function toMode(m){
-      const isSignup = m === 'signup';
-      login.classList.toggle('hidden', isSignup);
-      signup.classList.toggle('hidden', !isSignup);
-      subtitle.textContent = isSignup ? 'Crie sua conta em segundos' : 'Inteligência de conteúdo com IA';
-      toggle.innerHTML = isSignup
-        ? 'Já tem conta? <a onclick="toMode(\'login\')">Entrar</a>'
-        : 'Não tem conta? <a onclick="toMode(\'signup\')">Criar agora</a>';
-    }
-    {% if mode == 'signup' %}toMode('signup');{% endif %}
+    (() => {
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const subtitle = document.getElementById('subtitle');
+      const toggleLead = document.getElementById('toggleLead');
+      const toggleAction = document.getElementById('toggleAction');
+      const copy = {
+        loginSubtitle: {{ tr("login.subtitle")|tojson }},
+        signupSubtitle: {{ tr("login.signup_subtitle")|tojson }},
+        noAccount: {{ tr("login.no_account")|tojson }},
+        createNow: {{ tr("login.create_now")|tojson }},
+        haveAccount: {{ tr("login.have_account")|tojson }},
+        signIn: {{ tr("login.submit")|tojson }}
+      };
+      let mode = {{ (mode if mode else 'login')|tojson }};
+
+      function renderMode(nextMode) {
+        mode = nextMode === 'signup' ? 'signup' : 'login';
+        const isSignup = mode === 'signup';
+        loginForm.hidden = isSignup;
+        signupForm.hidden = !isSignup;
+        subtitle.textContent = isSignup ? copy.signupSubtitle : copy.loginSubtitle;
+        toggleLead.textContent = isSignup ? copy.haveAccount : copy.noAccount;
+        toggleAction.textContent = isSignup ? copy.signIn : copy.createNow;
+        toggleAction.setAttribute('aria-label', isSignup ? copy.signIn : copy.createNow);
+      }
+
+      toggleAction.addEventListener('click', () => renderMode(mode === 'signup' ? 'login' : 'signup'));
+
+      async function changeLanguage(lang) {
+        const selected = String(lang || '').toLowerCase();
+        if (!['pt', 'en', 'es'].includes(selected)) return;
+        document.querySelectorAll('[data-lang]').forEach(button => { button.disabled = true; });
+        try {
+          const response = await fetch('/api/i18n/language', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+            credentials: 'same-origin',
+            body: JSON.stringify({lang: selected})
+          });
+          if (!response.ok) throw new Error('language_change_failed');
+          const url = new URL(window.location.href);
+          url.searchParams.set('lang', selected);
+          if (mode === 'signup') url.searchParams.set('mode', 'signup');
+          else url.searchParams.delete('mode');
+          window.location.assign(url.toString());
+        } catch (_) {
+          const fallback = new URL('/login', window.location.origin);
+          fallback.searchParams.set('lang', selected);
+          if (mode === 'signup') fallback.searchParams.set('mode', 'signup');
+          window.location.assign(fallback.toString());
+        }
+      }
+
+      document.querySelectorAll('[data-lang]').forEach(button => {
+        button.addEventListener('click', () => changeLanguage(button.dataset.lang));
+      });
+
+      renderMode(mode);
+    })();
   </script>
 </body>
 </html>

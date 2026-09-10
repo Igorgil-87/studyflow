@@ -4649,3 +4649,113 @@ img,video,svg{max-width:100%}
   .cx-georgina-art{opacity:.18}
   .cx-mode-cards .cx-mode-btn{grid-template-columns:38px minmax(0,1fr) 18px}
 }
+
+/* ==========================================================================\n   HOME UX — compact dashboard / floating resume dock\n   ========================================================================== */
+.homeux-shell{
+  width:min(1240px,calc(100% - 56px));
+  min-height:100dvh;
+  padding:18px 0 18px;
+  gap:18px;
+}
+.homeux-start{
+  display:flex;
+  flex:1;
+  min-height:0;
+  flex-direction:column;
+  justify-content:center;
+  gap:14px;
+}
+.homeux-intro{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:28px;
+  padding:0 2px;
+}
+.homeux-intro h1{
+  margin:5px 0 0;
+  color:#f7f8fa;
+  font-size:clamp(1.55rem,2.4vw,2.25rem);
+  line-height:1;
+  letter-spacing:-.045em;
+}
+.homeux-intro p{
+  margin:0 0 2px;
+  max-width:390px;
+  color:#9199a5;
+  font-size:12px;
+  line-height:1.45;
+  text-align:right;
+}
+.homeux-paths{
+  width:100%;
+  align-items:stretch;
+}
+.homeux-path{
+  min-height:355px;
+}
+
+.homeux-resume{
+  position:fixed;
+  right:max(24px,env(safe-area-inset-right));
+  bottom:max(24px,env(safe-area-inset-bottom));
+  z-index:40;
+  width:min(340px,calc(100vw - 32px));
+  filter:drop-shadow(0 20px 45px rgba(0,0,0,.38));
+}
+.homeux-resume[hidden]{display:none!important}
+.homeux-resume-pill{
+  width:100%;
+  min-height:58px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:10px;
+  padding:9px 12px;
+  border:1px solid rgba(207,255,71,.28);
+  border-radius:18px;
+  background:rgba(10,14,12,.82);
+  color:#f5f7f6;
+  backdrop-filter:blur(18px) saturate(125%);
+  -webkit-backdrop-filter:blur(18px) saturate(125%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+  cursor:pointer;
+  text-align:left;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.homeux-resume-pill:hover{transform:translateY(-2px);border-color:rgba(207,255,71,.48);background:rgba(13,18,14,.9)}
+.homeux-resume-dot{width:9px;height:9px;border-radius:999px;background:#cfff47;box-shadow:0 0 14px rgba(207,255,71,.7)}
+.homeux-resume-pill-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
+.homeux-resume-pill-copy small{color:#9ba3ad;font-size:8px;font-weight:800;letter-spacing:.13em}
+.homeux-resume-pill-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f7f8fa;font-size:12px;font-weight:700}
+.homeux-resume-percent{padding:5px 7px;border-radius:999px;background:rgba(255,255,255,.055);color:#cfff47;font-size:10px;font-weight:800}
+.homeux-resume-chevron{color:#8f98a3;font-size:12px}
+.homeux-resume-panel{
+  padding:17px;
+  border:1px solid rgba(207,255,71,.28);
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(14,19,15,.94),rgba(7,9,12,.95));
+  backdrop-filter:blur(22px) saturate(120%);
+  -webkit-backdrop-filter:blur(22px) saturate(120%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+}
+.homeux-resume-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.homeux-resume-panel .homeux-status{margin:0}
+.homeux-resume-close{width:28px;height:28px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.035);color:#9ca4ae;cursor:pointer;font-size:15px;line-height:1}
+.homeux-resume-close:hover{color:#fff;background:rgba(255,255,255,.07)}
+.homeux-resume-panel h2{margin:0;color:#f7f8fa;font-size:19px;line-height:1.12;letter-spacing:-.035em}
+.homeux-resume-panel p{margin:6px 0 13px;color:#9fa7b1;font-size:11px;line-height:1.45}
+.homeux-resume-panel .homeux-primary-btn{width:100%;min-height:42px;margin-top:13px;box-sizing:border-box}
+.homeux-resume-panel .homeux-progress-meta{margin-top:0}
+
+@media (max-width:900px){
+  .homeux-start{justify-content:flex-start}
+  .homeux-intro{align-items:flex-start;flex-direction:column;gap:5px}
+  .homeux-intro p{text-align:left;max-width:520px}
+  .homeux-path{min-height:235px}
+}
+@media (max-width:639px){
+  .homeux-intro h1{font-size:1.75rem}
+  .homeux-intro p{font-size:11px}
+  .homeux-resume{right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:calc(100vw - 24px)}
+}

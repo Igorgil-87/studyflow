@@ -49,6 +49,7 @@ from obs import report as obs_report
 from tools import TrendFetcherTool, CATEGORIES as TREND_CATEGORIES
 from tools import cookies_config
 from production import health as production_health
+import platform_i18n
 
 load_dotenv()
 
@@ -68,6 +69,46 @@ app.config.update(
 )
 CORS(app)
 
+
+def _current_locale():
+    return platform_i18n.normalize_locale(session.get("lang")) or platform_i18n.DEFAULT
+
+
+@app.before_request
+def _resolve_platform_locale():
+    """Resolve UI language without forcing form parsing on arbitrary API requests."""
+    raw_locale = request.args.get("lang")
+    if not raw_locale and request.method == "POST" and request.path in {"/login", "/signup", "/mfa"}:
+        raw_locale = request.form.get("lang")
+    explicit = platform_i18n.normalize_locale(raw_locale)
+    if explicit:
+        session["lang"] = explicit
+        return None
+    current = platform_i18n.normalize_locale(session.get("lang"))
+    if current:
+        return None
+    cookie = platform_i18n.normalize_locale(request.cookies.get(platform_i18n.COOKIE))
+    if cookie:
+        session["lang"] = cookie
+        return None
+    best = request.accept_languages.best_match(list(platform_i18n.SUPPORTED))
+    session["lang"] = platform_i18n.normalize_locale(best) or platform_i18n.DEFAULT
+    return None
+
+
+@app.context_processor
+def _inject_platform_locale():
+    loc = _current_locale()
+    return {
+        "locale": loc,
+        "html_lang": platform_i18n.HTML_LANG[loc],
+        "supported_locales": platform_i18n.SUPPORTED,
+        "tr": lambda key, **values: platform_i18n.tr(loc, key, **values),
+    }
+
+
+app.jinja_env.globals["tr"] = lambda key, **values: platform_i18n.tr(_current_locale(), key, **values)
+
 @app.after_request
 def _security_headers(response):
     """Baseline browser hardening without a CSP that would break legacy inline UI."""
@@ -75,6 +116,12 @@ def _security_headers(response):
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    loc = _current_locale()
+    response.headers.setdefault("Content-Language", platform_i18n.HTML_LANG[loc])
+    response.set_cookie(
+        platform_i18n.COOKIE, loc, max_age=31536000, samesite="Lax",
+        secure=app.config.get("SESSION_COOKIE_SECURE", False), httponly=False,
+    )
     return response
 
 # CSRF só nos formulários HTML reais (login/signup/MFA); rotas de
@@ -93,6 +140,32 @@ obs_db.init()
 
 def sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+# ── Platform language ───────────────────────────────────────────────────────
+@app.route("/api/i18n/language", methods=["GET", "POST"])
+def platform_language():
+    """Public UI-preference endpoint. Keeps the selected locale in session + cookie."""
+    payload = request.get_json(silent=True) or {}
+    requested = request.values.get("lang") or payload.get("lang")
+    loc = platform_i18n.normalize_locale(requested)
+    if not loc:
+        return jsonify({"ok": False, "error": "unsupported_locale",
+                        "supported": list(platform_i18n.SUPPORTED)}), 400
+    session["lang"] = loc
+    response = jsonify({"ok": True, "locale": loc, "html_lang": platform_i18n.HTML_LANG[loc]})
+    response.set_cookie(
+        platform_i18n.COOKIE, loc, max_age=31536000, samesite="Lax",
+        secure=app.config.get("SESSION_COOKIE_SECURE", False), httponly=False,
+    )
+    return response
+
+
+# ── Public Blueprint / Author Portal ──────────────────────────────────────
+@app.route("/blueprint")
+def blueprint_portal():
+    """Public author + StudyFlow project portal opened from the login screen."""
+    return render_template("blueprint.html")
 
 
 # ── Auth ─────────────────────────────────────────────────────────────────
@@ -165,9 +238,12 @@ def login():
             if auth_mfa.is_enabled() and user.get("email"):
                 return _start_mfa(user)
             return _finish_login(user.get("name") or username)
-        return render_template("login.html", error="Usuário ou senha incorretos.",
-                               providers=OAUTH_PROVIDERS)
-    return render_template("login.html", providers=OAUTH_PROVIDERS)
+        return render_template(
+            "login.html", error=platform_i18n.tr(_current_locale(), "auth.invalid"),
+            providers=OAUTH_PROVIDERS,
+        )
+    mode = "signup" if request.args.get("mode") == "signup" else "login"
+    return render_template("login.html", providers=OAUTH_PROVIDERS, mode=mode)
 
 
 @app.route("/signup", methods=["POST"])
@@ -179,8 +255,10 @@ def signup():
     try:
         user = auth_users.create_local_user(email, password, name)
     except ValueError as e:
-        return render_template("login.html", error=str(e), mode="signup",
-                               providers=OAUTH_PROVIDERS)
+        return render_template(
+            "login.html", error=platform_i18n.translate_auth_error(_current_locale(), str(e)),
+            mode="signup", providers=OAUTH_PROVIDERS,
+        )
     if auth_mfa.is_enabled() and user.get("email"):
         return _start_mfa(user)
     return _finish_login(user.get("name") or email)

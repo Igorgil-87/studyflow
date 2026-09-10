@@ -11,7 +11,7 @@
 </head>
 <body data-module="neutral">
 <div class="grain"></div>{% include 'partials/_mobile_header.html' %}
-<aside class="sidebar" id="appSidebar" aria-label="Navegação principal"><div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>{% set active='system' %}{% include 'partials/_sidebar.html' %}</aside>
+<aside class="sidebar" id="appSidebar" aria-label="Navegação principal"><div class="brand"><div class="brand-mark"><img src="{{ url_for('static', filename='img/logo-animated.svg') }}" alt="" aria-hidden="true" style="width:100%;height:100%;display:block;object-fit:contain"></div><span class="brand-name">Study<em>Flow</em></span></div>{% set active='system' %}{% include 'partials/_sidebar.html' %}</aside>
 <main class="stage sys-wrap">
   <div class="topline"><div><div class="head-tag">Production Engineering</div><h1 class="cat-title">System Health &amp; Readiness</h1><p class="cat-sub">Liveness, readiness, infraestrutura, fila e SLOs observados sem consumir chamadas pagas de IA.</p></div><button class="refresh" id="refreshBtn">Atualizar</button></div>
   <section class="sys-grid">

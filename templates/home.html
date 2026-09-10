@@ -17,7 +17,7 @@
   <main class="homev3-shell homeux-shell" id="mainContent" tabindex="-1">
     <header class="homev3-topbar">
       <a href="/" class="homev3-brand" aria-label="StudyFlow — início">
-        <span class="homev3-brand-mark" aria-hidden="true"></span>
+        <span class="homev3-brand-mark" aria-hidden="true"><img src="{{ url_for('static', filename='img/logo-animated.svg') }}" alt="" style="width:100%;height:100%;display:block;object-fit:contain"></span>
         <span>Study<span>Flow</span></span>
       </a>
       <nav class="homev3-top-actions" aria-label="Ações da conta">
@@ -30,25 +30,13 @@
       </nav>
     </header>
 
-    <section class="homeux-continue" id="continueSection" hidden aria-live="polite" aria-labelledby="continueHeading">
-      <div class="homeux-section-label" id="continueHeading">CONTINUE DE ONDE PAROU</div>
-      <div class="homeux-continue-card">
-        <div class="homeux-continue-main">
-          <span class="homeux-status"><span class="continue-dot" aria-hidden="true"></span> Em andamento</span>
-          <h2 id="continueTitle">—</h2>
-          <p id="continueSub">—</p>
-          <div class="homeux-progress-meta"><span id="continueAula"></span><strong id="continuePct">0% concluído</strong></div>
-          <div class="homeux-progress" aria-hidden="true"><span id="continueBar"></span></div>
-        </div>
-        <a href="/curso" class="homeux-primary-btn ux-action ux-action-primary" data-action-level="primary" data-ux-event="continue_learning_click">Continuar <span aria-hidden="true">→</span></a>
-      </div>
-    </section>
-
     <section class="homeux-start" aria-labelledby="homeux-title">
-      <div class="homeux-hero">
-        <span class="homeux-section-label" id="startLabel">COMECE ALGO NOVO</span>
-        <h1 id="homeux-title">O que você quer fazer <em>agora?</em></h1>
-        <p>Escolha o que você quer fazer agora. O StudyFlow guia você pelo próximo passo.</p>
+      <div class="homeux-intro">
+        <div>
+          <span class="homeux-section-label">SEU PRÓXIMO PASSO</span>
+          <h1 id="homeux-title">Escolha um caminho.</h1>
+        </div>
+        <p>Aprenda, crie ou encontre a próxima oportunidade.</p>
       </div>
 
       <div class="homeux-paths" aria-label="Escolha seu objetivo">
@@ -96,6 +84,26 @@
       </div>
     </section>
 
+    <aside class="homeux-resume" id="continueSection" hidden aria-live="polite" aria-label="Retomar curso">
+      <button class="homeux-resume-pill" id="resumePill" type="button" aria-expanded="false" aria-controls="resumePanel">
+        <span class="homeux-resume-dot" aria-hidden="true"></span>
+        <span class="homeux-resume-pill-copy"><small>RETOMAR</small><strong id="resumePillTitle">Curso em andamento</strong></span>
+        <span class="homeux-resume-percent" id="resumePillPct">0%</span>
+        <span class="homeux-resume-chevron" aria-hidden="true">⌃</span>
+      </button>
+      <div class="homeux-resume-panel" id="resumePanel" hidden>
+        <div class="homeux-resume-panel-head">
+          <span class="homeux-status"><span class="continue-dot" aria-hidden="true"></span> Em andamento</span>
+          <button type="button" class="homeux-resume-close" id="resumeClose" aria-label="Minimizar curso em andamento">—</button>
+        </div>
+        <h2 id="continueTitle">—</h2>
+        <p id="continueSub">—</p>
+        <div class="homeux-progress-meta"><span id="continueAula"></span><strong id="continuePct">0% concluído</strong></div>
+        <div class="homeux-progress" aria-hidden="true"><span id="continueBar"></span></div>
+        <a href="/curso" class="homeux-primary-btn ux-action ux-action-primary" data-action-level="primary" data-ux-event="continue_learning_click">Continuar <span aria-hidden="true">→</span></a>
+      </div>
+    </aside>
+
     <footer class="homev3-community homeux-community" id="community" aria-label="Redes sociais">
       <span class="homev3-community-label">Acompanhe o StudyFlow</span>
       <a href="https://www.instagram.com/igorgil.ai" class="homev3-social social-instagram" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Igor Gil"><span class="social-icon">◎</span><span>Instagram</span><b>↗</b></a>
@@ -119,15 +127,38 @@
         var c = d.curso;
         if(!c) return;
         var sec = document.getElementById('continueSection');
-        document.getElementById('continueTitle').textContent = c.titulo || 'Curso em andamento';
+        var title = c.titulo || 'Curso em andamento';
+        document.getElementById('continueTitle').textContent = title;
         document.getElementById('continueSub').textContent = c.subtitulo || 'Retome sua jornada de estudo.';
+        document.getElementById('resumePillTitle').textContent = title;
         var pct = Math.max(0, Math.min(100, Number(c.progresso) || 0));
         document.getElementById('continuePct').textContent = pct + '% concluído';
+        document.getElementById('resumePillPct').textContent = pct + '%';
         document.getElementById('continueBar').style.width = pct + '%';
         document.getElementById('continueAula').textContent = c.aula_atual ? 'Aula atual: ' + c.aula_atual : 'Curso em andamento';
         sec.hidden = false;
-        document.getElementById('startLabel').textContent = 'OU COMECE ALGO NOVO';
       }).catch(function(){});
+
+      var resume = document.getElementById('continueSection');
+      var resumePill = document.getElementById('resumePill');
+      var resumePanel = document.getElementById('resumePanel');
+      var resumeClose = document.getElementById('resumeClose');
+      function setResumeOpen(open){
+        if(!resumePill || !resumePanel) return;
+        resumePanel.hidden = !open;
+        resumePill.hidden = open;
+        resumePill.setAttribute('aria-expanded', open ? 'true' : 'false');
+        try { localStorage.setItem('studyflow.resume.open', open ? '1' : '0'); } catch(_) {}
+      }
+      if(resumePill){
+        resumePill.addEventListener('click', function(){ setResumeOpen(true); track('continue_widget_expand'); });
+      }
+      if(resumeClose){
+        resumeClose.addEventListener('click', function(){ setResumeOpen(false); track('continue_widget_collapse'); });
+      }
+      try {
+        if(localStorage.getItem('studyflow.resume.open') === '1') setResumeOpen(true);
+      } catch(_) {}
     })();
   </script>
 </body>

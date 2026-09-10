@@ -1,47 +1,93 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="bg-[#09090b]">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>StudyFlow · GenAI Case Cockpit</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>StudyFlow · AI Engineering Defense Cockpit</title>
   {% include 'partials/_fonts.html' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={corePlugins:{preflight:false},theme:{extend:{colors:{obsidian:'#09090b',compute:'#d4ff4f',healthy:'#10b981',creative:'#a855f7',danger:'#f43f5e'},fontFamily:{sans:['Geist','Inter','ui-sans-serif','system-ui'],mono:['Geist Mono','SFMono-Regular','Menlo','monospace']}}}};</script>
+  <script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({startOnLoad:true,theme:'dark',securityLevel:'strict',themeVariables:{background:'#09090b',primaryColor:'#141416',primaryTextColor:'#f5f5f5',primaryBorderColor:'#2b2b30',lineColor:'#6b7280',secondaryColor:'#111113',tertiaryColor:'#0f1012',fontFamily:'Geist Mono, monospace'}});window.studyflowMermaid=mermaid;</script>
   <style>
-    .case-wrap{max-width:1180px}.hero{display:grid;grid-template-columns:1.5fr .7fr;gap:16px;align-items:stretch}.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}.hero-main{padding:24px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:800}.hero h1{font-size:clamp(30px,5vw,58px);line-height:.96;margin:10px 0 14px;letter-spacing:-.04em}.hero p{max-width:760px;color:var(--text-2);line-height:1.65}.coverage{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.coverage .n{font-size:54px;font-weight:850;letter-spacing:-.05em}.coverage .ok{color:var(--accent)}.muted{font-size:12px;color:var(--text-3);line-height:1.55}.section{margin-top:22px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:10px}.section h2{font-size:18px;margin:0}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.metric{min-height:108px}.metric .v{font-size:28px;font-weight:780;margin-top:7px}.metric .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3)}.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:10px}.pill.ok{color:var(--accent)}.pill.bad{color:#ff7777}.pill.warn{color:#ffbf69}.architecture{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;overflow:auto}.layer{min-width:150px;position:relative}.layer h3{font-size:12px;margin:0 0 10px;color:var(--accent)}.layer ul{padding-left:16px;margin:0;color:var(--text-2);font-size:11px;line-height:1.7}.req-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.req{display:flex;gap:12px;align-items:flex-start}.req .mark{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);flex:none;font-weight:800}.req.covered .mark{color:var(--accent)}.req h3{font-size:13px;margin:0 0 5px}.evidence{font-size:10px;color:var(--text-3);margin-top:6px;word-break:break-word}.links{display:flex;gap:8px;flex-wrap:wrap}.link-btn{display:inline-flex;padding:8px 11px;border-radius:10px;border:1px solid var(--line);color:var(--text-1);text-decoration:none;font-size:11px}.link-btn:hover{border-color:var(--accent)}.bar{height:7px;background:var(--line);border-radius:10px;overflow:hidden;margin-top:8px}.bar>span{height:100%;display:block;background:var(--accent)}.topline{display:flex;justify-content:space-between;gap:10px;align-items:flex-end;margin-bottom:16px}.refresh{border:0;background:var(--accent);color:#11140d;padding:9px 12px;border-radius:10px;font-weight:750;cursor:pointer}.footnote{border-left:3px solid var(--accent);padding-left:12px}.status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.status-row:last-child{border-bottom:0}@media(max-width:980px){.hero{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.architecture{grid-template-columns:repeat(3,minmax(160px,1fr))}.req-grid{grid-template-columns:1fr}}@media(max-width:600px){.metrics{grid-template-columns:1fr}.architecture{grid-template-columns:1fr}.topline{align-items:flex-start;flex-direction:column}.hero-main{padding:18px}}
-  </style>
+    :root{color-scheme:dark}.case-defense{max-width:1440px}.case-doc-nav{position:sticky;top:14px;z-index:40;display:flex;gap:4px;width:max-content;max-width:100%;margin:0 auto 22px;padding:5px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(12,12,14,.78);backdrop-filter:blur(24px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 60px rgba(0,0,0,.4);overflow:auto}.case-act-btn{border:0;background:transparent;color:#8b8b93;font:600 11px/1.2 'Geist Mono',monospace;padding:10px 14px;border-radius:999px;white-space:nowrap;cursor:pointer;transition:.2s ease}.case-act-btn:hover{color:#fff;background:rgba(255,255,255,.045)}.case-act-btn.is-active{background:#f5f5f5;color:#09090b;box-shadow:0 5px 22px rgba(0,0,0,.32)}.case-act[hidden]{display:none!important}.case-act.is-entering{animation:caseFade .28s ease both}@keyframes caseFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.lux-card{background:rgba(23,23,26,.52);border:1px solid rgba(255,255,255,.08);border-radius:24px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 24px 70px rgba(0,0,0,.22);backdrop-filter:blur(24px)}.micro{font:600 10px/1.3 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#73737c}.metric-num{font-variant-numeric:tabular-nums}.tech-table{width:100%;border-collapse:collapse}.tech-table th{font:600 10px/1.2 'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.09em;color:#71717a;background:rgba(0,0,0,.28);text-align:left}.tech-table th,.tech-table td{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.055);vertical-align:top}.tech-table tr:last-child td{border-bottom:0}.cap-card{border:1px solid rgba(255,255,255,.07);background:rgba(9,9,11,.46);border-radius:16px;padding:14px;min-height:118px}.cap-path{font:500 9px/1.4 'Geist Mono',monospace;color:#666672;margin-top:7px;word-break:break-word}.case-subtabs{display:flex;gap:4px;flex-wrap:wrap}.case-subtab{border:1px solid rgba(255,255,255,.07);background:rgba(9,9,11,.45);color:#91919a;border-radius:10px;padding:8px 10px;font:600 10px/1 'Geist Mono',monospace;cursor:pointer}.case-subtab.is-active{color:#09090b;background:#d4ff4f;border-color:#d4ff4f}.case-subpanel[hidden]{display:none!important}.status-pill{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:5px 8px;font:600 9px/1 'Geist Mono',monospace}.status-ok{color:#34d399}.status-bad{color:#fb7185}.status-warn{color:#fbbf24}.defense-bg:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 75% 8%,rgba(16,185,129,.055),transparent 28%),radial-gradient(circle at 15% 90%,rgba(212,255,79,.035),transparent 30%);z-index:-1}@media(max-width:760px){.case-doc-nav{margin-inline:0;border-radius:18px}.case-act-btn{padding:9px 10px}.tech-table{min-width:760px}}
+  .case-public-header{position:relative;z-index:50;max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 24px}.case-public-brand{display:inline-flex;align-items:center;gap:10px;color:#f5f5f5;text-decoration:none;font:650 14px/1 Geist,Inter,sans-serif}.case-public-brand>span>span{color:#d4ff4f}.case-public-meta{display:flex;align-items:center;gap:8px}.case-diagram-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(0,0,0,.22)}.case-diagram-tab{border:0;background:transparent;color:#85858d;border-radius:10px;padding:8px 10px;font:600 10px/1 'Geist Mono',monospace;cursor:pointer}.case-diagram-tab:hover{color:#fff;background:rgba(255,255,255,.04)}.case-diagram-tab.is-active{background:#d4ff4f;color:#09090b}.case-diagram-canvas{overflow:auto;min-height:460px;border:1px solid rgba(255,255,255,.07);border-radius:18px;background:rgba(0,0,0,.3);padding:20px}.case-diagram-canvas svg{max-width:100%;height:auto;margin:auto}@media(max-width:700px){.case-public-header{padding:14px 16px}.case-public-meta .status-pill{display:none}}</style>
 </head>
-<body data-module="neutral">
-<div class="grain"></div>{% include 'partials/_mobile_header.html' %}
-<aside class="sidebar" id="appSidebar" aria-label="Navegação principal"><div class="brand"><div class="brand-mark">◐</div><span class="brand-name">Study<em>Flow</em></span></div>{% set active='case' %}{% include 'partials/_sidebar.html' %}</aside>
-<main class="stage case-wrap">
-  <div class="topline"><div><div class="head-tag">GenAI Engineering Case</div><div class="cat-sub">Cockpit de evidências para apresentação e auditoria técnica.</div></div><button class="refresh" id="refreshBtn">Atualizar evidências</button></div>
+<body data-module="neutral" class="defense-bg bg-[#09090b] text-neutral-100 antialiased">
+<div class="grain"></div>
+<header class="case-public-header">
+  <a href="/login" class="case-public-brand" aria-label="Voltar ao StudyFlow">
+    <img src="{{ url_for('static', filename='img/logo-animated.svg') }}" alt="StudyFlow" class="h-8 w-8 object-contain">
+    <span>Study<span>Flow</span></span>
+  </a>
+  <div class="case-public-meta"><span class="status-pill status-ok">● PROJETO COLABORATIVO</span><a href="/login" class="link-btn">Entrar no StudyFlow →</a></div>
+</header>
 
-  <section class="hero">
-    <div class="panel hero-main"><div class="eyebrow">StudyFlow · Knowledge-to-Learning</div><h1>Conhecimento bruto em aprendizagem mensurável.</h1><p id="problem">Carregando problema de negócio...</p><div class="links" id="links" style="margin-top:16px"></div></div>
-    <div class="panel coverage"><div class="muted">Cobertura com evidência</div><div class="n" id="coverage">—</div><div class="muted" id="coverageDetail">calculando...</div><div class="bar" style="width:100%"><span id="coverageBar" style="width:0%"></span></div></div>
-  </section>
+<main class="case-defense mx-auto w-full px-4 pb-12 sm:px-6 lg:px-8" id="caseMain">
+  <header class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div><div class="micro text-emerald-400">AI Engineering Defense Cockpit</div><h1 class="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">StudyFlow · Engenharia que pode ser defendida.</h1><p class="mt-2 max-w-3xl text-xs leading-5 text-neutral-500">Uma narrativa executiva em cinco atos: autoria, propósito, produto, inteligência e operação.</p></div>
+    <div class="flex flex-wrap gap-2 text-[10px] font-mono"><a href="/rag" class="link-btn">RAG</a><a href="/obs" class="link-btn">Observabilidade</a><a href="/security" class="link-btn">Security</a><a href="/models" class="link-btn">Models</a><a href="/creator-os" class="link-btn">Creator OS</a><button class="refresh" id="refreshBtn" type="button">Atualizar evidências</button></div>
+  </header>
 
-  <section class="section"><div class="section-head"><div><div class="eyebrow">Live evidence</div><h2>Estado do case agora</h2></div><div class="muted">Sem chamadas pagas de LLM ao abrir esta tela.</div></div><div class="metrics">
-    <div class="panel metric"><div class="k">Quality Gate</div><div class="v" id="qualityGate">—</div><div class="muted" id="qualityDetail"></div></div>
-    <div class="panel metric"><div class="k">Groundedness</div><div class="v" id="groundedness">—</div><div class="muted" id="evalSamples"></div></div>
-    <div class="panel metric"><div class="k">Production</div><div class="v" id="production">—</div><div class="muted" id="productionDetail"></div></div>
-    <div class="panel metric"><div class="k">RAG indexed chunks</div><div class="v" id="chunks">—</div><div class="muted">pgvector · best effort</div></div>
-  </div></section>
+  <nav class="case-doc-nav" aria-label="Cinco atos da defesa" role="tablist">
+    <button class="case-act-btn is-active" data-case-act="fundamentos" role="tab" aria-selected="true">01 · Autor &amp; Fundamentos</button>
+    <button class="case-act-btn" data-case-act="genese" role="tab" aria-selected="false">02 · Gênese &amp; Propósito</button>
+    <button class="case-act-btn" data-case-act="creator" role="tab" aria-selected="false">03 · Creator OS &amp; Mídia</button>
+    <button class="case-act-btn" data-case-act="engine" role="tab" aria-selected="false">04 · AI Engine &amp; Trust</button>
+    <button class="case-act-btn" data-case-act="governanca" role="tab" aria-selected="false">05 · Governança &amp; SRE</button>
+  </nav>
 
-  <section class="section panel"><div class="section-head"><div><div class="eyebrow">Architecture</div><h2>Camadas e responsabilidades</h2></div></div><div class="architecture" id="architecture"></div></section>
-
-  <section class="section"><div class="section-head"><div><div class="eyebrow">Requirement → implementation → evidence</div><h2>Matriz de cobertura</h2></div><span class="pill" id="matrixStatus">—</span></div><div class="req-grid" id="requirements"></div></section>
-
-  <section class="section" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px" id="opsGrid">
-    <div class="panel"><div class="eyebrow">Responsible AI</div><h2 style="font-size:16px">Controles</h2><div id="securityRows"></div></div>
-    <div class="panel"><div class="eyebrow">AI Gateway</div><h2 style="font-size:16px">Providers</h2><div id="providerRows"></div></div>
-  </section>
-
-  <section class="section panel footnote"><strong>Regra de apresentação:</strong> documentação não substitui evidência executável. Se uma métrica não tiver amostra suficiente, o StudyFlow mostra <em>insufficient data</em> em vez de fabricar aprovação. Use este cockpit como índice e abra as telas técnicas para provar cada requisito.</section>
+  {% include 'partials/_case_act_01.html' %}
+  {% include 'partials/_case_act_02.html' %}
+  {% include 'partials/_case_act_03.html' %}
+  {% include 'partials/_case_act_04.html' %}
+  {% include 'partials/_case_act_05.html' %}
 </main>
+
 <script>
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pct=v=>v==null?'—':(Number(v)*100).toFixed(1)+'%';
-function gateLabel(g){if(!g||!g.status)return '—';if(g.status==='pass')return 'PASS';if(g.status==='fail')return 'FAIL';return 'INSUFFICIENT';}
-async function load(){const b=document.getElementById('refreshBtn');b.disabled=true;try{const r=await fetch('/api/case/summary');if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();document.getElementById('problem').textContent=d.case?.business_problem||'—';const c=d.coverage||{};document.getElementById('coverage').textContent=(c.coverage_pct??0).toFixed(0)+'%';document.getElementById('coverage').className='n '+(c.all_covered?'ok':'');document.getElementById('coverageDetail').textContent=`${c.covered??0}/${c.total??0} requisitos com artefato verificável`;document.getElementById('coverageBar').style.width=(c.coverage_pct??0)+'%';document.getElementById('matrixStatus').textContent=c.all_covered?'ARTEFATOS COMPLETOS':'GAPS DETECTADOS';document.getElementById('matrixStatus').className='pill '+(c.all_covered?'ok':'bad');document.getElementById('links').innerHTML=Object.entries(d.links||{}).map(([k,v])=>`<a class="link-btn" href="${esc(v)}">${esc(k.toUpperCase())}</a>`).join('');const q=d.quality||{},g=q.gate||{};document.getElementById('qualityGate').textContent=gateLabel(g);document.getElementById('qualityDetail').textContent=g.samples==null?'':`${g.samples} avaliações · ${g.failures?.length||0} falhas de gate`;document.getElementById('groundedness').textContent=pct(q.evals?.avg_groundedness);document.getElementById('evalSamples').textContent=`${q.evals?.count??0} evals registradas`;document.getElementById('production').textContent=d.production?.ready?'READY':'DEGRADED';document.getElementById('productionDetail').textContent=`${(d.production?.checks||[]).filter(x=>x.required&&x.ok).length}/${(d.production?.checks||[]).filter(x=>x.required).length} dependências obrigatórias saudáveis`;document.getElementById('chunks').textContent=q.rag?.indexed_chunks??'—';document.getElementById('architecture').innerHTML=(d.architecture||[]).map(x=>`<div class="layer"><h3>${esc(x.name)}</h3><ul>${(x.items||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join('');document.getElementById('requirements').innerHTML=(d.requirements||[]).map(x=>`<div class="panel req ${x.covered?'covered':''}"><div class="mark">${x.covered?'✓':'!'}</div><div><h3>${esc(x.requirement)}</h3><div class="muted">${esc(x.implementation)}</div><div class="evidence">Evidência: ${(x.evidence||[]).map(esc).join(' · ')}</div></div></div>`).join('');const controls=d.security?.controls||{};document.getElementById('securityRows').innerHTML=Object.entries(controls).map(([k,v])=>`<div class="status-row"><span>${esc(k.replaceAll('_',' '))}</span><span class="pill ${v?'ok':'bad'}">${v?'ON':'OFF'}</span></div>`).join('')||'<div class="muted">Indisponível.</div>';document.getElementById('providerRows').innerHTML=(d.models?.providers||[]).map(p=>`<div class="status-row"><span><strong>${esc(p.provider)}</strong><br><span class="muted">${esc(p.model)}</span></span><span class="pill ${p.configured?'ok':'warn'}">${p.configured?'configured':'not configured'}</span></div>`).join('')||'<div class="muted">Indisponível.</div>';}catch(e){document.getElementById('coverage').textContent='ERROR';document.getElementById('coverageDetail').textContent=e.message;}finally{b.disabled=false}}
-document.getElementById('refreshBtn').addEventListener('click',load);load();
-</script></body></html>
+const ACTS=['fundamentos','genese','creator','engine','governanca'];
+function showCaseAct(name,{updateHash=true}={}){const target=ACTS.includes(name)?name:'fundamentos';document.querySelectorAll('[data-case-act-view]').forEach(el=>{const active=el.dataset.caseActView===target;el.hidden=!active;el.classList.toggle('is-entering',active);if(active)setTimeout(()=>el.classList.remove('is-entering'),320)});document.querySelectorAll('[data-case-act]').forEach(btn=>{const active=btn.dataset.caseAct===target;btn.classList.toggle('is-active',active);btn.setAttribute('aria-selected',String(active))});if(updateHash)history.replaceState(null,'','#'+target);window.scrollTo({top:0,behavior:'smooth'})}
+window.showCaseAct=showCaseAct;
+window.showCaseView=(legacy)=>{const map={author:'fundamentos',overview:'genese',architecture:'engine',evidence:'governanca'};showCaseAct(map[legacy]||legacy)};
+document.querySelectorAll('[data-case-act]').forEach(btn=>btn.addEventListener('click',()=>showCaseAct(btn.dataset.caseAct)));
+function initSubtabs(){document.querySelectorAll('[data-subtabs]').forEach(group=>{const buttons=group.querySelectorAll('[data-subtab]');const scope=group.closest('[data-subtab-scope]')||group.parentElement;buttons.forEach(btn=>btn.addEventListener('click',()=>{buttons.forEach(b=>b.classList.toggle('is-active',b===btn));scope.querySelectorAll('[data-subpanel]').forEach(p=>p.hidden=p.dataset.subpanel!==btn.dataset.subtab)}))})}
+initSubtabs();
+function gateLabel(g){if(!g||!g.status)return '—';if(g.status==='pass')return 'PASS';if(g.status==='fail')return 'FAIL';return 'INSUFFICIENT'}
+async function loadCaseSummary(){const b=document.getElementById('refreshBtn');if(b)b.disabled=true;try{const r=await fetch('/api/case/summary',{headers:{'Accept':'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();const c=d.coverage||{},q=d.quality||{},g=q.gate||{},prod=d.production||{};const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};set('liveCoverage',(c.coverage_pct??0).toFixed(0)+'%');set('liveCoverageDetail',`${c.covered??0}/${c.total??0} requisitos com artefato verificável`);set('liveQuality',gateLabel(g));set('liveGroundedness',pct(q.evals?.avg_groundedness));set('liveProduction',prod.ready?'READY':'DEGRADED');set('liveChunks',q.rag?.indexed_chunks??'—');const bar=document.getElementById('liveCoverageBar');if(bar)bar.style.width=(c.coverage_pct??0)+'%';const req=document.getElementById('liveRequirements');if(req)req.innerHTML=(d.requirements||[]).map(x=>`<div class="rounded-xl border border-white/[0.06] bg-black/20 p-3"><div class="flex items-start gap-3"><span class="status-pill ${x.covered?'status-ok':'status-bad'}">${x.covered?'✓':'!'}</span><div><div class="text-xs font-semibold text-white">${esc(x.requirement)}</div><div class="mt-1 text-[10px] leading-4 text-neutral-500">${esc(x.implementation)}</div><div class="mt-2 font-mono text-[9px] text-neutral-600">${(x.evidence||[]).map(esc).join(' · ')}</div></div></div></div>`).join('')||'<div class="text-xs text-neutral-600">Sem requisitos retornados.</div>';const sec=document.getElementById('liveSecurity');if(sec){const controls=d.security?.controls||{};sec.innerHTML=Object.entries(controls).map(([k,v])=>`<div class="flex items-center justify-between border-b border-white/[0.05] py-2 text-[11px]"><span class="text-neutral-400">${esc(k.replaceAll('_',' '))}</span><span class="status-pill ${v?'status-ok':'status-bad'}">${v?'ON':'OFF'}</span></div>`).join('')||'<span class="text-xs text-neutral-600">Indisponível.</span>'}const providers=document.getElementById('liveProviders');if(providers)providers.innerHTML=(d.models?.providers||[]).map(p=>`<div class="flex items-center justify-between border-b border-white/[0.05] py-2 text-[11px]"><span><strong class="text-neutral-300">${esc(p.provider)}</strong><span class="block font-mono text-[9px] text-neutral-600">${esc(p.model)}</span></span><span class="status-pill ${p.configured?'status-ok':'status-warn'}">${p.configured?'configured':'not configured'}</span></div>`).join('')||'<span class="text-xs text-neutral-600">Indisponível.</span>'}catch(e){const el=document.getElementById('summaryError');if(el){el.textContent='Telemetria indisponível: '+e.message;el.hidden=false}}finally{if(b)b.disabled=false}}
+document.getElementById('refreshBtn')?.addEventListener('click',loadCaseSummary);
+const initial=location.hash.replace('#','');showCaseAct(ACTS.includes(initial)?initial:'fundamentos',{updateHash:false});loadCaseSummary();
+</script>
+
+<script>
+(() => {
+  const buttons=[...document.querySelectorAll('[data-case-diagram]')];
+  const render=document.getElementById('caseDiagramRender');
+  const source=document.getElementById('caseDiagramSource');
+  let seq=0;
+  async function showDiagram(name){
+    const tpl=document.getElementById('diagram-'+name);
+    if(!tpl||!render||!source)return;
+    const code=tpl.content.textContent.trim();
+    source.textContent=code;
+    buttons.forEach(b=>b.classList.toggle('is-active',b.dataset.caseDiagram===name));
+    render.innerHTML='<div class="flex min-h-[390px] items-center justify-center font-mono text-xs text-neutral-600">renderizando arquitetura…</div>';
+    try{
+      const mm=window.studyflowMermaid;
+      if(!mm){setTimeout(()=>showDiagram(name),150);return;}
+      const id='case-diagram-'+(++seq);
+      const result=await mm.render(id,code);
+      render.innerHTML=result.svg;
+      result.bindFunctions?.(render);
+    }catch(err){render.innerHTML='<pre class="whitespace-pre-wrap font-mono text-xs text-rose-300"></pre>';render.querySelector('pre').textContent='Falha ao renderizar Mermaid: '+err.message;}
+  }
+  buttons.forEach(b=>b.addEventListener('click',()=>showDiagram(b.dataset.caseDiagram)));
+  const original=window.showCaseAct;
+  window.showCaseAct=function(name,opts){original(name,opts);if(name==='engine')setTimeout(()=>showDiagram(document.querySelector('[data-case-diagram].is-active')?.dataset.caseDiagram||'platform'),80)};
+  setTimeout(()=>{if(location.hash==='#engine')showDiagram('platform')},350);
+})();
+</script>
+</body>
+</html>
