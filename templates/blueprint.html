@@ -1,187 +1,1001 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth bg-[#09090b]">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
-<title>StudyFlow · Architecture Blueprint</title>
-<style>
-:root{--bg:#05090b;--p:#091116;--p2:#0b151b;--line:#1c3039;--text:#edf5f7;--muted:#81939d;--lime:#9cff38;--cyan:#26d8f5;--blue:#4388ff;--violet:#9b6cff;--orange:#ff8a34;--teal:#17d9bc;--red:#ff5d68;--green:#45eb8c;--yellow:#e8ff43;--radius:16px}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 50% -10%,rgba(27,96,129,.18),transparent 34%),#05090b;color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.35}a{color:inherit;text-decoration:none}button,input{font:inherit}.mono,code{font-family:"SFMono-Regular",Consolas,monospace}.shell{max-width:1760px;margin:auto;padding:0 18px 70px}.top{height:74px;position:sticky;top:0;z-index:50;margin:0 -18px;padding:0 34px;display:grid;grid-template-columns:270px 1fr 300px;align-items:center;background:rgba(4,9,12,.91);backdrop-filter:blur(22px);border-bottom:1px solid #15262e}.brand{display:flex;align-items:center;gap:12px}.mark{width:34px;height:46px;position:relative;filter:drop-shadow(0 0 16px rgba(156,255,56,.22))}.mark:before,.mark:after{content:"";position:absolute;left:5px;width:24px;height:13px;background:linear-gradient(135deg,#5ff785,#a6ff31);clip-path:polygon(25% 0,100% 0,72% 100%,0 100%)}.mark:before{top:5px}.mark:after{top:24px;transform:scaleX(-1)}.brand b{font-size:22px;letter-spacing:-.03em}.brand small{display:block;color:#78909a;font-size:8px;letter-spacing:.21em;margin-top:2px}.topnav{display:flex;justify-content:center;gap:4px}.topnav a{padding:10px 16px;border-radius:10px;color:#9eb0b9;font-size:11px}.topnav a:hover,.topnav a.active{background:#0c171d;color:white}.topnav a.active{box-shadow:inset 0 -2px var(--lime)}.topright{display:flex;align-items:center;justify-content:flex-end;gap:14px}.collab{font-size:9px;color:#a4b1b7;letter-spacing:.15em;text-transform:uppercase}.enter{background:linear-gradient(90deg,#7efa39,#a8ff27);color:#061007;font-size:11px;font-weight:850;padding:10px 17px;border-radius:8px;border:0}.hero{padding:44px 10px 28px;display:grid;grid-template-columns:1fr 440px;gap:30px;align-items:end}.eyebrow{color:#53edc3;font-weight:800;font-size:9px;letter-spacing:.25em;text-transform:uppercase}.hero h1{font-size:clamp(44px,5vw,72px);margin:10px 0 9px;line-height:.96;letter-spacing:-.055em}.hero h1 span{color:var(--lime)}.hero p{margin:0;color:#93a3ab;font-size:14px;max-width:900px}.hero-side{display:flex;gap:22px;justify-content:flex-end}.hero-mode{text-align:center;min-width:74px}.hero-mode .ico{font-size:27px;margin-bottom:5px}.hero-mode b{display:block;font-size:11px}.hero-mode small{font-size:8px;color:#82939c}.quote{grid-column:2;padding:18px 20px;border:1px solid #1c3440;border-radius:14px;background:#091117;color:#a8b5bb;font-size:13px}.quote strong{font-size:30px;color:var(--lime);float:left;margin-right:10px;line-height:.7}.quote small{display:block;text-align:right;margin-top:8px;color:#6f838d}.arch-grid{display:grid;grid-template-columns:220px 1fr 220px;gap:12px;align-items:stretch}.panel{background:linear-gradient(180deg,#091218,#071015);border:1px solid #18303a;border-radius:14px;overflow:hidden}.panel-h{height:40px;display:flex;align-items:center;padding:0 15px;border-bottom:1px solid #19313b;color:#72a8ff;font-size:10px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.source-list,.impact-list{padding:10px;display:grid;gap:8px}.src,.impact{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid #142a34;border-radius:9px;background:#0b161c}.src .icon,.impact .icon{width:28px;height:28px;border-radius:8px;background:#0f222b;display:grid;place-items:center;font-size:15px}.src b,.impact b{font-size:10px}.src small,.impact small{display:block;color:#7d9099;font-size:8px;margin-top:3px}.platform{border:1px solid #1b8eb2;border-radius:14px;background:radial-gradient(circle at 50% 0,rgba(16,123,121,.12),transparent 36%),#061015;padding:13px}.platform-title{display:flex;justify-content:space-between;align-items:center;padding:0 6px 11px}.platform-title h3{margin:0;font-size:15px;letter-spacing:.04em}.platform-title small{font-size:8px;color:#93a3aa;letter-spacing:.12em}.lanes{display:grid;grid-template-columns:1.05fr 1.1fr 1.05fr 1.05fr 1.12fr;gap:10px}.lane{border:1px solid var(--lane);border-radius:11px;padding:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--lane) 10%,#071015),#081116)}.lane h4{margin:0 0 9px;color:#e8f2f5;font-size:10px}.lane h4 span{color:var(--lane);margin-right:6px}.block{padding:8px 9px;margin:6px 0;border:1px solid color-mix(in srgb,var(--lane) 38%,#19313a);border-radius:7px;background:color-mix(in srgb,var(--lane) 10%,#0a151a);font-size:9px}.block small{display:block;color:#88a0aa;font-size:7px;margin-top:2px}.trust{margin-top:12px;border:1px solid #5c7d52;border-radius:11px;padding:10px;background:linear-gradient(180deg,rgba(63,117,88,.12),#081115)}.trust h4,.infra h4{font-size:10px;margin:0 0 8px;letter-spacing:.06em}.trust-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.trust-item{padding:8px;border:1px solid #27463c;border-radius:7px;background:#0c1716;font-size:8px}.trust-item b{display:block;color:#dcf5e3;font-size:8px}.trust-item small{color:#7e9488;font-size:7px}.infra{grid-column:2;margin-top:12px;border:1px solid #195a7d;border-radius:12px;padding:11px;background:#081116}.infra-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}.infra-item{padding:9px;border:1px solid #193541;border-radius:8px;background:#0b161c;font-size:8px}.infra-item b{display:block;font-size:8px}.infra-item small{color:#758a95;font-size:7px}.bottom-grid{display:grid;grid-template-columns:1.08fr .82fr .9fr 1.08fr .9fr;gap:10px;margin-top:12px}.ops{border:1px solid var(--accent);border-radius:12px;padding:11px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 8%,#081116),#071015)}.ops h4{margin:0 0 9px;color:var(--accent);font-size:10px}.ops-item{font-size:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.055);color:#b7c5cb}.ops-item:last-child{border:0}.ops-item small{color:#70838c}.mental{margin-top:28px;border:1px solid #1e3540;border-radius:16px;background:#071015;padding:18px}.section-title{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:14px}.section-title h2{font-size:28px;margin:4px 0 0;letter-spacing:-.035em}.section-title p{margin:0;color:#7e9099;font-size:11px;max-width:620px}.mental-flow{display:grid;grid-template-columns:repeat(9,1fr);gap:8px;align-items:stretch}.mnode{min-height:105px;border:1px solid var(--c);border-radius:10px;padding:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 11%,#081116),#081116);position:relative}.mnode:not(:last-child):after{content:'→';position:absolute;right:-13px;top:40%;z-index:3;color:#62808e;font-size:16px}.mnode .n{color:var(--c);font-size:8px;letter-spacing:.1em}.mnode b{display:block;font-size:9px;margin:5px 0}.mnode small{font-size:7px;color:#80939c}.feedback{margin-top:10px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.feedback .mnode{min-height:72px}.feedback .mnode:after{display:none}.capability{margin-top:30px}.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.search{flex:1;min-width:260px;background:#071015;color:white;border:1px solid #1b3440;border-radius:9px;padding:10px 12px;outline:none}.filters{display:flex;gap:5px;overflow:auto}.filters button{background:#09151b;border:1px solid #1a323d;color:#8da0a9;border-radius:8px;padding:9px 10px;font-size:8px;cursor:pointer;white-space:nowrap}.filters button.active{color:#061007;background:var(--lime);border-color:var(--lime);font-weight:850}.table-wrap{border:1px solid #19313b;border-radius:13px;overflow:auto;max-height:760px;background:#071015}.matrix{width:100%;border-collapse:collapse;font-size:9px;min-width:1250px}.matrix thead{position:sticky;top:0;background:#0b171d;z-index:2}.matrix th{text-align:left;padding:10px;color:#6f8894;font-size:8px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid #1a3440}.matrix td{padding:9px 10px;border-bottom:1px solid #10252d;color:#9fb0b8;vertical-align:top}.matrix tr:hover td{background:#0b171d}.matrix b{color:#edf4f6}.matrix code{color:#73d8ff;font-size:8px}.cat{display:inline-flex;border:1px solid #24404b;border-radius:999px;padding:4px 7px;color:#a7bac3;font-size:7px}.notes{margin-top:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.note{border:1px solid #1a313b;border-radius:12px;padding:14px;background:#081116}.note h4{font-size:10px;margin:0 0 7px}.note p{font-size:8px;color:#7d9099;margin:0}.footer{margin-top:60px;border-top:1px solid #142832;padding:25px 0;display:flex;justify-content:space-between;color:#66808b;font-size:8px}.badge{display:inline-flex;padding:5px 8px;border-radius:999px;border:1px solid #1f3d48;color:#83a6b4;font-size:7px;letter-spacing:.08em;text-transform:uppercase}
-/* Presentation narrative: author + genesis. Architecture styles below remain unchanged. */
-.profile-story{margin:18px 0 30px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:14px}
-.profile-card,.story-card{border:1px solid #1b3440;border-radius:16px;background:linear-gradient(180deg,#091218,#071015);overflow:hidden}
-.profile-card{display:grid;grid-template-columns:210px 1fr;min-height:310px}.profile-photo{position:relative;min-height:310px;background:#0a1419;overflow:hidden}.profile-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.9) contrast(1.04)}.profile-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(5,9,11,.8))}.profile-copy{padding:24px}.profile-copy h2{font-size:31px;margin:7px 0 4px;letter-spacing:-.04em}.profile-role{color:#b8c7cd;font-size:12px;margin-bottom:15px}.profile-copy p{color:#8fa1aa;font-size:11px;max-width:760px;margin:0 0 14px}.profile-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}.profile-tags span{border:1px solid #203943;background:#0b171c;border-radius:999px;padding:6px 8px;color:#9fb3bc;font-size:8px}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:16px}.profile-stat{padding:10px;border:1px solid #17303a;border-radius:9px;background:#0a151a}.profile-stat b{font-size:14px;display:block;color:#eaf3f6}.profile-stat small{font-size:7px;color:#718690}.story-card{padding:22px;position:relative}.story-card:before{content:'';position:absolute;inset:0 auto 0 0;width:2px;background:linear-gradient(var(--lime),var(--cyan),var(--violet))}.story-card h3{font-size:22px;margin:7px 0 9px;letter-spacing:-.035em}.story-card>p{font-size:10px;color:#879aa3;margin:0 0 16px}.story-flow{display:grid;gap:7px}.story-step{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:start;padding:10px;border:1px solid #17303a;border-radius:9px;background:#09151a}.story-step .num{width:27px;height:27px;display:grid;place-items:center;border-radius:8px;border:1px solid #31505d;color:var(--lime);font-size:8px;font-weight:850}.story-step b{display:block;font-size:9px;margin-bottom:3px}.story-step small{display:block;color:#71858f;font-size:7px}.manifesto{margin-top:10px;padding:11px;border-left:2px solid var(--lime);background:rgba(156,255,56,.035);color:#a9bac1;font-size:9px}.journey{margin:6px 0 30px;border:1px solid #1a333e;border-radius:15px;padding:17px;background:#071015}.journey-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:13px}.journey-head h2{font-size:26px;margin:4px 0 0;letter-spacing:-.035em}.journey-head p{max-width:620px;color:#778b95;font-size:10px;margin:0}.timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.tstep{position:relative;padding:13px;border:1px solid #19323c;border-radius:10px;background:#09151a;min-height:120px}.tstep:not(:last-child):after{content:'→';position:absolute;right:-12px;top:45%;color:#526e7a;z-index:2}.tstep .year{font-size:7px;color:#56edc5;letter-spacing:.09em}.tstep b{display:block;font-size:10px;margin:6px 0 5px}.tstep small{display:block;color:#728690;font-size:7px}.history-principle{margin-top:11px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.principle{padding:11px;border:1px solid #1a323d;border-radius:9px;background:#091419}.principle b{display:block;font-size:9px;color:#dbe8ec}.principle small{font-size:7px;color:#71858f}
-@media(max-width:1100px){.profile-story{grid-template-columns:1fr}.timeline{grid-template-columns:repeat(3,1fr)}.tstep:after{display:none}}
-@media(max-width:760px){.profile-card{grid-template-columns:1fr}.profile-photo{min-height:320px}.profile-stats,.timeline,.history-principle{grid-template-columns:1fr 1fr}}
-@media(max-width:1250px){.top{grid-template-columns:220px 1fr}.topright{display:none}.arch-grid{grid-template-columns:180px 1fr}.impact-panel{display:none}.lanes{grid-template-columns:repeat(3,1fr)}.bottom-grid{grid-template-columns:repeat(3,1fr)}.mental-flow{grid-template-columns:repeat(3,1fr)}.mnode:after{display:none}.notes{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.shell{padding:0 10px 50px}.top{margin:0 -10px;padding:0 14px;grid-template-columns:1fr}.topnav{display:none}.hero{grid-template-columns:1fr;padding:32px 2px 20px}.hero-side,.quote{grid-column:1;justify-content:flex-start}.arch-grid{grid-template-columns:1fr}.source-panel{display:none}.lanes,.trust-grid,.infra-grid,.bottom-grid,.feedback,.notes{grid-template-columns:1fr 1fr}.infra{grid-column:1}.mental-flow{grid-template-columns:1fr 1fr}.section-title{align-items:start;flex-direction:column}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Blueprint executivo do StudyFlow e perfil de Igor Henrique Gil.">
+  <title>Igor Henrique Gil · Blueprint StudyFlow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { ink: '#09090b', limebrand: '#b7ff3c' },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+            mono: ['SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { background: #09090b; }
+    body { margin: 0; }
+    .noise {
+      background-image: radial-gradient(rgba(255,255,255,.055) .7px, transparent .7px);
+      background-size: 18px 18px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,.034), rgba(255,255,255,.014));
+      border: 1px solid rgba(255,255,255,.09);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 24px 80px rgba(0,0,0,.18);
+    }
+    .card-hover { transition: transform .22s ease, border-color .22s ease, background-color .22s ease; }
+    .card-hover:hover { transform: translateY(-2px); border-color: rgba(183,255,60,.24); }
+    .orb {
+      background:
+        radial-gradient(circle at 42% 42%, rgba(183,255,60,.11), transparent 18%),
+        radial-gradient(circle at center, rgba(42,75,67,.24), rgba(9,9,11,0) 62%);
+    }
+    .globe {
+      background-image:
+        radial-gradient(circle at 50% 50%, transparent 46%, rgba(255,255,255,.08) 47%, transparent 48%),
+        radial-gradient(circle at 50% 50%, transparent 35%, rgba(255,255,255,.04) 36%, transparent 37%);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+
+  <!-- Mermaid.js: diagramas versionáveis e auditáveis dentro do próprio Blueprint. -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    .arch-shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px}
+    .arch-nav{position:sticky;top:18px;align-self:start}
+    .arch-nav button{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;border-radius:12px;padding:10px 11px;text-align:left;color:#a3a3a3;background:transparent;transition:.18s}
+    .arch-nav button:hover{background:rgba(255,255,255,.035);color:#fff}
+    .arch-nav button[aria-selected="true"]{border-color:rgba(183,255,60,.42);background:rgba(183,255,60,.07);color:#d9ff9d}
+    .arch-nav .arch-ico{display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:9px;border:1px solid rgba(255,255,255,.08);background:#0d1113;color:#b7ff3c;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .arch-panel{display:none}
+    .arch-panel.active{display:block}
+    .arch-card{border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.20);border-radius:18px;padding:18px}
+    .arch-mermaid{overflow:auto;border:1px solid rgba(255,255,255,.07);background:#080b0d;border-radius:16px;padding:14px;min-height:260px}
+    .arch-mermaid .mermaid{min-width:720px}
+    [data-arch-panel="overview"] .arch-mermaid{min-height:760px;background:radial-gradient(circle at 50% 0%,rgba(183,255,60,.035),transparent 32%),#080b0d}
+    [data-arch-panel="overview"] .arch-mermaid .mermaid{min-width:1320px}
+    [data-arch-panel="overview"] svg{max-width:none!important;height:auto!important}
+    .arch-kpi{border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.025);border-radius:14px;padding:13px}
+    .arch-truth{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .arch-truth>div{border-radius:14px;padding:13px;border:1px solid rgba(255,255,255,.075)}
+    .arch-truth .no{background:rgba(251,191,36,.035);border-color:rgba(251,191,36,.18)}
+    .arch-truth .yes{background:rgba(183,255,60,.035);border-color:rgba(183,255,60,.18)}
+    .arch-table{width:100%;border-collapse:collapse;font-size:12px}
+    .arch-table th,.arch-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top}
+    .arch-table th{color:#737373;font:600 10px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.08em}
+    .arch-table td:first-child{color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .arch-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);border-radius:999px;padding:6px 9px;font-size:10px;color:#a3a3a3}
+    .arch-dot{width:6px;height:6px;border-radius:99px;background:#b7ff3c;box-shadow:0 0 12px rgba(183,255,60,.5)}
+    .arch-code{border:1px solid rgba(255,255,255,.07);background:#07090a;border-radius:14px;padding:13px;overflow:auto;font:11px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a3a3a3}
+
+    .cap-toolbar{display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:12px;align-items:center}
+    .cap-search{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.09);background:#080c0e;border-radius:14px;padding:13px 14px;color:#f5f5f5;outline:none;font-size:13px}
+    .cap-search:focus{border-color:rgba(183,255,60,.45);box-shadow:0 0 0 3px rgba(183,255,60,.05)}
+    .cap-filters{display:flex;flex-wrap:wrap;gap:7px}
+    .cap-filter{border:1px solid rgba(255,255,255,.09);background:#091013;color:#889297;border-radius:10px;padding:9px 11px;font-size:10px;font-weight:700;transition:.18s}
+    .cap-filter:hover{color:#fff;border-color:rgba(183,255,60,.25)}
+    .cap-filter.active{background:#b7ff3c;color:#071006;border-color:#b7ff3c}
+    .cap-table-wrap{overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(0,0,0,.18)}
+    .cap-table{width:100%;min-width:1160px;border-collapse:collapse;font-size:11px}
+    .cap-table th{position:sticky;top:0;z-index:2;background:#091115;color:#678087;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.10);text-align:left;font:700 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.12em}
+    .cap-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.065);vertical-align:top;color:#9aa6ab;line-height:1.55}
+    .cap-table tr:hover td{background:rgba(255,255,255,.018)}
+    .cap-table td:nth-child(2){color:#f5f5f5;font-weight:700}
+    .cap-table td:nth-child(5){color:#62d7ff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px}
+    .cap-tag{display:inline-flex;border:1px solid rgba(92,170,193,.30);border-radius:999px;padding:4px 7px;color:#91b9c7;background:rgba(43,111,131,.06);font:600 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .cap-count{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#59666b}
+    @media(max-width:980px){.cap-toolbar{grid-template-columns:1fr}}
+
+    @media(max-width:980px){.arch-shell{grid-template-columns:1fr}.arch-nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.arch-truth{grid-template-columns:1fr}}
+    @media(max-width:620px){.arch-nav{grid-template-columns:1fr}.arch-mermaid .mermaid{min-width:620px}}
+  </style>
+
 </head>
-<body><div class="shell">
-<header class="top"><a class="brand" href="#top"><span class="mark"></span><span><b>StudyFlow</b><small>LEARN · CREATE · EVOLVE</small></span></a><nav class="topnav"><a href="#author">Autor</a><a href="#genesis">Gênese</a><a href="#mental">Modelo Mental</a><a class="active" href="#architecture">Arquitetura</a><a href="#capabilities">Capacidades</a><a href="#operations">Operação</a></nav><div class="topright"><span class="collab">Projeto colaborativo · Blueprint público</span><a class="enter" href="/login">Entrar no StudyFlow</a></div></header>
+<body class="min-h-screen overflow-x-hidden bg-[#09090b] text-neutral-100 antialiased selection:bg-lime-300 selection:text-neutral-950">
+  <div class="fixed inset-0 pointer-events-none noise opacity-40" aria-hidden="true"></div>
+  <div class="fixed inset-x-0 top-0 h-40 pointer-events-none bg-gradient-to-b from-lime-300/[0.025] to-transparent" aria-hidden="true"></div>
 
-<section class="hero" id="top"><div><div class="eyebrow mono">Arquitetura de referência do StudyFlow</div><h1>Do Conhecimento à <span>Ação</span></h1><p>Uma plataforma modular de agentes, dados e modelos para aprender, criar, automatizar e operar com inteligência — com contexto, memória, segurança, observabilidade e evidência como partes da arquitetura, não como acessórios.</p></div><div class="hero-side"><div class="hero-mode"><div class="ico">▱</div><b>Aprender</b><small>Conhecimento estruturado</small></div><div class="hero-mode"><div class="ico">▶</div><b>Criar</b><small>Conteúdo com inteligência</small></div><div class="hero-mode"><div class="ico">⌘</div><b>Agentes</b><small>Execução controlada</small></div><div class="hero-mode"><div class="ico">▥</div><b>Evoluir</b><small>Feedback contínuo</small></div></div><div class="quote"><strong>“</strong>Democratizar o conhecimento traz liberdade.<small>— Igor Gil</small></div></section>
+  <header class="relative z-20 mx-auto flex w-full max-w-[1460px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+    <a href="#top" class="inline-flex items-center gap-3 text-sm font-semibold tracking-tight text-white">
+      <span class="grid h-7 w-7 place-items-center rounded-lg border border-lime-300/40 bg-lime-300 text-[10px] font-black text-neutral-950 shadow-[0_0_24px_rgba(183,255,60,.18)]">IG</span>
+      <span>IGOR GIL</span>
+    </a>
 
-<section class="profile-story" id="author">
-  <article class="profile-card">
-    <div class="profile-photo"><img src="{{ url_for('static', filename='img/author/igor-gil.webp') }}" alt="Igor Gil"></div>
-    <div class="profile-copy">
-      <div class="eyebrow mono">Autor · liderança · arquitetura</div>
-      <h2>Igor Henrique Nascimento Lourenço Gil</h2>
-      <div class="profile-role">Senior Manager · Data, AI & Decision Intelligence · Santander Brasil</div>
-      <p>Profissional de Dados e IA com trajetória em arquitetura, engenharia, analytics e plataformas de decisão. O trabalho conecta estratégia, tecnologia e negócio para transformar dados em decisões inteligentes, escaláveis e governadas.</p>
-      <div class="manifesto">“Transformar dados em informação já não é suficiente. Empresas modernas são definidas pela velocidade e qualidade das decisões que conseguem tomar.”</div>
-      <div class="profile-tags"><span>Data Strategy</span><span>Decision Intelligence</span><span>Artificial Intelligence</span><span>Credit Risk & Pricing</span><span>Data & Cloud Architecture</span><span>Governance & LGPD</span></div>
-      <div class="profile-stats"><div class="profile-stat"><b>20+ anos</b><small>software, dados e arquitetura</small></div><div class="profile-stat"><b>MIT · MBA</b><small>inovação, dados e gestão</small></div><div class="profile-stat"><b>Enterprise AI</b><small>decisão, automação e plataformas</small></div></div>
-    </div>
-  </article>
-  <article class="story-card" id="genesis">
-    <div class="eyebrow mono">Gênese · por que o StudyFlow existe</div>
-    <h3>Começou como um projeto com meu filho. Virou um laboratório de AI Engineering.</h3>
-    <p>O StudyFlow nasceu de um problema real de aprendizagem e criação — e evoluiu em ciclos, sem abandonar a motivação humana inicial.</p>
-    <div class="story-flow">
-      <div class="story-step"><span class="num">01</span><div><b>Aprender tecnologia e IA juntos</b><small>O ponto de partida foi estudar com meu filho de 14 anos enquanto ele iniciava um canal de história no YouTube.</small></div></div>
-      <div class="story-step"><span class="num">02</span><div><b>Primeira necessidade: transformar vídeo em conteúdo</b><small>Download, transcrição com Whisper, descoberta de trechos e geração de Shorts criaram o primeiro fluxo útil.</small></div></div>
-      <div class="story-step"><span class="num">03</span><div><b>De ferramenta para plataforma de conhecimento</b><small>Cursos, documentos, RAG, quiz, flashcards e experiências de estudo transformaram conteúdo em aprendizagem estruturada.</small></div></div>
-      <div class="story-step"><span class="num">04</span><div><b>Creator OS</b><small>Hook, curiosidade, emoção, retenção, viral judge, packaging e platform intelligence transformaram criação em processo mensurável.</small></div></div>
-      <div class="story-step"><span class="num">05</span><div><b>AI Control Plane</b><small>Contexto, memória, modelos, agentes, tools, segurança, evals, observabilidade, FinOps, lineage, drift e reliability passaram a ser tratados como sistema.</small></div></div>
-    </div>
-  </article>
-</section>
+    <nav class="hidden items-center gap-1 rounded-full border border-white/[0.07] bg-white/[0.025] p-1 text-xs text-neutral-400 backdrop-blur-xl md:flex" aria-label="Navegação principal">
+      <a href="#sobre" data-blueprint-tab class="rounded-full bg-lime-300/[0.08] px-4 py-2 text-lime-200">Sobre</a>
+      <a href="#trajetoria" data-blueprint-tab class="rounded-full px-4 py-2 transition hover:bg-white/[0.05] hover:text-white">Trajetória</a>
+      <a href="#case-study" data-blueprint-tab class="rounded-full px-4 py-2 transition hover:bg-white/[0.05] hover:text-white">Case Study</a>
+      <a href="#arquitetura" data-blueprint-tab class="rounded-full px-4 py-2 transition hover:bg-white/[0.05] hover:text-white">Arquitetura</a>
+      <a href="#tecnologias" data-blueprint-tab class="rounded-full px-4 py-2 transition hover:bg-white/[0.05] hover:text-white">Tecnologias</a>
+      <a href="#capacidades" data-blueprint-tab class="rounded-full px-4 py-2 transition hover:bg-white/[0.05] hover:text-white">Capacidades</a>
+    </nav>
 
-<section class="journey">
-  <div class="journey-head"><div><div class="eyebrow mono">Evolução do projeto</div><h2>Problema → produto → plataforma → sistema de decisão.</h2></div><p>A arquitetura abaixo não foi desenhada primeiro. Ela emergiu das necessidades do produto, das falhas encontradas e da busca por controle operacional.</p></div>
-  <div class="timeline">
-    <div class="tstep"><span class="year">ORIGEM</span><b>Estudo + YouTube</b><small>Aprender, pesquisar e criar com propósito.</small></div>
-    <div class="tstep"><span class="year">CREATOR</span><b>Video Intelligence</b><small>Whisper, cortes, scoring e distribuição.</small></div>
-    <div class="tstep"><span class="year">LEARNING</span><b>Knowledge Engine</b><small>Cursos, RAG, recuperação e personalização.</small></div>
-    <div class="tstep"><span class="year">AGENTIC</span><b>Agents & Skills</b><small>Harness, tools, MCP, A2A, supervisor e swarm.</small></div>
-    <div class="tstep"><span class="year">CONTROL</span><b>Trust & Governance</b><small>Guardrails, evals, identity, context, audit e policy.</small></div>
-    <div class="tstep"><span class="year">PRODUCTION</span><b>AI Engineering</b><small>SRE, FinOps, lineage, drift, CI/CD e readiness.</small></div>
-  </div>
-  <div class="history-principle"><div class="principle"><b>Pessoas antes da tecnologia</b><small>O produto existe para ampliar aprendizagem, criação e autonomia.</small></div><div class="principle"><b>Evidência antes do buzzword</b><small>Cada capacidade precisa apontar para código, runtime, teste ou decisão arquitetural.</small></div><div class="principle"><b>Controle antes da autonomia</b><small>Agência só escala quando identidade, ferramentas, contexto, custo e risco são observáveis.</small></div></div>
-</section>
+    <a href="https://www.linkedin.com/in/igorgil-ai/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-neutral-950 transition hover:bg-neutral-200">
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.34 18.34v-8H5.67v8h2.67zM7 9.16a1.55 1.55 0 1 0 0-3.1 1.55 1.55 0 0 0 0 3.1zm11.34 9.18v-4.39c0-2.35-1.25-3.44-2.92-3.44-1.35 0-1.95.74-2.29 1.26v-1.08h-2.67v8h2.67v-4.47c0-1.18.83-1.4 1.18-1.4.69 0 1.36.42 1.36 1.65v4.22h2.67z"/></svg>
+      <span class="hidden sm:inline">LinkedIn de Igor Gil</span><span>↗</span>
+    </a>
+  </header>
 
-<section id="architecture">
-<div class="arch-grid">
-<aside class="panel source-panel"><div class="panel-h">Fontes & integrações externas</div><div class="source-list">
-<div class="src"><span class="icon">▶</span><div><b>YouTube</b><small>Google / YouTube API · upload · busca · analytics</small></div></div>
-<div class="src"><span class="icon">◎</span><div><b>Instagram</b><small>Graph API / browser fetcher · insights · publicação</small></div></div>
-<div class="src"><span class="icon">✉</span><div><b>Gmail / Google</b><small>E-mail, conectores e automações</small></div></div>
-<div class="src"><span class="icon">G</span><div><b>Google Search / Web</b><small>Pesquisa, URLs, crawl e fontes abertas</small></div></div>
-<div class="src"><span class="icon">⇄</span><div><b>APIs / Webhooks / SFTP</b><small>Integrações síncronas e batch</small></div></div>
-<div class="src"><span class="icon">◫</span><div><b>Documentos</b><small>PDF · DOCX · páginas web · uploads</small></div></div>
-<div class="src"><span class="icon">☁</span><div><b>Cloudinary</b><small>Mídia e assets de publicação</small></div></div>
-<div class="src"><span class="icon">⇆</span><div><b>Decodo Proxy</b><small>Proxy residencial para runtimes bloqueados</small></div></div>
-<div class="src"><span class="icon">◈</span><div><b>Parceiros & dados</b><small>B3 · Serasa · Webmotors · Fenabrave · Ituran · INMET · IBGE</small></div></div>
-</div></aside>
+  <main id="top" class="relative z-10 mx-auto w-full max-w-[1460px] px-5 pb-10 sm:px-8 lg:px-10">
+    <section id="sobre" class="glass relative overflow-hidden rounded-[28px] px-6 py-8 sm:px-8 lg:px-10 lg:py-10 scroll-mt-24">
+      <div class="orb pointer-events-none absolute inset-y-0 right-0 hidden w-[44%] lg:block" aria-hidden="true"></div>
 
-<main class="platform"><div class="platform-title"><div><h3>STUDYFLOW AI PLATFORM</h3><small>AGENTS · KNOWLEDGE · CONTEXT · AUTOMATION · ANALYTICS · TRUST</small></div><span class="badge">modular · escalável · seguro</span></div>
-<div class="lanes">
-<div class="lane" style="--lane:var(--blue)"><h4><span>01</span>INGESTÃO & DADOS</h4><div class="block">APIs & Webhooks</div><div class="block">SFTP / Batch</div><div class="block">Stream / Kafka</div><div class="block">Document Extraction</div><div class="block">OCR / Whisper<small>transcrição de áudio/vídeo</small></div><div class="block">Chunking & Normalização</div><div class="block">Dataset Engineering</div><div class="block">Synthetic Data</div></div>
-<div class="lane" style="--lane:var(--green)"><h4><span>02</span>RAG & CONTEXTO</h4><div class="block">Vector Search<small>pgvector / vetorial</small></div><div class="block">Hybrid Search</div><div class="block">Query Rewriting / Expansion</div><div class="block">HyDE</div><div class="block">Reranking</div><div class="block">Parent-Child Retrieval</div><div class="block">Contextual Retrieval</div><div class="block">GraphRAG</div><div class="block">Context Window / Budgeting</div><div class="block">Memory / Consolidation</div></div>
-<div class="lane" style="--lane:var(--violet)"><h4><span>03</span>MODEL LAYER</h4><div class="block">LLM / Transformer<small>providers externos ou open-weight</small></div><div class="block">Model Gateway</div><div class="block">Model Registry</div><div class="block">Model Routing</div><div class="block">Model Cascade<small>barato → poderoso</small></div><div class="block">Local Models / vLLM</div><div class="block">Fine-tuning<small>SFT · LoRA · QLoRA · DPO</small></div></div>
-<div class="lane" style="--lane:var(--orange)"><h4><span>04</span>AGENT RUNTIME</h4><div class="block">AI Agent</div><div class="block">Planning</div><div class="block">Agent Harness</div><div class="block">Tool Calling</div><div class="block">Supervisor</div><div class="block">Controlled Agent Swarm</div><div class="block">Self-Correction</div><div class="block">Skills Registry</div><div class="block">MCP / A2A</div></div>
-<div class="lane" style="--lane:var(--teal)"><h4><span>05</span>CREATOR OS</h4><div class="block">Content Intelligence</div><div class="block">Scoring Swarm<small>hook · curiosidade · emoção · retenção</small></div><div class="block">Viral Judge</div><div class="block">Packaging Intelligence</div><div class="block">Platform Brain</div><div class="block">Performance Intelligence</div><div class="block">Experiment Engine</div><div class="block">Learning Loop</div><div class="block">Autonomous Content Director</div></div>
-</div>
-<div class="trust"><h4>CAMADA DE SEGURANÇA, GOVERNANÇA & CONTROLE</h4><div class="trust-grid"><div class="trust-item"><b>AI Security Gateway</b><small>pré/pós-modelo</small></div><div class="trust-item"><b>Guardrails</b><small>regras determinísticas</small></div><div class="trust-item"><b>Zero Trust</b><small>identity + access</small></div><div class="trust-item"><b>Audit Trail</b><small>rastreabilidade</small></div><div class="trust-item"><b>Privacy & LGPD</b><small>dados e finalidade</small></div><div class="trust-item"><b>Prompt Injection Defense</b><small>input/tool safety</small></div><div class="trust-item"><b>Browser Sandbox</b><small>blast radius</small></div></div></div>
-</main>
+      <div class="relative grid gap-8 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
+        <div>
+          <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-lime-300/15 bg-lime-300/[0.055] px-3 py-1.5 font-mono text-[11px] text-lime-200">
+            <span class="h-1.5 w-1.5 rounded-full bg-lime-300 shadow-[0_0_12px_rgba(183,255,60,.8)]"></span>
+            Data &amp; AI Senior Manager · Decision Intelligence
+          </div>
+          <h1 class="max-w-4xl text-4xl font-bold tracking-[-0.045em] text-white sm:text-5xl lg:text-[62px] lg:leading-[.98]">Igor Henrique Nascimento Lourenço Gil</h1>
+          <p class="mt-4 max-w-3xl text-sm leading-6 text-neutral-300 sm:text-base">Liderança de plataformas de decisão corporativa, governança e inteligência artificial no setor financeiro.</p>
+          <p class="mt-3 font-mono text-[11px] leading-5 text-neutral-500">São Paulo, Brasil · Português (Nativo) · Inglês (Fluente/Profissional) · Espanhol (Profissional)</p>
 
-<aside class="panel impact-panel"><div class="panel-h">Entregas & impacto</div><div class="impact-list"><div class="impact"><span class="icon">◇</span><div><b>Cursos</b><small>quiz · flashcards · trilhas</small></div></div><div class="impact"><span class="icon">▶</span><div><b>Vídeos & Shorts</b><small>edição e otimização</small></div></div><div class="impact"><span class="icon">▥</span><div><b>Insights</b><small>dashboards e relatórios</small></div></div><div class="impact"><span class="icon">⚙</span><div><b>Agentes & Automação</b><small>tarefas executadas</small></div></div><div class="impact"><span class="icon">⇄</span><div><b>APIs / Integrações</b><small>outros sistemas</small></div></div><div class="impact"><span class="icon">◎</span><div><b>Publicação</b><small>YouTube · Instagram · e-mail</small></div></div></div></aside>
+          <div class="mt-7 flex flex-wrap gap-2">
+            <a href="https://www.linkedin.com/in/igorgil-ai/" target="_blank" rel="noopener noreferrer" class="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 text-xs font-semibold text-neutral-950 transition hover:bg-neutral-200">LinkedIn de Igor Gil ↗</a>
+            <a href="/case" target="_blank" rel="noopener noreferrer" class="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-neutral-900/70 px-4 text-xs font-medium text-neutral-200 transition hover:border-lime-300/25 hover:bg-neutral-800">Explorar Arquitetura do Case →</a>
+          </div>
 
-<div class="infra"><h4>INFRAESTRUTURA · ON-PREM · CLOUD · HÍBRIDO</h4><div class="infra-grid"><div class="infra-item"><b>Azure</b><small>Databricks · ADF · Storage · VMs</small></div><div class="infra-item"><b>AWS</b><small>parceiros / integrações</small></div><div class="infra-item"><b>Hetzner</b><small>self-hosted · workers · GPU/vLLM</small></div><div class="infra-item"><b>Docker</b><small>Compose · containers</small></div><div class="infra-item"><b>PostgreSQL</b><small>+ pgvector</small></div><div class="infra-item"><b>MinIO</b><small>S3-compatible</small></div><div class="infra-item"><b>Kafka / Queue</b><small>eventos / jobs</small></div><div class="infra-item"><b>Elastic / Kibana</b><small>logs e pesquisa</small></div></div></div>
-</div>
+          <div class="mt-8 grid max-w-4xl grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.07] bg-black/20 sm:grid-cols-4">
+            <div class="border-b border-r border-white/[0.07] p-4 sm:border-b-0"><div class="font-mono text-xl text-white">2006→</div><div class="mt-1 text-[11px] text-neutral-500">trajetória em tecnologia</div></div>
+            <div class="border-b border-white/[0.07] p-4 sm:border-b-0 sm:border-r"><div class="font-mono text-xl text-white">Data + AI</div><div class="mt-1 text-[11px] text-neutral-500">estratégia e engenharia</div></div>
+            <div class="border-r border-white/[0.07] p-4"><div class="font-mono text-xl text-white">Decision</div><div class="mt-1 text-[11px] text-neutral-500">intelligence platforms</div></div>
+            <div class="p-4"><div class="font-mono text-xl text-white">PT · EN · ES</div><div class="mt-1 text-[11px] text-neutral-500">idiomas profissionais</div></div>
+          </div>
+        </div>
 
-<div class="bottom-grid" id="operations">
-<div class="ops" style="--accent:var(--cyan)"><h4>CI/CD & DEVOPS</h4><div class="ops-item"><b>GitHub / GitLab</b> · source control</div><div class="ops-item">Build → <b>Test</b> → Scan → Package → Deploy</div><div class="ops-item"><b>GitHub Actions / Jenkins</b> · pipelines</div><div class="ops-item"><b>Docker</b> · artefato reproduzível</div><div class="ops-item"><b>Hetzner CD</b> · workflow de deploy</div><div class="ops-item"><small>Ambientes dev / staging / prod · rollback e recovery baseline</small></div></div>
-<div class="ops" style="--accent:var(--green)"><h4>TESTES & SEGURANÇA</h4><div class="ops-item"><b>PyTest</b> · unitário / integração / regressão</div><div class="ops-item">Golden Dataset & Evals</div><div class="ops-item">Security checks · SAST/DAST</div><div class="ops-item"><b>Pentest</b> · OWASP / ZAP / testes manuais</div><div class="ops-item">Red Team · Prompt Injection</div><div class="ops-item">Failure Lab · chaos controlado</div></div>
-<div class="ops" style="--accent:var(--orange)"><h4>OBSERVABILIDADE & FINOPS</h4><div class="ops-item"><b>Tracing</b> · caminho da execução</div><div class="ops-item">Context Observability</div><div class="ops-item">Runtime Evidence</div><div class="ops-item">Agent Observability</div><div class="ops-item">Tokens & Cost</div><div class="ops-item">Drift · Lineage · Value Ledger</div></div>
-<div class="ops" style="--accent:var(--teal)"><h4>CICLO DE APRENDIZADO</h4><div class="ops-item">Feedback de uso → performance</div><div class="ops-item">Experiment Engine / A-B</div><div class="ops-item">Golden Dataset → regressão</div><div class="ops-item">Synthetic Data Factory</div><div class="ops-item">Model Adaptation Lab</div><div class="ops-item">Learning Loop → nova decisão</div></div>
-<div class="ops" style="--accent:#9eabb3"><h4>INTEGRAÇÕES FUTURAS</h4><div class="ops-item">Notion / Confluence</div><div class="ops-item">Slack / Teams</div><div class="ops-item">Google Calendar / Agenda</div><div class="ops-item">CRM / Sistemas corporativos</div><div class="ops-item">LMS / marketplaces</div><div class="ops-item">WhatsApp / canais adicionais</div></div>
-</section>
+        <div class="relative mx-auto w-full max-w-[430px] lg:justify-self-end">
+          <div class="absolute -inset-8 rounded-full bg-lime-300/[0.035] blur-3xl" aria-hidden="true"></div>
+          <figure class="relative overflow-hidden rounded-[26px] border border-white/[0.10] bg-neutral-950/80 shadow-[0_28px_90px_rgba(0,0,0,.55)]">
+            <div class="aspect-[4/5] overflow-hidden">
+              <img src="{{ url_for('static', filename='img/author/igor-gil.webp') }}" alt="Igor Henrique Nascimento Lourenço Gil" class="h-full w-full object-cover object-top grayscale contrast-105 transition duration-500 hover:grayscale-0">
+            </div>
+            <figcaption class="flex items-center justify-between border-t border-white/[0.08] bg-black/40 px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em] text-neutral-500">
+              <span>Autor do StudyFlow</span><span class="text-lime-200">Data · AI · Decision</span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
 
-<section class="mental" id="mental"><div class="section-title"><div><div class="eyebrow mono">Modelo mental do runtime</div><h2>Uma solicitação atravessa capacidades — não “chama um LLM”.</h2></div><p>Esta é a visão que conecta as peças: entrada, política, contexto, conhecimento, modelo, agência, ferramentas, evidência e aprendizado.</p></div>
-<div class="mental-flow"><div class="mnode" style="--c:#4a8cff"><span class="n">01 · INPUT</span><b>Usuário / Evento</b><small>pergunta · arquivo · webhook · vídeo · job</small></div><div class="mnode" style="--c:#56e88c"><span class="n">02 · TRUST</span><b>Security Gateway</b><small>identity · guardrails · injection · PII · policy</small></div><div class="mnode" style="--c:#3de0bd"><span class="n">03 · CONTEXT</span><b>Context Intelligence</b><small>window · budgeting · observability · memory</small></div><div class="mnode" style="--c:#55da72"><span class="n">04 · KNOWLEDGE</span><b>RAG Engine</b><small>rewrite · hybrid · HyDE · rerank · GraphRAG</small></div><div class="mnode" style="--c:#a375ff"><span class="n">05 · MODEL</span><b>Model Gateway</b><small>registry · routing · cascade · local/vLLM</small></div><div class="mnode" style="--c:#ff8b35"><span class="n">06 · PLAN</span><b>Agent Harness</b><small>planning · supervisor · swarm · self-correction</small></div><div class="mnode" style="--c:#facd4c"><span class="n">07 · ACTION</span><b>Skills & Tools</b><small>MCP · A2A · browser · APIs · publish · e-mail</small></div><div class="mnode" style="--c:#19dabb"><span class="n">08 · OUTPUT</span><b>Entrega</b><small>curso · insight · conteúdo · ação · API</small></div><div class="mnode" style="--c:#ff5d68"><span class="n">09 · EVIDENCE</span><b>Evaluation & Audit</b><small>evals · tracing · runtime evidence · cost · lineage</small></div></div>
-<div class="feedback"><div class="mnode" style="--c:#26d8f5"><span class="n">OBSERVE</span><b>Context Window</b><small>quanto e qual contexto foi usado</small></div><div class="mnode" style="--c:#26d8f5"><span class="n">OBSERVE</span><b>AgentOps</b><small>loops · tools · falhas · autonomia</small></div><div class="mnode" style="--c:#ff8a34"><span class="n">ECONOMICS</span><b>FinOps</b><small>tokens · custo · modelo · task</small></div><div class="mnode" style="--c:#45eb8c"><span class="n">ASSURANCE</span><b>Evals</b><small>golden dataset · judge · retrieval quality</small></div><div class="mnode" style="--c:#9b6cff"><span class="n">MEMORY</span><b>Consolidation</b><small>o que merece persistir</small></div><div class="mnode" style="--c:#9cff38"><span class="n">LEARN</span><b>Learning Loop</b><small>resultado → experimento → melhoria</small></div></div></section>
+    <section id="manifesto" class="glass mt-4 grid gap-6 rounded-[24px] px-6 py-7 sm:px-8 lg:grid-cols-[1fr_280px] lg:items-center scroll-mt-24">
+      <blockquote class="border-l-4 border-lime-300 pl-5 text-xl font-semibold leading-8 tracking-[-0.025em] text-neutral-100 sm:text-2xl">
+        “Transformar dados em informação já não é suficiente. As empresas modernas serão definidas não pelo volume bruto de dados, mas pela velocidade, governança e precisão das decisões que conseguem automatizar e escalar.”
+      </blockquote>
+      <p class="border-white/10 text-sm leading-6 text-neutral-500 lg:border-l lg:pl-7">Liderança conectando estratégia, tecnologia e negócio para modernizar operações, acelerar decisões e construir plataformas escaláveis em ambientes financeiros complexos.</p>
+    </section>
 
-<section class="capability" id="capabilities"><div class="section-title"><div><div class="eyebrow mono">Mapa de capacidades</div><h2>Capacidade → função → implementação → analogia.</h2></div><p>Use esta matriz durante a apresentação para sair do conceito e chegar ao componente técnico correspondente.</p></div><div class="toolbar"><input class="search" id="q" placeholder="Buscar: RAG, Guardrails, Context Window, Fine-tuning, Creator OS..."><div class="filters"><button class="active" data-filter="all">Todos</button><button data-filter="RAG">RAG</button><button data-filter="Contexto">Contexto</button><button data-filter="Modelos">Modelos</button><button data-filter="Agentes">Agentes</button><button data-filter="Segurança">Segurança</button><button data-filter="Observabilidade">Observabilidade</button><button data-filter="Creator AI">Creator AI</button><button data-filter="Reliability">Reliability</button></div></div><div class="table-wrap"><table class="matrix"><thead><tr><th>Categoria</th><th>Capacidade / Termo</th><th>O que é</th><th>Função no StudyFlow</th><th>Implementação / Exemplo</th><th>Analogia</th></tr></thead><tbody id="capRows"><tr data-cat="Fundamentos"><td><span class="cat">Fundamentos</span></td><td><b>LLM</b></td><td>Modelo de linguagem de grande escala</td><td>Motor de raciocínio e geração</td><td><code>Providers via AI Gateway</code></td><td>O cérebro</td></tr>
-<tr data-cat="Fundamentos"><td><span class="cat">Fundamentos</span></td><td><b>Transformer</b></td><td>Arquitetura base dos LLMs modernos</td><td>Fundamento conceitual dos modelos consumidos</td><td><code>Não implementado internamente</code></td><td>Arquitetura do cérebro</td></tr>
-<tr data-cat="Fundamentos"><td><span class="cat">Fundamentos</span></td><td><b>Tokens</b></td><td>Unidades processadas pelo modelo</td><td>Medição de contexto e custo</td><td><code>Context Intelligence / FinOps</code></td><td>Palavras/pedaços que o cérebro lê</td></tr>
-<tr data-cat="Contexto"><td><span class="cat">Contexto</span></td><td><b>Context Window</b></td><td>Limite de informação disponível numa inferência</td><td>Controlar quanto contexto chega ao LLM</td><td><code>context_intelligence/engine.py</code></td><td>Mesa de trabalho</td></tr>
-<tr data-cat="Contexto"><td><span class="cat">Contexto</span></td><td><b>Context Budgeting</b></td><td>Distribuição deliberada da janela de contexto</td><td>Priorizar informação relevante</td><td><code>Context Intelligence</code></td><td>Organizar espaço na mesa</td></tr>
-<tr data-cat="Contexto"><td><span class="cat">Contexto</span></td><td><b>Context Observability</b></td><td>Observabilidade do uso do contexto</td><td>Entender consumo, pressão e composição</td><td><code>obs/context_observability.py</code></td><td>Painel da mesa de trabalho</td></tr>
-<tr data-cat="Memória"><td><span class="cat">Memória</span></td><td><b>Memory</b></td><td>Estado persistente entre interações</td><td>Manter informação útil além da janela</td><td><code>obs/memory.py</code></td><td>Memória de longo prazo</td></tr>
-<tr data-cat="Memória"><td><span class="cat">Memória</span></td><td><b>Memory Consolidation</b></td><td>Seleção/consolidação do que merece persistir</td><td>Evitar guardar tudo indiscriminadamente</td><td><code>memory_consolidation/engine.py</code></td><td>Organizar lembranças</td></tr>
-<tr data-cat="Modelos"><td><span class="cat">Modelos</span></td><td><b>Model Gateway</b></td><td>Abstração sobre diferentes modelos/providers</td><td>Evitar acoplamento direto ao provider</td><td><code>ai_gateway/gateway.py</code></td><td>Central telefônica</td></tr>
-<tr data-cat="Modelos"><td><span class="cat">Modelos</span></td><td><b>Model Registry</b></td><td>Catálogo dos modelos disponíveis</td><td>Conhecer capacidades e configurações</td><td><code>ai_gateway/model_registry.py</code></td><td>Catálogo de especialistas</td></tr>
-<tr data-cat="Modelos"><td><span class="cat">Modelos</span></td><td><b>Model Routing</b></td><td>Escolha do modelo por política/tarefa</td><td>Direcionar cada requisição</td><td><code>ai_gateway/router.py</code></td><td>Triagem médica</td></tr>
-<tr data-cat="Modelos"><td><span class="cat">Modelos</span></td><td><b>Model Cascade</b></td><td>Escalonamento barato → poderoso</td><td>Otimizar custo × qualidade</td><td><code>model_cascade/cascade.py</code></td><td>Júnior → sênior → especialista</td></tr>
-<tr data-cat="Modelos"><td><span class="cat">Modelos</span></td><td><b>Local Models</b></td><td>Execução de modelos open-weight</td><td>Privacidade, laboratório e alternativas</td><td><code>local_ai/provider.py</code></td><td>Especialista dentro de casa</td></tr>
-<tr data-cat="Modelos"><td><span class="cat">Modelos</span></td><td><b>vLLM</b></td><td>Serving otimizado de modelos</td><td>Infraestrutura para inferência open-weight</td><td><code>Local Model Lab</code></td><td>Servidor especializado</td></tr>
-<tr data-cat="Treinamento"><td><span class="cat">Treinamento</span></td><td><b>Fine-tuning</b></td><td>Ajuste de modelo com dados específicos</td><td>Adaptação quando há evidência para isso</td><td><code>Model Adaptation Lab</code></td><td>Especialização profissional</td></tr>
-<tr data-cat="Treinamento"><td><span class="cat">Treinamento</span></td><td><b>SFT</b></td><td>Supervised Fine-Tuning</td><td>Ensinar comportamento com exemplos</td><td><code>training_runtime/runtime.py</code></td><td>Professor mostrando respostas</td></tr>
-<tr data-cat="Treinamento"><td><span class="cat">Treinamento</span></td><td><b>LoRA</b></td><td>Fine-tuning eficiente por adaptadores</td><td>Adaptar sem retreinar todo o modelo</td><td><code>Model Adaptation</code></td><td>Especialização modular</td></tr>
-<tr data-cat="Treinamento"><td><span class="cat">Treinamento</span></td><td><b>QLoRA</b></td><td>LoRA sobre modelo quantizado</td><td>Reduzir recursos de treinamento</td><td><code>Training Runtime</code></td><td>Especialização econômica</td></tr>
-<tr data-cat="Treinamento"><td><span class="cat">Treinamento</span></td><td><b>DPO</b></td><td>Otimização baseada em preferências</td><td>Alinhar respostas a preferências</td><td><code>Model Adaptation Lab</code></td><td>Aprender qual resposta é melhor</td></tr>
-<tr data-cat="Dados"><td><span class="cat">Dados</span></td><td><b>Dataset Engineering</b></td><td>Preparação sistemática dos datasets</td><td>Criar dados adequados para treino/eval</td><td><code>dataset_engineering/lab.py</code></td><td>Preparar material didático</td></tr>
-<tr data-cat="Dados"><td><span class="cat">Dados</span></td><td><b>Synthetic Data</b></td><td>Dados gerados artificialmente</td><td>Expandir cenários de treino/eval</td><td><code>obs/synthetic_data.py</code></td><td>Simulador de situações</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>RAG</b></td><td>Recuperação + geração</td><td>Responder usando conhecimento externo</td><td><code>rag/query.py</code></td><td>Prova com consulta</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Document Extraction</b></td><td>Extração de conteúdo documental</td><td>Transformar documentos em conhecimento</td><td><code>rag/document_extractor.py</code></td><td>Digitalizar um livro</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Chunking</b></td><td>Divisão de documentos</td><td>Criar unidades recuperáveis</td><td><code>rag/chunker.py</code></td><td>Dividir livro em fichas</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Vector Search</b></td><td>Busca semântica</td><td>Encontrar conteúdo conceitualmente parecido</td><td><code>RAG / Vector Store</code></td><td>Buscar por significado</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Hybrid Search</b></td><td>Vetorial + lexical</td><td>Melhorar recall/precision</td><td><code>rag/hybrid.py</code></td><td>Buscar por significado e palavras</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Reranking</b></td><td>Reordenação dos resultados</td><td>Colocar evidência mais relevante primeiro</td><td><code>rag/reranker.py</code></td><td>Segunda avaliação</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Query Rewriting</b></td><td>Reescrita da pergunta</td><td>Melhorar a recuperação</td><td><code>rag/query_rewriter.py</code></td><td>Reformular a pergunta</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Query Expansion</b></td><td>Expansão da consulta</td><td>Aumentar cobertura da busca</td><td><code>rag/query_expansion.py</code></td><td>Procurar sinônimos</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>HyDE</b></td><td>Documento hipotético para recuperação</td><td>Melhorar matching semântico</td><td><code>rag/hyde.py</code></td><td>Imaginar a resposta antes de procurar</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Parent-Child Retrieval</b></td><td>Recuperação granular + contexto pai</td><td>Precisão sem perder contexto</td><td><code>rag/parent_child.py</code></td><td>Encontrar parágrafo e abrir capítulo</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>Contextual Retrieval</b></td><td>Chunks enriquecidos com contexto</td><td>Reduzir ambiguidade</td><td><code>rag/contextual.py</code></td><td>Ficha com contexto</td></tr>
-<tr data-cat="RAG"><td><span class="cat">RAG</span></td><td><b>GraphRAG</b></td><td>Recuperação usando relações/grafo</td><td>Explorar conhecimento conectado</td><td><code>rag/graphrag.py</code></td><td>Mapa de relações</td></tr>
-<tr data-cat="Agentes"><td><span class="cat">Agentes</span></td><td><b>AI Agent</b></td><td>LLM com objetivo, ferramentas e loop</td><td>Executar tarefas, não apenas responder</td><td><code>Agent Harness</code></td><td>Funcionário digital</td></tr>
-<tr data-cat="Agentes"><td><span class="cat">Agentes</span></td><td><b>Planning</b></td><td>Decomposição do objetivo</td><td>Planejar etapas antes da execução</td><td><code>agents/planning.py</code></td><td>Plano de trabalho</td></tr>
-<tr data-cat="Agentes"><td><span class="cat">Agentes</span></td><td><b>Agent Harness</b></td><td>Runtime controlado do agente</td><td>Limitar execução, ferramentas e loops</td><td><code>agent_harness/runtime.py</code></td><td>Ambiente de trabalho supervisionado</td></tr>
-<tr data-cat="Agentes"><td><span class="cat">Agentes</span></td><td><b>Supervisor</b></td><td>Agente coordenador</td><td>Gerenciar agentes especializados</td><td><code>supervisor/architecture.py</code></td><td>Gestor</td></tr>
-<tr data-cat="Agentes"><td><span class="cat">Agentes</span></td><td><b>Controlled Agent Swarm</b></td><td>Agentes trabalhando paralelamente sob controle</td><td>Colaboração multiagente</td><td><code>swarm/control.py</code></td><td>Equipe especializada</td></tr>
-<tr data-cat="Agentes"><td><span class="cat">Agentes</span></td><td><b>Self-Correction</b></td><td>Revisão/correção da própria execução</td><td>Melhorar resultados dentro de limites</td><td><code>obs/self_correction.py</code></td><td>Revisão antes da entrega</td></tr>
-<tr data-cat="Ferramentas"><td><span class="cat">Ferramentas</span></td><td><b>Tool Calling</b></td><td>Modelo acionando funções externas</td><td>Permitir ações reais</td><td><code>Agent Harness</code></td><td>Usar ferramentas</td></tr>
-<tr data-cat="Protocolos"><td><span class="cat">Protocolos</span></td><td><b>MCP</b></td><td>Protocolo para conectar modelos a ferramentas/contexto</td><td>Padronizar tools/resources</td><td><code>mcp_server/server.py</code></td><td>USB-C para IA</td></tr>
-<tr data-cat="Protocolos"><td><span class="cat">Protocolos</span></td><td><b>A2A</b></td><td>Comunicação agente-agente</td><td>Interoperabilidade entre agentes</td><td><code>a2a/fabric.py</code></td><td>Idioma entre funcionários</td></tr>
-<tr data-cat="Skills"><td><span class="cat">Skills</span></td><td><b>Skills</b></td><td>Capacidades reutilizáveis e especializadas</td><td>Modularizar competências</td><td><code>skills/registry.py</code></td><td>Manual operacional</td></tr>
-<tr data-cat="Segurança"><td><span class="cat">Segurança</span></td><td><b>AI Security Gateway</b></td><td>Camada de controle das interações de IA</td><td>Aplicar políticas antes/depois do modelo</td><td><code>ai_security/gateway.py</code></td><td>Portaria</td></tr>
-<tr data-cat="Segurança"><td><span class="cat">Segurança</span></td><td><b>Guardrails</b></td><td>Regras determinísticas de segurança</td><td>Impedir ações/conteúdo indevidos</td><td><code>security/guards.py</code></td><td>Grades de proteção</td></tr>
-<tr data-cat="Segurança"><td><span class="cat">Segurança</span></td><td><b>Zero Trust</b></td><td>Nada é confiável por padrão</td><td>Validar identidade, acesso e ação</td><td><code>Agent Gateway / Security</code></td><td>Crachá para cada porta</td></tr>
-<tr data-cat="Segurança"><td><span class="cat">Segurança</span></td><td><b>Audit Trail</b></td><td>Registro auditável de ações</td><td>Rastreabilidade</td><td><code>security/audit.py</code></td><td>Caixa-preta</td></tr>
-<tr data-cat="Segurança"><td><span class="cat">Segurança</span></td><td><b>Browser Sandbox</b></td><td>Navegação isolada</td><td>Reduzir blast radius</td><td><code>browser_agent/sandbox.py</code></td><td>Sala isolada</td></tr>
-<tr data-cat="Avaliação"><td><span class="cat">Avaliação</span></td><td><b>Evals</b></td><td>Avaliação sistemática</td><td>Medir qualidade antes/depois de mudanças</td><td><code>evals/benchmark.py</code></td><td>Provas</td></tr>
-<tr data-cat="Avaliação"><td><span class="cat">Avaliação</span></td><td><b>Golden Dataset</b></td><td>Casos de referência</td><td>Detectar regressões</td><td><code>Evaluation Engineering</code></td><td>Gabarito</td></tr>
-<tr data-cat="Avaliação"><td><span class="cat">Avaliação</span></td><td><b>LLM-as-Judge</b></td><td>LLM avaliando respostas</td><td>Um sinal adicional de qualidade</td><td><code>obs/judge.py</code></td><td>Segundo avaliador</td></tr>
-<tr data-cat="Avaliação"><td><span class="cat">Avaliação</span></td><td><b>Retrieval Quality</b></td><td>Avaliação específica do RAG</td><td>Medir qualidade da recuperação</td><td><code>obs/retrieval_quality.py</code></td><td>Avaliar a pesquisa antes da resposta</td></tr>
-<tr data-cat="Observabilidade"><td><span class="cat">Observabilidade</span></td><td><b>Tracing</b></td><td>Rastreamento da execução</td><td>Entender caminho da requisição</td><td><code>obs/tracing.py</code></td><td>GPS da execução</td></tr>
-<tr data-cat="Observabilidade"><td><span class="cat">Observabilidade</span></td><td><b>Runtime Evidence</b></td><td>Evidência da execução real</td><td>Separar “há código” de “foi executado”</td><td><code>obs/runtime_evidence.py</code></td><td>Caixa-preta operacional</td></tr>
-<tr data-cat="Observabilidade"><td><span class="cat">Observabilidade</span></td><td><b>Drift</b></td><td>Mudança de comportamento/distribuição</td><td>Detectar degradação</td><td><code>obs/drift_intelligence.py</code></td><td>Radar de mudança</td></tr>
-<tr data-cat="Observabilidade"><td><span class="cat">Observabilidade</span></td><td><b>Lineage</b></td><td>Origem e transformação dos artefatos</td><td>Rastreabilidade</td><td><code>obs/lineage.py</code></td><td>Árvore genealógica</td></tr>
-<tr data-cat="FinOps"><td><span class="cat">FinOps</span></td><td><b>Token/Cost Observability</b></td><td>Controle econômico do uso de IA</td><td>Custo por operação/modelo</td><td><code>obs/finops.py</code></td><td>Conta de energia</td></tr>
-<tr data-cat="ValueOps"><td><span class="cat">ValueOps</span></td><td><b>Value Ledger</b></td><td>Relação custo → resultado → valor</td><td>Mostrar se IA gera valor</td><td><code>obs/value_ledger.py</code></td><td>Demonstrativo de ROI</td></tr>
-<tr data-cat="AgentOps"><td><span class="cat">AgentOps</span></td><td><b>Agent Observability</b></td><td>Observabilidade específica de agentes</td><td>Ver execução, ferramentas, falhas e limites</td><td><code>Observability stack</code></td><td>Sala de controle</td></tr>
-<tr data-cat="Reliability"><td><span class="cat">Reliability</span></td><td><b>Failure Lab</b></td><td>Simulação determinística de falhas</td><td>Testar comportamento fora do happy path</td><td><code>production/failure_lab.py</code></td><td>Simulador de pane</td></tr>
-<tr data-cat="Reliability"><td><span class="cat">Reliability</span></td><td><b>SLO</b></td><td>Objetivo mensurável de confiabilidade</td><td>Definir nível esperado de serviço</td><td><code>production/slo.py</code></td><td>Contrato operacional</td></tr>
-<tr data-cat="Reliability"><td><span class="cat">Reliability</span></td><td><b>Incident Management</b></td><td>Tratamento estruturado de incidentes</td><td>Detectar → conter → recuperar</td><td><code>production/incident_center.py</code></td><td>Sala de crise</td></tr>
-<tr data-cat="Reliability"><td><span class="cat">Reliability</span></td><td><b>Blast Radius</b></td><td>Impacto potencial de uma mudança/falha</td><td>Priorizar análise</td><td><code>case_mode/dependency_graph.py</code></td><td>Raio de explosão</td></tr>
-<tr data-cat="Production"><td><span class="cat">Production</span></td><td><b>Readiness Gate</b></td><td>Gate de prontidão</td><td>Bloquear produção quando evidência crítica falta</td><td><code>production/readiness_gate.py</code></td><td>Checklist de decolagem</td></tr>
-<tr data-cat="Architecture"><td><span class="cat">Architecture</span></td><td><b>Change Impact</b></td><td>Avaliação prévia de mudanças</td><td>Saber o que uma alteração pode afetar</td><td><code>case_mode/change_impact.py</code></td><td>Engenharia de impacto</td></tr>
-<tr data-cat="Architecture"><td><span class="cat">Architecture</span></td><td><b>Trade-off Ledger</b></td><td>Registro de decisões e alternativas</td><td>Explicar por que uma arquitetura foi escolhida</td><td><code>case_mode/tradeoff_ledger.py</code></td><td>Diário de decisões</td></tr>
-<tr data-cat="Architecture"><td><span class="cat">Architecture</span></td><td><b>Source Explorer</b></td><td>Navegação da capacidade até código real</td><td>Defender arquitetura com evidência</td><td><code>case_mode/source_explorer.py</code></td><td>Raio-X do sistema</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Content Intelligence</b></td><td>Inteligência aplicada ao conteúdo</td><td>Entender potencial e características</td><td><code>Creator OS</code></td><td>Editor analítico</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Scoring Swarm</b></td><td>Múltiplos avaliadores especializados</td><td>Hook, curiosidade, emoção, retenção etc.</td><td><code>Creator OS</code></td><td>Banca de jurados</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Viral Judge</b></td><td>Avaliação final do potencial</td><td>Consolidar sinais</td><td><code>Creator OS</code></td><td>Editor-chefe</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Packaging Intelligence</b></td><td>Título/thumbnail/embalagem</td><td>Melhorar descoberta e clique</td><td><code>Creator OS</code></td><td>Capa do produto</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Platform Brain</b></td><td>Inteligência específica por plataforma</td><td>Adaptar estratégia ao canal</td><td><code>Creator OS</code></td><td>Especialista de canal</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Performance Intelligence</b></td><td>Análise pós-publicação</td><td>Aprender com performance</td><td><code>Creator OS</code></td><td>Analista de audiência</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Learning Loop</b></td><td>Feedback performance → decisão</td><td>Fazer o sistema aprender com resultados</td><td><code>Creator OS</code></td><td>Ciclo de melhoria</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Experiment Engine</b></td><td>Experimentos controlados</td><td>Comparar estratégias</td><td><code>Creator OS</code></td><td>Laboratório</td></tr>
-<tr data-cat="Creator AI"><td><span class="cat">Creator AI</span></td><td><b>Autonomous Content Director</b></td><td>Orquestração do processo criativo</td><td>Coordenar análise→score→package→repurpose</td><td><code>Creator OS</code></td><td>Diretor de conteúdo</td></tr></tbody></table></div></section>
+    <section id="tecnologias" class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <article class="glass card-hover rounded-[22px] p-6">
+        <div class="mb-9 flex items-start justify-between"><div class="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30 text-lime-200">◈</div><span class="font-mono text-sm text-neutral-600">01</span></div>
+        <h2 class="text-lg font-semibold tracking-tight text-white">Decision Intelligence</h2>
+        <p class="mt-2 text-sm leading-6 text-neutral-500">Credit Risk, Pricing, Analytics, Decision Engines e inteligência comercial.</p>
+      </article>
+      <article class="glass card-hover rounded-[22px] p-6">
+        <div class="mb-9 flex items-start justify-between"><div class="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30 text-lime-200">▤</div><span class="font-mono text-sm text-neutral-600">02</span></div>
+        <h2 class="text-lg font-semibold tracking-tight text-white">Enterprise Data Platforms</h2>
+        <p class="mt-2 text-sm leading-6 text-neutral-500">Data Engineering, Cloud, integração, governança, LGPD e plataformas analíticas.</p>
+      </article>
+      <article class="glass card-hover rounded-[22px] p-6">
+        <div class="mb-9 flex items-start justify-between"><div class="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30 text-lime-200">⌁</div><span class="font-mono text-sm text-neutral-600">03</span></div>
+        <h2 class="text-lg font-semibold tracking-tight text-white">AI &amp; Generative Runtimes</h2>
+        <p class="mt-2 text-sm leading-6 text-neutral-500">Generative AI, MLOps, Intelligent Platforms, guardrails e sistemas de agentes.</p>
+      </article>
+      <article class="glass card-hover rounded-[22px] p-6">
+        <div class="mb-9 flex items-start justify-between"><div class="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30 text-lime-200">⌂</div><span class="font-mono text-sm text-neutral-600">04</span></div>
+        <h2 class="text-lg font-semibold tracking-tight text-white">Formação &amp; Credenciais</h2>
+        <p class="mt-2 text-sm leading-6 text-neutral-500">MIT, Mackenzie, USP, FIAP; Microsoft Azure, Oracle OCA e outras certificações.</p>
+      </article>
+    </section>
 
-<section class="notes"><div class="note"><h4>Integração Google / YouTube</h4><p>Busca, ingestão, upload e analytics entram como tools/conectores; o runtime não deve acoplar decisão de IA à API externa.</p></div><div class="note"><h4>Decodo + Hetzner</h4><p>Proxy residencial funciona como fallback operacional para bloqueios por IP de datacenter; Hetzner permanece infraestrutura self-hosted para serviços e workers.</p></div><div class="note"><h4>CI/CD como evidência</h4><p>Pipeline deve provar build, teste, scan, package e deploy. Readiness e rollback fazem parte do desenho de produção, não são pós-deploy.</p></div><div class="note"><h4>Pentest para GenAI</h4><p>OWASP tradicional precisa ser combinado com prompt injection, tool abuse, data exfiltration, authorization, sandbox escape e testes de blast radius.</p></div></section>
+    <section id="case-study" class="glass mt-4 overflow-hidden rounded-[28px]">
+      <div class="grid lg:grid-cols-[1.15fr_.85fr]">
+        <div class="p-6 sm:p-8 lg:p-9">
+          <div class="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.15em] text-lime-200"><span class="h-1.5 w-1.5 rounded-full bg-lime-300"></span>Projeto em destaque</div>
+          <h2 class="max-w-3xl text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">StudyFlow: Da Matéria Bruta à Engenharia Defensável</h2>
+          <p class="mt-4 max-w-2xl text-sm leading-6 text-neutral-400">Uma plataforma multimodal para aprender, criar e operar com inteligência — conectando cursos, vídeo, RAG, agentes, observabilidade e arquitetura de produção.</p>
 
-<footer class="footer"><span>StudyFlow · Architecture Blueprint · projeto colaborativo</span><span>Knowledge → Context → Reasoning → Action → Evidence → Learning</span></footer>
-</div>
-<script>
-const q=document.getElementById('q'), rows=[...document.querySelectorAll('#capRows tr')], filters=[...document.querySelectorAll('[data-filter]')];let cat='all';function apply(){const s=(q.value||'').toLowerCase();rows.forEach(r=>{const okCat=cat==='all'||r.dataset.cat===cat;const okQ=!s||r.textContent.toLowerCase().includes(s);r.style.display=okCat&&okQ?'':'none'})}q.addEventListener('input',apply);filters.forEach(b=>b.addEventListener('click',()=>{filters.forEach(x=>x.classList.remove('active'));b.classList.add('active');cat=b.dataset.filter;apply()}));
-</script></body></html>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="rounded-full border border-lime-300/35 bg-lime-300/[0.07] px-4 py-2 text-xs font-medium text-lime-200">Módulo Georgina</span>
+            <span class="rounded-full border border-purple-400/35 bg-purple-400/[0.07] px-4 py-2 text-xs font-medium text-purple-200">Módulo Marcos Cezar</span>
+          </div>
+
+          <div class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-2xl border border-white/[0.07] bg-black/25 p-4"><div class="font-mono text-base text-white">35+ Views</div><div class="mt-1 text-[11px] text-neutral-600">no case técnico</div></div>
+            <div class="rounded-2xl border border-white/[0.07] bg-black/25 p-4"><div class="font-mono text-base text-white">AI Gateway 2.0</div><div class="mt-1 text-[11px] text-neutral-600">roteamento inteligente</div></div>
+            <div class="rounded-2xl border border-white/[0.07] bg-black/25 p-4"><div class="font-mono text-base text-white">RAG Verificável</div><div class="mt-1 text-[11px] text-neutral-600">fontes e evidências</div></div>
+            <div class="rounded-2xl border border-white/[0.07] bg-black/25 p-4"><div class="font-mono text-base text-white">&lt;140ms P95</div><div class="mt-1 text-[11px] text-neutral-600">meta operacional</div></div>
+          </div>
+        </div>
+
+        <div class="border-t border-white/[0.07] bg-black/25 p-5 lg:border-l lg:border-t-0">
+          <div class="h-full min-h-[330px] rounded-2xl border border-white/[0.08] bg-[#0b0d10] p-4 shadow-inner">
+            <div class="flex items-center justify-between border-b border-white/[0.06] pb-3"><div class="flex items-center gap-2 text-xs font-semibold"><span class="grid h-5 w-5 place-items-center rounded-md bg-lime-300 text-[8px] font-black text-neutral-950">SF</span>StudyFlow</div><span class="font-mono text-[9px] text-neutral-600">CONTROL PLANE</span></div>
+            <div class="mt-4 grid grid-cols-[110px_1fr] gap-3">
+              <aside class="space-y-2 text-[9px] text-neutral-600"><div class="rounded-lg bg-lime-300/[0.07] px-2.5 py-2 text-lime-200">Início</div><div class="px-2.5 py-1.5">Aprender</div><div class="px-2.5 py-1.5">Criar</div><div class="px-2.5 py-1.5">Tendências</div><div class="px-2.5 py-1.5">Observabilidade</div></aside>
+              <div>
+                <div class="grid grid-cols-3 gap-2"><div class="rounded-lg border border-white/[0.06] p-3"><div class="text-[8px] text-neutral-600">CONTEXTO</div><div class="mt-1 font-mono text-lg">78%</div></div><div class="rounded-lg border border-white/[0.06] p-3"><div class="text-[8px] text-neutral-600">CAPABILITIES</div><div class="mt-1 font-mono text-lg">24</div></div><div class="rounded-lg border border-white/[0.06] p-3"><div class="text-[8px] text-neutral-600">RUNTIME</div><div class="mt-1 font-mono text-lg">AI</div></div></div>
+                <div class="mt-3 rounded-lg border border-white/[0.06] p-3"><div class="mb-3 text-[9px] text-neutral-500">Arquitetura operacional</div><div class="space-y-2"><div class="h-2 rounded-full bg-neutral-900"><div class="h-full w-[82%] rounded-full bg-lime-300/65"></div></div><div class="h-2 rounded-full bg-neutral-900"><div class="h-full w-[64%] rounded-full bg-purple-400/55"></div></div><div class="h-2 rounded-full bg-neutral-900"><div class="h-full w-[73%] rounded-full bg-neutral-500/45"></div></div></div></div>
+                <a href="/case" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex rounded-lg border border-lime-300/20 bg-lime-300/[0.05] px-3 py-2 text-[9px] font-medium text-lime-200 hover:bg-lime-300/[0.09]">Abrir documentação técnica →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="arquitetura" class="glass mt-4 overflow-hidden rounded-[28px] scroll-mt-24">
+      <div class="border-b border-white/[0.07] px-6 py-7 sm:px-8 lg:px-9">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div class="font-mono text-[10px] uppercase tracking-[.16em] text-lime-200">Architecture Blueprint</div>
+            <h2 class="mt-2 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">Infraestrutura, fluxos, segurança e operação.</h2>
+            <p class="mt-3 max-w-4xl text-sm leading-6 text-neutral-400">Visão técnica do StudyFlow com diagramas Mermaid versionáveis. Cada aba explica uma responsabilidade específica, seus limites e a evidência que pode ser defendida hoje.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="arch-chip"><span class="arch-dot"></span>Hetzner / Linux</span>
+            <span class="arch-chip">Docker Compose</span>
+            <span class="arch-chip">Flask + Redis + PostgreSQL/pgvector</span>
+            <span class="arch-chip">Gemini · OpenAI · Anthropic</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 sm:p-6 lg:p-7">
+        <div class="arch-shell">
+          <aside class="arch-nav arch-card" aria-label="Subabas de arquitetura">
+            <div class="mb-3 px-2 font-mono text-[9px] uppercase tracking-[.16em] text-neutral-600">Mapa técnico</div>
+            <button type="button" data-arch-tab="overview" aria-selected="true"><span class="arch-ico">⌘</span><span><b class="block text-xs">Visão Geral</b><small class="text-[10px] text-neutral-600">Cloud, rede e serviços</small></span></button>
+            <button type="button" data-arch-tab="components" aria-selected="false"><span class="arch-ico">▦</span><span><b class="block text-xs">Componentes</b><small class="text-[10px] text-neutral-600">web, worker, scheduler...</small></span></button>
+            <button type="button" data-arch-tab="runtime" aria-selected="false"><span class="arch-ico">↯</span><span><b class="block text-xs">Web / Worker / Scheduler</b><small class="text-[10px] text-neutral-600">Separação de responsabilidades</small></span></button>
+            <button type="button" data-arch-tab="edge" aria-selected="false"><span class="arch-ico">⇄</span><span><b class="block text-xs">Nginx & Rede</b><small class="text-[10px] text-neutral-600">Entrada e isolamento</small></span></button>
+            <button type="button" data-arch-tab="health" aria-selected="false"><span class="arch-ico">♥</span><span><b class="block text-xs">Health Checks</b><small class="text-[10px] text-neutral-600">Ready ≠ running</small></span></button>
+            <button type="button" data-arch-tab="youtube" aria-selected="false"><span class="arch-ico">▶</span><span><b class="block text-xs">YouTube Pipeline</b><small class="text-[10px] text-neutral-600">Download, Whisper e publicação</small></span></button>
+            <button type="button" data-arch-tab="instagram" aria-selected="false"><span class="arch-ico">◎</span><span><b class="block text-xs">Instagram</b><small class="text-[10px] text-neutral-600">OAuth e publicação</small></span></button>
+            <button type="button" data-arch-tab="ai" aria-selected="false"><span class="arch-ico">AI</span><span><b class="block text-xs">AI Gateway</b><small class="text-[10px] text-neutral-600">Multi-provider e routing</small></span></button>
+            <button type="button" data-arch-tab="benchmark" aria-selected="false"><span class="arch-ico">≋</span><span><b class="block text-xs">Benchmark & Judge</b><small class="text-[10px] text-neutral-600">Comparação controlada</small></span></button>
+            <button type="button" data-arch-tab="rag" aria-selected="false"><span class="arch-ico">R</span><span><b class="block text-xs">RAG</b><small class="text-[10px] text-neutral-600">Retrieval verificável</small></span></button>
+            <button type="button" data-arch-tab="guardrails" aria-selected="false"><span class="arch-ico">◇</span><span><b class="block text-xs">Guardrails</b><small class="text-[10px] text-neutral-600">Policy, tools e aprovação</small></span></button>
+            <button type="button" data-arch-tab="security" aria-selected="false"><span class="arch-ico">⚿</span><span><b class="block text-xs">Testes de Segurança</b><small class="text-[10px] text-neutral-600">Attack Lab</small></span></button>
+            <button type="button" data-arch-tab="reliability" aria-selected="false"><span class="arch-ico">∞</span><span><b class="block text-xs">Confiabilidade</b><small class="text-[10px] text-neutral-600">Retry, breaker, DLQ</small></span></button>
+            <button type="button" data-arch-tab="slo" aria-selected="false"><span class="arch-ico">S</span><span><b class="block text-xs">SLO & Production Health</b><small class="text-[10px] text-neutral-600">SLI, budget e burn rate</small></span></button>
+            <button type="button" data-arch-tab="observability" aria-selected="false"><span class="arch-ico">◫</span><span><b class="block text-xs">Observabilidade & FinOps</b><small class="text-[10px] text-neutral-600">Trace, tokens, custo</small></span></button>
+            <button type="button" data-arch-tab="cicd" aria-selected="false"><span class="arch-ico">CI</span><span><b class="block text-xs">CI/CD & Deploy</b><small class="text-[10px] text-neutral-600">Git, testes, Hetzner, rollback</small></span></button>
+            <button type="button" data-arch-tab="truth" aria-selected="false"><span class="arch-ico">✓</span><span><b class="block text-xs">Claims & Limites</b><small class="text-[10px] text-neutral-600">O que afirmar / não afirmar</small></span></button>
+          </aside>
+
+          <div class="min-w-0">
+            <!-- VISÃO GERAL -->
+            <article class="arch-panel active" data-arch-panel="overview">
+              <div class="arch-card">
+                <div class="mb-4 flex items-start justify-between gap-4"><div><div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">01 · visão geral</div><h3 class="mt-2 text-xl font-semibold text-white">Arquitetura geral do StudyFlow</h3><p class="mt-2 text-sm leading-6 text-neutral-500">A produção atual é single-node em VPS Linux/Hetzner, com Nginx como reverse proxy. Multi-node load balancing é evolução, não claim atual.</p></div><span class="arch-chip">evidence-first</span></div>
+                <div class="arch-mermaid"><pre class="mermaid">
+flowchart TB
+
+  USER["👥 Usuários<br/>Web · Mobile · Admin"]
+
+  subgraph EDGE["🌐 EDGE & SECURITY"]
+    DNS["DNS / Domain"]
+    TLS["HTTPS / TLS"]
+    NGINX["🛡️ Nginx<br/>Reverse Proxy"]
+  end
+
+  subgraph APP["🟢 APPLICATION PLANE"]
+    WEB["Web / Flask<br/>UI + APIs + Auth"]
+    API["API Surface<br/>REST + SSE"]
+    I18N["i18n<br/>PT · EN · ES"]
+  end
+
+  subgraph EXEC["⚙️ EXECUTION PLANE"]
+    REDIS["Redis<br/>Queue + Coordination"]
+    WORKER["Worker Pool<br/>CPU-heavy / async"]
+    SCHED["Scheduler<br/>Periodic jobs"]
+    N8N["n8n<br/>Automation"]
+    CRAWL["Crawl4AI<br/>Isolated crawler"]
+    MPT["MoneyPrinterTurbo<br/>Optional creator engine"]
+  end
+
+  subgraph DATA["💾 DATA & KNOWLEDGE PLANE"]
+    PG["PostgreSQL"]
+    VEC["pgvector<br/>Vector Store"]
+    MEDIA["Persistent Volumes<br/>video · image · audio"]
+    OBSVOL["Observability Data"]
+    CACHE["Caches<br/>HuggingFace · cookies"]
+  end
+
+  subgraph AI["✨ AI INTELLIGENCE PLANE"]
+    ROUTER["Model Router<br/>off · shadow · active"]
+    GATE["AI Gateway<br/>timeout · fallback · tracing"]
+    GEM["Gemini"]
+    OAI["OpenAI"]
+    ANT["Anthropic"]
+    LOCAL["Local AI / Ollama"]
+    JUDGE["LLM-as-a-Judge"]
+    RAG["RAG Engine<br/>Hybrid · GraphRAG · Rerank"]
+  end
+
+  subgraph MEDIAAI["🎬 MEDIA INTELLIGENCE"]
+    YTDLP["yt-dlp"]
+    PROXY["Residential Proxy"]
+    POT["PO Token / bgutil-pot"]
+    FFMPEG["FFmpeg"]
+    WHISPER["faster-whisper"]
+    SHORTS["Cuts / Shorts / Courses"]
+  end
+
+  subgraph EXT["🔌 EXTERNAL INTEGRATIONS"]
+    YTIN["YouTube Ingest"]
+    YTOUT["YouTube Data API<br/>OAuth publish"]
+    IG["Instagram<br/>OAuth / Publish"]
+    CLOUD["Cloudinary"]
+    WEBEXT["Web / APIs / Webhooks"]
+  end
+
+  subgraph CONTROL["🛡️ CONTROL & ASSURANCE"]
+    GUARD["Guardrails<br/>Input / Output / Policy"]
+    TOOL["Tool Governance<br/>least privilege"]
+    APPROVAL["Human Approval<br/>critical actions"]
+    ATTACK["Attack Lab<br/>security tests"]
+    REL["Reliability<br/>retry · breaker · DLQ"]
+    SLO["SLO / Production Health"]
+    TRACE["Observability<br/>trace_id · latency · status"]
+    FIN["FinOps<br/>tokens · cost · outcome"]
+  end
+
+  subgraph DELIVERY["🚀 DELIVERY & OPERATIONS"]
+    GIT["Git"]
+    CI["CI Validation<br/>Python · Jinja · JS · tests"]
+    CD["CD / Hetzner"]
+    BUILD["Docker Compose<br/>build + deploy"]
+    HEALTH["Health Checks"]
+    ROLLBACK["Rollback<br/>known-good baseline"]
+  end
+
+  USER --> DNS --> TLS --> NGINX --> WEB
+  WEB --> API
+  WEB --> I18N
+
+  WEB --> REDIS
+  REDIS --> WORKER
+  REDIS --> SCHED
+  WEB --> N8N
+  WEB --> CRAWL
+  WORKER --> MPT
+
+  WEB --> PG
+  WORKER --> PG
+  PG --> VEC
+  WORKER --> MEDIA
+  WEB --> MEDIA
+  WEB --> OBSVOL
+  WORKER --> CACHE
+
+  WEB --> ROUTER --> GATE
+  GATE --> GEM
+  GATE --> OAI
+  GATE --> ANT
+  GATE --> LOCAL
+  WEB --> RAG
+  RAG --> VEC
+  RAG --> GATE
+  GATE --> JUDGE
+
+  WORKER --> YTDLP
+  YTIN --> YTDLP
+  PROXY --> YTDLP
+  POT --> YTDLP
+  YTDLP --> FFMPEG --> WHISPER --> SHORTS
+  SHORTS --> MEDIA
+
+  WORKER --> YTOUT
+  WORKER --> IG
+  WORKER --> CLOUD
+  WEB --> WEBEXT
+
+  WEB --> GUARD
+  GUARD --> TOOL
+  TOOL --> APPROVAL
+  WEB --> TRACE
+  WORKER --> TRACE
+  GATE --> TRACE
+  TRACE --> FIN
+  TRACE --> SLO
+  ATTACK --> GUARD
+  REL --> WORKER
+
+  GIT --> CI --> CD --> BUILD --> HEALTH
+  HEALTH --> WEB
+  HEALTH --> REDIS
+  HEALTH --> PG
+  HEALTH --> CRAWL
+  HEALTH -->|failure| ROLLBACK --> BUILD
+
+  classDef edge fill:#16101f,stroke:#b58cff,color:#fff,stroke-width:1.5px;
+  classDef app fill:#071b14,stroke:#b7ff3c,color:#fff,stroke-width:1.5px;
+  classDef exec fill:#21170a,stroke:#f59e0b,color:#fff,stroke-width:1.5px;
+  classDef data fill:#0b1830,stroke:#60a5fa,color:#fff,stroke-width:1.5px;
+  classDef ai fill:#16122a,stroke:#a78bfa,color:#fff,stroke-width:1.5px;
+  classDef media fill:#102126,stroke:#2dd4bf,color:#fff,stroke-width:1.5px;
+  classDef control fill:#231016,stroke:#fb7185,color:#fff,stroke-width:1.5px;
+  classDef delivery fill:#102014,stroke:#4ade80,color:#fff,stroke-width:1.5px;
+
+  class DNS,TLS,NGINX edge;
+  class WEB,API,I18N app;
+  class REDIS,WORKER,SCHED,N8N,CRAWL,MPT exec;
+  class PG,VEC,MEDIA,OBSVOL,CACHE data;
+  class ROUTER,GATE,GEM,OAI,ANT,LOCAL,JUDGE,RAG ai;
+  class YTDLP,PROXY,POT,FFMPEG,WHISPER,SHORTS,YTIN,YTOUT,IG,CLOUD,WEBEXT media;
+  class GUARD,TOOL,APPROVAL,ATTACK,REL,SLO,TRACE,FIN control;
+  class GIT,CI,CD,BUILD,HEALTH,ROLLBACK delivery;
+</pre></div>
+              </div>
+            
+                <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <div class="arch-kpi"><div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">Entry</div><b class="mt-1 block text-sm text-white">Nginx + HTTPS</b><p class="mt-1 text-xs leading-5 text-neutral-500">Ponto público de entrada. Reverse proxy hoje; load balancer multi-node é evolução.</p></div>
+                  <div class="arch-kpi"><div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">Execution</div><b class="mt-1 block text-sm text-white">Web ≠ Worker ≠ Scheduler</b><p class="mt-1 text-xs leading-5 text-neutral-500">HTTP, processamento pesado e periodicidade possuem ciclos de vida diferentes.</p></div>
+                  <div class="arch-kpi"><div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">Control</div><b class="mt-1 block text-sm text-white">Guardrails + Approval</b><p class="mt-1 text-xs leading-5 text-neutral-500">Modelo pode recomendar; autoridade de execução continua limitada por policy e aprovação.</p></div>
+                  <div class="arch-kpi"><div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">Evidence</div><b class="mt-1 block text-sm text-white">Trace + Eval + FinOps</b><p class="mt-1 text-xs leading-5 text-neutral-500">Qualidade, custo, latência, segurança e outcome são tratados como evidência separada.</p></div>
+                </div>
+</article>
+
+            <!-- COMPONENTES -->
+            <article class="arch-panel" data-arch-panel="components">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">02 · componentes</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Componentes e responsabilidades</h3>
+                <div class="mt-4 overflow-x-auto rounded-2xl border border-white/[0.07]">
+                  <table class="arch-table">
+                    <thead><tr><th>Componente</th><th>Responsabilidade</th></tr></thead>
+                    <tbody>
+                      <tr><td>web</td><td>Flask, interface e APIs.</td></tr>
+                      <tr><td>worker</td><td>Tarefas pesadas e assíncronas.</td></tr>
+                      <tr><td>scheduler</td><td>Tarefas periódicas e verificações agendadas.</td></tr>
+                      <tr><td>redis</td><td>Fila, coordenação e desacoplamento entre web e execução.</td></tr>
+                      <tr><td>postgres / pgvector</td><td>Persistência estruturada + banco vetorial do RAG.</td></tr>
+                      <tr><td>crawl4ai</td><td>Crawling isolado em container próprio.</td></tr>
+                      <tr><td>n8n</td><td>Automações e orquestrações auxiliares.</td></tr>
+                      <tr><td>bgutil-pot</td><td>Suporte ao pipeline YouTube / PO Token.</td></tr>
+                      <tr><td>MoneyPrinterTurbo</td><td>Motor de criação de vídeo; integração opcional.</td></tr>
+                      <tr><td>volumes</td><td>Mídia, banco, cookies, observabilidade, modelos e cache persistentes.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </article>
+
+            <!-- WEB WORKER SCHEDULER -->
+            <article class="arch-panel" data-arch-panel="runtime">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">03 · runtime</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Por que web, worker e scheduler são separados?</h3>
+                <p class="mt-2 text-sm leading-6 text-neutral-500">HTTP rápido, CPU-heavy assíncrono e periodicidade têm ciclos de vida diferentes. Isso permite escalar workers sem multiplicar schedulers.</p>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  B["Browser"] --> WEB["web / Flask<br/>request curto"]
+  WEB -->|tarefa pesada| R["Redis Queue"]
+  R --> W1["worker 1"]
+  R --> W2["worker N<br/>escala independente"]
+  W1 --> OUT["resultado / mídia / DB"]
+  W2 --> OUT
+  S["scheduler<br/>1 réplica"] -->|jobs periódicos| R
+                </pre></div>
+              </div>
+            </article>
+
+            <!-- NGINX / REDE / FIREWALL -->
+            <article class="arch-panel" data-arch-panel="edge">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">04 · edge & network</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Nginx, entrada da aplicação e isolamento de rede</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart TD
+  I["Internet"] --> HTTPS["HTTPS"]
+  HTTPS --> N["Nginx<br/>Reverse Proxy"]
+  N --> W["Web / Flask"]
+  subgraph D["Docker Network — serviços internos"]
+    W --> R["Redis"]
+    W --> P["PostgreSQL / pgvector"]
+    W --> C["Crawl4AI"]
+    W --> B["bgutil-pot"]
+    W --> N8["n8n"]
+  end
+  P -. "não publicar externamente" .-> X["🚫 Internet"]
+  R -. "não publicar externamente" .-> X
+  B -. "não publicar externamente" .-> X
+                </pre></div>
+                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                  <div class="arch-kpi"><b class="text-sm text-white">Claim atual</b><p class="mt-2 text-xs leading-5 text-neutral-500">Nginx funciona como reverse proxy. Serviços internos devem permanecer na rede Docker e não serem publicados externamente.</p></div>
+                  <div class="arch-kpi"><b class="text-sm text-white">Evolução</b><p class="mt-2 text-xs leading-5 text-neutral-500">Multi-node + load balancer dedicado quando houver demanda de alta disponibilidade horizontal.</p></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- HEALTH -->
+            <article class="arch-panel" data-arch-panel="health">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">05 · health</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Health checks: running não significa ready</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  DC["Docker Compose"] --> R["Redis<br/>redis-cli ping"]
+  DC --> PG["Postgres<br/>pg_isready"]
+  DC --> C["Crawl4AI<br/>/health"]
+  DC --> WEB["Web<br/>/healthz"]
+  DC --> BG["bgutil-pot<br/>endpoint interno"]
+  DC --> MPT["MPT<br/>/openapi.json"]
+  R --> OK["✅ Healthy / Ready"]
+  PG --> OK
+  C --> OK
+  WEB --> OK
+  BG --> OK
+  MPT --> OK
+                </pre></div>
+              </div>
+            </article>
+
+            <!-- YOUTUBE -->
+            <article class="arch-panel" data-arch-panel="youtube">
+              <div class="space-y-4">
+                <div class="arch-card">
+                  <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">06 · youtube ingest</div>
+                  <h3 class="mt-2 text-xl font-semibold text-white">Pipeline de vídeo + Whisper</h3>
+                  <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  URL["YouTube URL"] --> YD["yt-dlp"]
+  CK["cookies.txt"] --> YD
+  PR["Residential Proxy<br/>IP reputation"] --> YD
+  POT["PO Token / bgutil-pot"] --> YD
+  YD --> VID["Vídeo"]
+  VID --> FF["FFmpeg<br/>extrai áudio"]
+  FF --> WH["faster-whisper"]
+  HC["HuggingFace cache<br/>persistente"] --> WH
+  WH --> TR["Transcrição"]
+  TR --> CUT["Cortes / Shorts"]
+  TR --> RAG["RAG / conhecimento"]
+                  </pre></div>
+                </div>
+                <div class="arch-card">
+                  <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">07 · youtube publish</div>
+                  <h3 class="mt-2 text-xl font-semibold text-white">Publicação via OAuth 2.0</h3>
+                  <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  U["👤 Usuário"] --> AUTH["🔐 Google OAuth 2.0"]
+  AUTH --> CONSENT["Consentimento + scopes"]
+  CONSENT --> TOK["Access token + refresh token"]
+  TOK --> SF["StudyFlow Publisher"]
+  SF --> YT["YouTube Data API"]
+  YT --> VIDEO["▶ Vídeo publicado"]
+  TOK --> STORE["🔒 Token renovável"]
+  SECRET["client_secret.json<br/>somente leitura"] --> SF
+                  </pre></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- INSTAGRAM -->
+            <article class="arch-panel" data-arch-panel="instagram">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">08 · instagram</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Identidade e publicação desacopladas</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  U["Usuário"] --> AUTH["OAuth / identidade"]
+  AUTH --> SF["StudyFlow"]
+  SF --> GOV["Tool Governance<br/>publish_instagram"]
+  GOV -->|approval quando aplicável| PUB["Publisher"]
+  MEDIA["Asset de mídia"] --> PUB
+  CL["Cloudinary<br/>quando necessário"] --> PUB
+  PUB --> IG["Instagram"]
+                </pre></div>
+                <p class="mt-4 text-xs leading-5 text-neutral-500">O blueprint trata a integração como ferramenta governada. Versão/endpoint específico da Graph API só deve ser afirmado quando verificado no publisher em execução.</p>
+              </div>
+            </article>
+
+            <!-- AI GATEWAY -->
+            <article class="arch-panel" data-arch-panel="ai">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">09 · ai gateway</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Gateway ≠ Router</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  T["Task"] --> TP["Task Profile<br/>quality · cost · latency"]
+  TP --> RT["Model Router<br/>off / shadow / active"]
+  RT --> GW["AI Gateway<br/>adapter + timeout + fallback + telemetry"]
+  GW --> G["Gemini"]
+  GW --> O["OpenAI"]
+  GW --> A["Anthropic"]
+  GW --> L["Local / Ollama"]
+                </pre></div>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div class="arch-kpi"><b class="text-white">Gateway</b><p class="mt-1 text-xs text-neutral-500">Como acessar modelos: adapters, timeout, fallback, tracing.</p></div>
+                  <div class="arch-kpi"><b class="text-white">Router</b><p class="mt-1 text-xs text-neutral-500">Qual modelo escolher: restrições, qualidade, custo e latência.</p></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- BENCHMARK -->
+            <article class="arch-panel" data-arch-panel="benchmark">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">10 · evaluation</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Model Benchmark + LLM-as-a-Judge</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart TD
+  I["Mesmo Prompt + Contexto"] --> G["Gemini"]
+  I --> O["OpenAI"]
+  I --> A["Anthropic"]
+  G --> J["LLM-as-a-Judge"]
+  O --> J
+  A --> J
+  J --> M1["Groundedness"]
+  J --> M2["Relevance"]
+  J --> M3["Source Fidelity"]
+  J --> M4["Completeness"]
+  J --> M5["Hallucination"]
+  J --> M6["Judge Score"]
+  B["Benchmark: fallback desativado"] -.-> I
+                </pre></div>
+                <p class="mt-4 text-xs leading-5 text-neutral-500">No benchmark, isolamento experimental é mais importante que resiliência. Em produção, o Gateway pode usar fallback; no benchmark, não.</p>
+              </div>
+            </article>
+
+            <!-- RAG -->
+            <article class="arch-panel" data-arch-panel="rag">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">11 · rag</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">RAG verificável</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  D["Documento / Transcrição"] --> CH["Chunking"]
+  CH --> E["Embeddings"]
+  E --> V["PostgreSQL + pgvector"]
+  Q["Pergunta"] --> QA["Query Analyzer / Rewrite"]
+  QA --> H["Hybrid Retrieval"]
+  V --> H
+  H --> GR["GraphRAG opcional"]
+  GR --> RR["Reranking"]
+  RR --> TK["Top-K Context"]
+  TK --> LLM["LLM"]
+  LLM --> AN["Resposta grounded + evidência"]
+                </pre></div>
+              </div>
+            </article>
+
+            <!-- GUARDRAILS -->
+            <article class="arch-panel" data-arch-panel="guardrails">
+              <div class="space-y-4">
+                <div class="arch-card">
+                  <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">12 · control plane</div>
+                  <h3 class="mt-2 text-xl font-semibold text-white">Guardrails em profundidade</h3>
+                  <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  C["Context Budget"] --> M["Model Choice"]
+  M --> T["Tool Access"]
+  T --> A["Autonomy"]
+  A --> COST["Cost"]
+  COST --> O["Outcome"]
+  O --> AU["Audit"]
+                  </pre></div>
+                </div>
+                <div class="arch-card">
+                  <h3 class="text-lg font-semibold text-white">Human approval e least privilege</h3>
+                  <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart TD
+  ID["Identity"] --> LP["Least Privilege"]
+  LP --> SK["Skill"]
+  SK --> TL["Tool"]
+  TL --> AUT["Autonomy"]
+  AUT --> CC["Cost / Context"]
+  CC --> D{"Decision"}
+  D --> AL["ALLOW"]
+  D --> AP["APPROVAL"]
+  D --> DN["DENY"]
+  H["SUBMIT · UPLOAD · PUBLISH · DELETE · PURCHASE · DOWNLOAD"] --> AP
+                  </pre></div>
+                  <p class="mt-3 text-xs text-neutral-500">Princípio: inteligência não implica autoridade. Explicit DENY vence.</p>
+                </div>
+              </div>
+            </article>
+
+            <!-- SECURITY -->
+            <article class="arch-panel" data-arch-panel="security">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">13 · security testing</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Attack Lab</h3>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mt-4">
+                  <div class="arch-kpi">Prompt Injection</div><div class="arch-kpi">Jailbreak</div><div class="arch-kpi">Prompt Leakage</div><div class="arch-kpi">Data Exfiltration</div>
+                  <div class="arch-kpi">Tool Escalation</div><div class="arch-kpi">Indirect Injection</div><div class="arch-kpi">Memory Poisoning</div><div class="arch-kpi">Output Secret Leakage</div>
+                </div>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  ATT["Synthetic Attack Case"] --> GUARD["Guard / Policy"]
+  GUARD --> RES{"Resultado"}
+  RES -->|blocked| E["Evidence"]
+  RES -->|escaped| F["Failure Evidence"]
+  E --> NOTE["100% da suíte ≠ 100% seguro"]
+  F --> NOTE
+                </pre></div>
+              </div>
+            </article>
+
+            <!-- RELIABILITY -->
+            <article class="arch-panel" data-arch-panel="reliability">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">14 · reliability</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Confiabilidade e recuperação</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  I["Idempotency"] --> CB["Circuit Breaker"]
+  CB --> EX["Execution"]
+  EX -->|falha transitória| BR["Bounded Retry"]
+  BR --> EX
+  EX -->|falha persistente| DLQ["Dead Letter Queue"]
+  DLQ --> RP["Explicit Replay"]
+  RP --> EX
+                </pre></div>
+              </div>
+            </article>
+
+            <!-- SLO -->
+            <article class="arch-panel" data-arch-panel="slo">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">15 · slo</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">SLO & Production Health</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  SLI["SLI"] --> TG["Target"]
+  TG --> W["Window"]
+  W --> EB["Error Budget"]
+  EB --> BR["Burn Rate"]
+  BR --> OR["Operating Response"]
+  DATA["Runtime telemetry"] --> SLI
+  UNKNOWN["Evidência insuficiente"] --> U["UNKNOWN"]
+                </pre></div>
+                <p class="mt-4 text-xs leading-5 text-neutral-500">Mecanismo de SLO existe; sem amostra/telemetria observada suficiente, o estado permanece UNKNOWN. Simulação não é promovida a prova de produção.</p>
+              </div>
+            </article>
+
+            <!-- OBSERVABILITY -->
+            <article class="arch-panel" data-arch-panel="observability">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">16 · observability & finops</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">Trace → tokens → custo → outcome</h3>
+                <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  RQ["Request"] --> TR["trace_id"]
+  TR --> MOD["provider / model"]
+  TR --> LAT["latency"]
+  TR --> TOK["input / output tokens"]
+  TR --> RET["retrieval"]
+  TR --> EV["evaluation"]
+  TOK --> PRICE["Pricing Registry"]
+  PRICE --> COST["Cost Ledger"]
+  EV --> Q["Quality"]
+  COST --> FIN["FinOps"]
+  Q --> FIN
+  FIN --> OUT["Cost × Quality × SLA × Outcome"]
+                </pre></div>
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div class="arch-kpi"><div class="font-mono text-[9px] text-neutral-600">TELEMETRIA</div><b class="mt-1 block text-sm text-white">tokens · latency · status</b></div>
+                  <div class="arch-kpi"><div class="font-mono text-[9px] text-neutral-600">ECONOMIA</div><b class="mt-1 block text-sm text-white">cost / task / provider</b></div>
+                  <div class="arch-kpi"><div class="font-mono text-[9px] text-neutral-600">RESULTADO</div><b class="mt-1 block text-sm text-white">quality · outcome · ROI</b></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- CICD -->
+            <article class="arch-panel" data-arch-panel="cicd">
+              <div class="space-y-4">
+                <div class="arch-card">
+                  <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">17 · ci/cd</div>
+                  <h3 class="mt-2 text-xl font-semibold text-white">Git → validação → Hetzner → Docker → Health</h3>
+                  <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  DEV["💻 Developer"] --> GIT["Git Commit / Push"]
+  GIT --> CI["CI Validation<br/>Python · Jinja · JS · tests · regressions"]
+  CI -->|pass| ART["Versioned source"]
+  ART --> CD["CD / Hetzner"]
+  CD --> PULL["git pull"]
+  PULL --> BUILD["docker compose<br/>up -d --build"]
+  BUILD --> HC["Health Checks"]
+  HC -->|healthy| PROD["✅ Release"]
+  HC -->|failure| RB["Rollback<br/>known-good commit/baseline"]
+  RB --> BUILD
+                  </pre></div>
+                  <div class="arch-code mt-4">git pull
+docker compose -f docker-compose.prod.yml up -d --build</div>
+                </div>
+                <div class="arch-card">
+                  <h3 class="text-lg font-semibold text-white">Release discipline</h3>
+                  <div class="arch-mermaid mt-4"><pre class="mermaid">
+flowchart LR
+  OFF["OFF"] --> SH["SHADOW"]
+  SH --> OB["OBSERVE"]
+  OB --> LI["LIMITED"]
+  LI --> PR["PRODUCTION"]
+  PR -->|regression| RB["ROLLBACK"]
+                  </pre></div>
+                  <p class="mt-3 text-xs leading-5 text-neutral-500">Definition of Done: capability + policy + telemetry + evaluation + security + cost visibility + rollback + documentação.</p>
+                </div>
+              </div>
+            </article>
+
+            <!-- CLAIMS / LIMITES -->
+            <article class="arch-panel" data-arch-panel="truth">
+              <div class="arch-card">
+                <div class="font-mono text-[9px] uppercase tracking-widest text-lime-200">18 · evidence boundaries</div>
+                <h3 class="mt-2 text-xl font-semibold text-white">O que eu não afirmo — e o que eu afirmo</h3>
+                <p class="mt-2 text-sm leading-6 text-neutral-500">Arquitetura defensável exige separar implementação, intenção e evidência observada.</p>
+                <div class="arch-truth mt-5">
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“Tenho load balancer em produção.”</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Tenho Nginx reverse proxy; multi-node LB é evolução.”</b></div>
+
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“Firewall bloqueia portas X/Y/Z” sem verificar.</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Serviços internos não são publicados externamente.”</b></div>
+
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“100% dos testes = sistema seguro.”</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Testes fornecem evidência, não prova absoluta.”</b></div>
+
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“Judge diz a verdade.”</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Judge é avaliação automatizada probabilística.”</b></div>
+
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“SLO está comprovado em produção.”</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Mecanismo existe; evidência insuficiente permanece UNKNOWN.”</b></div>
+
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“Router usa Judge para escalonar.”</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Hoje são mecanismos separados.”</b></div>
+
+                  <div class="no"><div class="font-mono text-[9px] text-amber-300">NÃO AFIRMO</div><b class="mt-1 block text-sm text-white">“Todo 403 do YouTube é proxy.”</b></div>
+                  <div class="yes"><div class="font-mono text-[9px] text-lime-200">AFIRMO</div><b class="mt-1 block text-sm text-white">“Cookie, IP reputation e PO Token atacam problemas diferentes.”</b></div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="capacidades" class="glass mt-4 overflow-hidden rounded-[28px] scroll-mt-24">
+      <div class="border-b border-white/[0.07] px-6 py-7 sm:px-8 lg:px-9">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div class="font-mono text-[10px] uppercase tracking-[.16em] text-lime-200">Mapa de capacidades</div>
+            <h2 class="mt-2 text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">Capacidade → função → implementação → analogia.</h2>
+            <p class="mt-3 max-w-4xl text-sm leading-6 text-neutral-400">Matriz para sair do conceito e chegar ao componente técnico correspondente durante a apresentação.</p>
+          </div>
+          <span id="capCount" class="cap-count">58 capacidades</span>
+        </div>
+      </div>
+      <div class="p-4 sm:p-6 lg:p-7">
+        <div class="cap-toolbar">
+          <input id="capSearch" class="cap-search" type="search" placeholder="Buscar: RAG, Guardrails, Context Window, Fine-tuning, Creator OS..." autocomplete="off">
+          <div class="cap-filters"><button type="button" class="cap-filter active" data-cap-filter="Todos">Todos</button><button type="button" class="cap-filter" data-cap-filter="RAG">RAG</button><button type="button" class="cap-filter" data-cap-filter="Contexto">Contexto</button><button type="button" class="cap-filter" data-cap-filter="Modelos">Modelos</button><button type="button" class="cap-filter" data-cap-filter="Agentes">Agentes</button><button type="button" class="cap-filter" data-cap-filter="Segurança">Segurança</button><button type="button" class="cap-filter" data-cap-filter="Observabilidade">Observabilidade</button><button type="button" class="cap-filter" data-cap-filter="Creator AI">Creator AI</button><button type="button" class="cap-filter" data-cap-filter="Reliability">Reliability</button><button type="button" class="cap-filter" data-cap-filter="Avaliação">Avaliação</button><button type="button" class="cap-filter" data-cap-filter="Produção">Produção</button></div>
+        </div>
+        <div class="cap-table-wrap mt-4">
+          <table class="cap-table">
+            <thead><tr><th>Categoria</th><th>Capacidade / Termo</th><th>O que é</th><th>Função no StudyFlow</th><th>Implementação / Exemplo</th><th>Analogia</th></tr></thead>
+            <tbody id="capRows">
+              <tr data-cap-row data-category="Fundamentos" data-search="fundamentos llm modelo de linguagem de grande escala motor de raciocínio e geração providers via ai gateway o cérebro"><td><span class="cap-tag">Fundamentos</span></td><td>LLM</td><td>Modelo de linguagem de grande escala</td><td>Motor de raciocínio e geração</td><td>Providers via AI Gateway</td><td>O cérebro</td></tr><tr data-cap-row data-category="Fundamentos" data-search="fundamentos transformer arquitetura base dos llms modernos fundamento conceitual dos modelos consumidos não implementado internamente arquitetura do cérebro"><td><span class="cap-tag">Fundamentos</span></td><td>Transformer</td><td>Arquitetura base dos LLMs modernos</td><td>Fundamento conceitual dos modelos consumidos</td><td>Não implementado internamente</td><td>Arquitetura do cérebro</td></tr><tr data-cap-row data-category="Fundamentos" data-search="fundamentos tokens unidades processadas pelo modelo medição de contexto e custo context intelligence / finops palavras ou pedaços que o cérebro lê"><td><span class="cap-tag">Fundamentos</span></td><td>Tokens</td><td>Unidades processadas pelo modelo</td><td>Medição de contexto e custo</td><td>Context Intelligence / FinOps</td><td>Palavras ou pedaços que o cérebro lê</td></tr><tr data-cap-row data-category="Contexto" data-search="contexto context window limite de informação disponível numa inferência controlar quanto contexto chega ao llm context_intelligence / gateway mesa de trabalho"><td><span class="cap-tag">Contexto</span></td><td>Context Window</td><td>Limite de informação disponível numa inferência</td><td>Controlar quanto contexto chega ao LLM</td><td>context_intelligence / gateway</td><td>Mesa de trabalho</td></tr><tr data-cap-row data-category="Contexto" data-search="contexto context budgeting distribuição deliberada da janela de contexto priorizar informação relevante context intelligence organizar espaço na mesa"><td><span class="cap-tag">Contexto</span></td><td>Context Budgeting</td><td>Distribuição deliberada da janela de contexto</td><td>Priorizar informação relevante</td><td>Context Intelligence</td><td>Organizar espaço na mesa</td></tr><tr data-cap-row data-category="Contexto" data-search="contexto context observability observabilidade do uso do contexto entender consumo, pressão e composição obs/context_observability.py painel da mesa de trabalho"><td><span class="cap-tag">Contexto</span></td><td>Context Observability</td><td>Observabilidade do uso do contexto</td><td>Entender consumo, pressão e composição</td><td>obs/context_observability.py</td><td>Painel da mesa de trabalho</td></tr><tr data-cap-row data-category="Memória" data-search="memória memory estado persistente entre interações manter informação útil além da janela obs/memory.py memória de longo prazo"><td><span class="cap-tag">Memória</span></td><td>Memory</td><td>Estado persistente entre interações</td><td>Manter informação útil além da janela</td><td>obs/memory.py</td><td>Memória de longo prazo</td></tr><tr data-cap-row data-category="Memória" data-search="memória memory consolidation seleção do que merece persistir evitar guardar tudo indiscriminadamente memory_consolidation/engine.py organizar lembranças"><td><span class="cap-tag">Memória</span></td><td>Memory Consolidation</td><td>Seleção do que merece persistir</td><td>Evitar guardar tudo indiscriminadamente</td><td>memory_consolidation/engine.py</td><td>Organizar lembranças</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos model gateway abstração sobre modelos e providers evitar acoplamento direto ao provider ai_gateway/gateway.py central telefônica"><td><span class="cap-tag">Modelos</span></td><td>Model Gateway</td><td>Abstração sobre modelos e providers</td><td>Evitar acoplamento direto ao provider</td><td>ai_gateway/gateway.py</td><td>Central telefônica</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos model registry catálogo dos modelos disponíveis conhecer capacidades e configurações ai_gateway/model_registry.py catálogo de especialistas"><td><span class="cap-tag">Modelos</span></td><td>Model Registry</td><td>Catálogo dos modelos disponíveis</td><td>Conhecer capacidades e configurações</td><td>ai_gateway/model_registry.py</td><td>Catálogo de especialistas</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos model routing escolha do modelo por política/tarefa direcionar cada requisição ai_gateway/router.py triagem médica"><td><span class="cap-tag">Modelos</span></td><td>Model Routing</td><td>Escolha do modelo por política/tarefa</td><td>Direcionar cada requisição</td><td>ai_gateway/router.py</td><td>Triagem médica</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos model cascade escalonamento barato → poderoso otimizar custo x qualidade model_cascade/cascade.py júnior → sênior → especialista"><td><span class="cap-tag">Modelos</span></td><td>Model Cascade</td><td>Escalonamento barato → poderoso</td><td>Otimizar custo x qualidade</td><td>model_cascade/cascade.py</td><td>Júnior → sênior → especialista</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos local models execução de modelos open-weight privacidade, laboratório e alternativas local_ai/provider.py especialista dentro de casa"><td><span class="cap-tag">Modelos</span></td><td>Local Models</td><td>Execução de modelos open-weight</td><td>Privacidade, laboratório e alternativas</td><td>local_ai/provider.py</td><td>Especialista dentro de casa</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos vllm serving otimizado de modelos infraestrutura para inferência open-weight local model lab servidor especializado"><td><span class="cap-tag">Modelos</span></td><td>vLLM</td><td>Serving otimizado de modelos</td><td>Infraestrutura para inferência open-weight</td><td>Local Model Lab</td><td>Servidor especializado</td></tr><tr data-cap-row data-category="Modelos" data-search="modelos fine-tuning / lora / dpo adaptação de modelos aos dados/tarefas especializar comportamento quando houver evidência model adaptation lab treinar um especialista"><td><span class="cap-tag">Modelos</span></td><td>Fine-tuning / LoRA / DPO</td><td>Adaptação de modelos aos dados/tarefas</td><td>Especializar comportamento quando houver evidência</td><td>Model Adaptation Lab</td><td>Treinar um especialista</td></tr><tr data-cap-row data-category="RAG" data-search="rag embeddings representação vetorial de significado encontrar conteúdo semanticamente próximo rag/index.py / embeddings coordenadas de significado"><td><span class="cap-tag">RAG</span></td><td>Embeddings</td><td>Representação vetorial de significado</td><td>Encontrar conteúdo semanticamente próximo</td><td>rag/index.py / embeddings</td><td>Coordenadas de significado</td></tr><tr data-cap-row data-category="RAG" data-search="rag chunking divisão de documentos em unidades recuperáveis indexar contexto em partes úteis rag/chunker.py separar livro em fichas"><td><span class="cap-tag">RAG</span></td><td>Chunking</td><td>Divisão de documentos em unidades recuperáveis</td><td>Indexar contexto em partes úteis</td><td>rag/chunker.py</td><td>Separar livro em fichas</td></tr><tr data-cap-row data-category="RAG" data-search="rag vector search busca por similaridade vetorial recuperar evidência relevante postgresql + pgvector buscar ideias parecidas"><td><span class="cap-tag">RAG</span></td><td>Vector Search</td><td>Busca por similaridade vetorial</td><td>Recuperar evidência relevante</td><td>PostgreSQL + pgvector</td><td>Buscar ideias parecidas</td></tr><tr data-cap-row data-category="RAG" data-search="rag hybrid search combinação semântica + lexical melhorar recall sem depender de uma única técnica rag/hybrid.py duas lentes para a mesma busca"><td><span class="cap-tag">RAG</span></td><td>Hybrid Search</td><td>Combinação semântica + lexical</td><td>Melhorar recall sem depender de uma única técnica</td><td>rag/hybrid.py</td><td>Duas lentes para a mesma busca</td></tr><tr data-cap-row data-category="RAG" data-search="rag query rewrite / expansion reformula e expande a pergunta aumentar chance de recuperar a evidência correta retrieval intelligence traduzir a pergunta para o arquivo"><td><span class="cap-tag">RAG</span></td><td>Query Rewrite / Expansion</td><td>Reformula e expande a pergunta</td><td>Aumentar chance de recuperar a evidência correta</td><td>Retrieval Intelligence</td><td>Traduzir a pergunta para o arquivo</td></tr><tr data-cap-row data-category="RAG" data-search="rag hyde hipótese documental para retrieval melhorar recuperação em perguntas difíceis retrieval intelligence imaginar a resposta para procurar melhor"><td><span class="cap-tag">RAG</span></td><td>HyDE</td><td>Hipótese documental para retrieval</td><td>Melhorar recuperação em perguntas difíceis</td><td>Retrieval Intelligence</td><td>Imaginar a resposta para procurar melhor</td></tr><tr data-cap-row data-category="RAG" data-search="rag reranking reordenação pós-retrieval promover chunks mais relevantes rag reranker revisar a primeira seleção"><td><span class="cap-tag">RAG</span></td><td>Reranking</td><td>Reordenação pós-retrieval</td><td>Promover chunks mais relevantes</td><td>rag reranker</td><td>Revisar a primeira seleção</td></tr><tr data-cap-row data-category="RAG" data-search="rag parent-child retrieval chunk pequeno aponta para contexto maior recuperar precisão sem perder contexto retrieval intelligence 2.0 índice leva ao capítulo"><td><span class="cap-tag">RAG</span></td><td>Parent-Child Retrieval</td><td>Chunk pequeno aponta para contexto maior</td><td>Recuperar precisão sem perder contexto</td><td>Retrieval Intelligence 2.0</td><td>Índice leva ao capítulo</td></tr><tr data-cap-row data-category="RAG" data-search="rag contextual retrieval enriquece chunk com contexto do documento reduz ambiguidade na recuperação retrieval intelligence 2.0 etiqueta com contexto"><td><span class="cap-tag">RAG</span></td><td>Contextual Retrieval</td><td>Enriquece chunk com contexto do documento</td><td>Reduz ambiguidade na recuperação</td><td>Retrieval Intelligence 2.0</td><td>Etiqueta com contexto</td></tr><tr data-cap-row data-category="RAG" data-search="rag graphrag expansão via relações de conhecimento complementar recuperação vetorial com grafo controlado graphrag mapa de conexões"><td><span class="cap-tag">RAG</span></td><td>GraphRAG</td><td>Expansão via relações de conhecimento</td><td>Complementar recuperação vetorial com grafo controlado</td><td>GraphRAG</td><td>Mapa de conexões</td></tr><tr data-cap-row data-category="RAG" data-search="rag rag citations evidência ligada à resposta tornar geração verificável rag evidence / citations nota de rodapé"><td><span class="cap-tag">RAG</span></td><td>RAG Citations</td><td>Evidência ligada à resposta</td><td>Tornar geração verificável</td><td>RAG evidence / citations</td><td>Nota de rodapé</td></tr><tr data-cap-row data-category="Avaliação" data-search="avaliação llm-as-a-judge llm avalia resposta com critérios explícitos comparar qualidade automatizadamente obs/judge.py segundo avaliador"><td><span class="cap-tag">Avaliação</span></td><td>LLM-as-a-Judge</td><td>LLM avalia resposta com critérios explícitos</td><td>Comparar qualidade automatizadamente</td><td>obs/judge.py</td><td>Segundo avaliador</td></tr><tr data-cap-row data-category="Avaliação" data-search="avaliação golden dataset conjunto controlado de casos de referência benchmark reproduzível golden dataset + benchmark lab prova padrão"><td><span class="cap-tag">Avaliação</span></td><td>Golden Dataset</td><td>Conjunto controlado de casos de referência</td><td>Benchmark reproduzível</td><td>Golden Dataset + Benchmark Lab</td><td>Prova padrão</td></tr><tr data-cap-row data-category="Avaliação" data-search="avaliação quality gates critérios mínimos antes de promover resultado evitar avanço sem evidência suficiente ai evaluation / quality gates controle de qualidade"><td><span class="cap-tag">Avaliação</span></td><td>Quality Gates</td><td>Critérios mínimos antes de promover resultado</td><td>Evitar avanço sem evidência suficiente</td><td>AI Evaluation / Quality Gates</td><td>Controle de qualidade</td></tr><tr data-cap-row data-category="Segurança" data-search="segurança guardrails regras determinísticas pré/pós-modelo limitar entradas, saídas e ações security/guards.py grades de proteção"><td><span class="cap-tag">Segurança</span></td><td>Guardrails</td><td>Regras determinísticas pré/pós-modelo</td><td>Limitar entradas, saídas e ações</td><td>security/guards.py</td><td>Grades de proteção</td></tr><tr data-cap-row data-category="Segurança" data-search="segurança zero trust identidade não implica confiança aplicar least privilege e policy agent gateway / control plane crachá não abre todas as portas"><td><span class="cap-tag">Segurança</span></td><td>Zero Trust</td><td>Identidade não implica confiança</td><td>Aplicar least privilege e policy</td><td>Agent Gateway / Control Plane</td><td>Crachá não abre todas as portas</td></tr><tr data-cap-row data-category="Segurança" data-search="segurança tool governance registro de permissão, risco e aprovação controlar quais ferramentas podem executar tool registry catálogo de ferramentas autorizadas"><td><span class="cap-tag">Segurança</span></td><td>Tool Governance</td><td>Registro de permissão, risco e aprovação</td><td>Controlar quais ferramentas podem executar</td><td>Tool Registry</td><td>Catálogo de ferramentas autorizadas</td></tr><tr data-cap-row data-category="Segurança" data-search="segurança human approval aprovação explícita para ações críticas separar inteligência de autoridade approval policy dupla checagem humana"><td><span class="cap-tag">Segurança</span></td><td>Human Approval</td><td>Aprovação explícita para ações críticas</td><td>Separar inteligência de autoridade</td><td>approval policy</td><td>Dupla checagem humana</td></tr><tr data-cap-row data-category="Segurança" data-search="segurança ai attack lab suíte sintética de ataques testar controles sem alegar segurança absoluta attack lab simulado de incêndio"><td><span class="cap-tag">Segurança</span></td><td>AI Attack Lab</td><td>Suíte sintética de ataques</td><td>Testar controles sem alegar segurança absoluta</td><td>Attack Lab</td><td>Simulado de incêndio</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes agent passport identidade, risco, autonomia e grants definir contrato operacional do agente agent identity passport passaporte funcional"><td><span class="cap-tag">Agentes</span></td><td>Agent Passport</td><td>Identidade, risco, autonomia e grants</td><td>Definir contrato operacional do agente</td><td>Agent Identity Passport</td><td>Passaporte funcional</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes agent gateway policy antes da execução de tools decidir allow / approval / deny agent gateway portaria de segurança"><td><span class="cap-tag">Agentes</span></td><td>Agent Gateway</td><td>Policy antes da execução de tools</td><td>Decidir ALLOW / APPROVAL / DENY</td><td>Agent Gateway</td><td>Portaria de segurança</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes skills registry skills governadas compostas por tools reuso com limites de autonomia agent skill store manual de competências"><td><span class="cap-tag">Agentes</span></td><td>Skills Registry</td><td>Skills governadas compostas por tools</td><td>Reuso com limites de autonomia</td><td>Agent Skill Store</td><td>Manual de competências</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes mcp interface padronizada de tools/contexto expor capacidades de modo governado mcp server adaptador universal"><td><span class="cap-tag">Agentes</span></td><td>MCP</td><td>Interface padronizada de tools/contexto</td><td>Expor capacidades de modo governado</td><td>MCP server</td><td>Adaptador universal</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes a2a comunicação estruturada entre agentes delegação/handoff com permissões a2a fabric protocolo entre equipes"><td><span class="cap-tag">Agentes</span></td><td>A2A</td><td>Comunicação estruturada entre agentes</td><td>Delegação/handoff com permissões</td><td>A2A fabric</td><td>Protocolo entre equipes</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes planner → executor → verifier plano operacional executável e verificável separar planejamento, execução e checagem agent execution dag planejar, fazer, revisar"><td><span class="cap-tag">Agentes</span></td><td>Planner → Executor → Verifier</td><td>Plano operacional executável e verificável</td><td>Separar planejamento, execução e checagem</td><td>agent execution DAG</td><td>Planejar, fazer, revisar</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes controlled agent swarm colaboração paralela com limites escalar trabalho sem autonomia ilimitada controlled agent swarm equipe com supervisor"><td><span class="cap-tag">Agentes</span></td><td>Controlled Agent Swarm</td><td>Colaboração paralela com limites</td><td>Escalar trabalho sem autonomia ilimitada</td><td>Controlled Agent Swarm</td><td>Equipe com supervisor</td></tr><tr data-cap-row data-category="Agentes" data-search="agentes self-correction generate → judge → correct → re-evaluate corrigir resposta de forma limitada self-correction loop revisão antes de entregar"><td><span class="cap-tag">Agentes</span></td><td>Self-Correction</td><td>Generate → Judge → Correct → Re-evaluate</td><td>Corrigir resposta de forma limitada</td><td>self-correction loop</td><td>Revisão antes de entregar</td></tr><tr data-cap-row data-category="Observabilidade" data-search="observabilidade tracing rastreio por trace_id conectar requisição, modelo, latência, custo e resultado obs/tracing.py número de protocolo"><td><span class="cap-tag">Observabilidade</span></td><td>Tracing</td><td>Rastreio por trace_id</td><td>Conectar requisição, modelo, latência, custo e resultado</td><td>obs/tracing.py</td><td>Número de protocolo</td></tr><tr data-cap-row data-category="Observabilidade" data-search="observabilidade finops tokens → custo → tarefa → outcome medir economia por resultado útil agent finops / value ledger livro-caixa por operação"><td><span class="cap-tag">Observabilidade</span></td><td>FinOps</td><td>Tokens → custo → tarefa → outcome</td><td>Medir economia por resultado útil</td><td>Agent FinOps / Value Ledger</td><td>Livro-caixa por operação</td></tr><tr data-cap-row data-category="Observabilidade" data-search="observabilidade drift intelligence detectar mudança de comportamento/distribuição sinalizar degradação e investigação drift intelligence center radar de desvio"><td><span class="cap-tag">Observabilidade</span></td><td>Drift Intelligence</td><td>Detectar mudança de comportamento/distribuição</td><td>Sinalizar degradação e investigação</td><td>Drift Intelligence Center</td><td>Radar de desvio</td></tr><tr data-cap-row data-category="Observabilidade" data-search="observabilidade ai lineage proveniência de artefatos e decisões rastrear origem sem guardar conteúdo sensível ai lineage graph árvore genealógica técnica"><td><span class="cap-tag">Observabilidade</span></td><td>AI Lineage</td><td>Proveniência de artefatos e decisões</td><td>Rastrear origem sem guardar conteúdo sensível</td><td>AI Lineage Graph</td><td>Árvore genealógica técnica</td></tr><tr data-cap-row data-category="Reliability" data-search="reliability idempotency repetição sem duplicar efeito evitar efeitos colaterais duplicados reliability control plane botão que não cobra duas vezes"><td><span class="cap-tag">Reliability</span></td><td>Idempotency</td><td>Repetição sem duplicar efeito</td><td>Evitar efeitos colaterais duplicados</td><td>Reliability Control Plane</td><td>Botão que não cobra duas vezes</td></tr><tr data-cap-row data-category="Reliability" data-search="reliability circuit breaker interrompe chamadas a dependência degradada evitar cascata de falhas reliability control plane disjuntor elétrico"><td><span class="cap-tag">Reliability</span></td><td>Circuit Breaker</td><td>Interrompe chamadas a dependência degradada</td><td>Evitar cascata de falhas</td><td>Reliability Control Plane</td><td>Disjuntor elétrico</td></tr><tr data-cap-row data-category="Reliability" data-search="reliability bounded retry + dlq retry limitado e fila de falhas permanentes recuperação controlada e replay explícito reliability control plane tentativas limitadas + caixa de exceções"><td><span class="cap-tag">Reliability</span></td><td>Bounded Retry + DLQ</td><td>Retry limitado e fila de falhas permanentes</td><td>Recuperação controlada e replay explícito</td><td>Reliability Control Plane</td><td>Tentativas limitadas + caixa de exceções</td></tr><tr data-cap-row data-category="Reliability" data-search="reliability slo / error budget sli → target → janela → orçamento de erro transformar telemetria em compromisso explícito slo &amp; production health margem operacional"><td><span class="cap-tag">Reliability</span></td><td>SLO / Error Budget</td><td>SLI → target → janela → orçamento de erro</td><td>Transformar telemetria em compromisso explícito</td><td>SLO &amp; Production Health</td><td>Margem operacional</td></tr><tr data-cap-row data-category="Dados" data-search="dados synthetic data factory geração governada de dados sintéticos criar candidatos com proveniência, avaliação e deduplicação synthetic data factory laboratório de amostras"><td><span class="cap-tag">Dados</span></td><td>Synthetic Data Factory</td><td>Geração governada de dados sintéticos</td><td>Criar candidatos com proveniência, avaliação e deduplicação</td><td>Synthetic Data Factory</td><td>Laboratório de amostras</td></tr><tr data-cap-row data-category="Creator AI" data-search="creator ai content intelligence análise semântica de conteúdo entender tema, intenção e estrutura creator os editor analítico"><td><span class="cap-tag">Creator AI</span></td><td>Content Intelligence</td><td>Análise semântica de conteúdo</td><td>Entender tema, intenção e estrutura</td><td>Creator OS</td><td>Editor analítico</td></tr><tr data-cap-row data-category="Creator AI" data-search="creator ai scoring swarm hook, curiosidade, emoção e retenção priorizar cortes e conteúdos fortes creator os evaluators banca de avaliadores"><td><span class="cap-tag">Creator AI</span></td><td>Scoring Swarm</td><td>Hook, curiosidade, emoção e retenção</td><td>Priorizar cortes e conteúdos fortes</td><td>Creator OS evaluators</td><td>Banca de avaliadores</td></tr><tr data-cap-row data-category="Creator AI" data-search="creator ai viral judge avaliação de potencial de distribuição comparar candidatos de conteúdo creator os editor-chefe"><td><span class="cap-tag">Creator AI</span></td><td>Viral Judge</td><td>Avaliação de potencial de distribuição</td><td>Comparar candidatos de conteúdo</td><td>Creator OS</td><td>Editor-chefe</td></tr><tr data-cap-row data-category="Creator AI" data-search="creator ai packaging intelligence título, thumbnail e posicionamento otimizar apresentação do conteúdo creator os embalagem do produto"><td><span class="cap-tag">Creator AI</span></td><td>Packaging Intelligence</td><td>Título, thumbnail e posicionamento</td><td>Otimizar apresentação do conteúdo</td><td>Creator OS</td><td>Embalagem do produto</td></tr><tr data-cap-row data-category="Creator AI" data-search="creator ai performance intelligence métricas e feedback pós-publicação fechar loop criação → distribuição → aprendizado creator os painel de audiência"><td><span class="cap-tag">Creator AI</span></td><td>Performance Intelligence</td><td>Métricas e feedback pós-publicação</td><td>Fechar loop criação → distribuição → aprendizado</td><td>Creator OS</td><td>Painel de audiência</td></tr><tr data-cap-row data-category="Produção" data-search="produção ci/cd git → validação → deploy → health → rollback entregar mudanças de forma reproduzível github workflow + hetzner + docker compose linha de montagem"><td><span class="cap-tag">Produção</span></td><td>CI/CD</td><td>Git → validação → deploy → health → rollback</td><td>Entregar mudanças de forma reproduzível</td><td>GitHub workflow + Hetzner + Docker Compose</td><td>Linha de montagem</td></tr><tr data-cap-row data-category="Produção" data-search="produção health checks verificação ativa de dependências diferenciar running de ready docker healthchecks check-up operacional"><td><span class="cap-tag">Produção</span></td><td>Health Checks</td><td>Verificação ativa de dependências</td><td>Diferenciar running de ready</td><td>Docker healthchecks</td><td>Check-up operacional</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="trajetoria" class="mt-4 grid gap-4 lg:grid-cols-2 scroll-mt-24">
+      <div class="glass rounded-[22px] p-6 sm:p-7">
+        <div class="font-mono text-[10px] uppercase tracking-[.15em] text-neutral-600">Experiência atual</div>
+        <h3 class="mt-3 text-xl font-semibold text-white">Santander Brasil</h3>
+        <p class="mt-1 text-sm text-lime-200">Data &amp; AI Senior Manager · Decision Intelligence</p>
+        <p class="mt-4 text-sm leading-6 text-neutral-500">Liderança de iniciativas em Data, Artificial Intelligence e Decision Intelligence, conectando estratégia de negócio, engenharia e analytics para modernização e escala.</p>
+      </div>
+      <div class="glass rounded-[22px] p-6 sm:p-7">
+        <div class="font-mono text-[10px] uppercase tracking-[.15em] text-neutral-600">Trajetória</div>
+        <div class="mt-4 flex flex-wrap gap-2 text-xs text-neutral-300"><span class="rounded-full border border-white/[0.08] px-3 py-2">Santander</span><span class="rounded-full border border-white/[0.08] px-3 py-2">Bradesco</span><span class="rounded-full border border-white/[0.08] px-3 py-2">HDI Seguros</span><span class="rounded-full border border-white/[0.08] px-3 py-2">I4PRO</span><span class="rounded-full border border-white/[0.08] px-3 py-2">FOURSYS</span><span class="rounded-full border border-white/[0.08] px-3 py-2">Oracle</span><span class="rounded-full border border-white/[0.08] px-3 py-2">Prime IT</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 mx-auto flex w-full max-w-[1460px] flex-col gap-3 border-t border-white/[0.06] px-5 py-7 text-[10px] text-neutral-600 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
+    <span>Igor Henrique Gil · Data, AI &amp; Decision Intelligence</span>
+    <span class="font-mono tracking-widest">TECNOLOGIA · DADOS · INTELIGÊNCIA · IMPACTO</span>
+    <div class="flex gap-4"><a href="#sobre" class="hover:text-white">Sobre</a><a href="/case" target="_blank" rel="noopener noreferrer" class="hover:text-white">Case Study</a><a href="https://www.linkedin.com/in/igorgil-ai/" target="_blank" rel="noopener noreferrer" class="hover:text-white">LinkedIn</a></div>
+  </footer>
+
+  <script>
+    (() => {
+      const tabs = [...document.querySelectorAll('[data-blueprint-tab]')];
+      const setActive = () => {
+        const hash = location.hash || '#sobre';
+        tabs.forEach((tab) => {
+          const active = tab.getAttribute('href') === hash;
+          tab.classList.toggle('bg-lime-300/[0.08]', active);
+          tab.classList.toggle('text-lime-200', active);
+          if (!active) tab.classList.remove('bg-lime-300/[0.08]', 'text-lime-200');
+        });
+      };
+
+      const archTabs = [...document.querySelectorAll('[data-arch-tab]')];
+      const archPanels = [...document.querySelectorAll('[data-arch-panel]')];
+      const openArch = (name) => {
+        archTabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.archTab === name)));
+        archPanels.forEach((p) => p.classList.toggle('active', p.dataset.archPanel === name));
+        requestAnimationFrame(() => {
+          if (window.mermaid) {
+            const panel = document.querySelector(`[data-arch-panel="${name}"]`);
+            const diagrams = [...(panel?.querySelectorAll('.mermaid') || [])].filter((el) => !el.dataset.processed);
+            if (diagrams.length) mermaid.run({ nodes: diagrams }).catch(() => {});
+          }
+        });
+      };
+
+      archTabs.forEach((b) => b.addEventListener('click', () => openArch(b.dataset.archTab)));
+
+      const capSearch = document.getElementById('capSearch');
+      const capRows = [...document.querySelectorAll('[data-cap-row]')];
+      const capFilters = [...document.querySelectorAll('[data-cap-filter]')];
+      const capCount = document.getElementById('capCount');
+      let capCategory = 'Todos';
+      const applyCapabilityFilters = () => {
+        const q = (capSearch?.value || '').trim().toLowerCase();
+        let visible = 0;
+        capRows.forEach((row) => {
+          const byCat = capCategory === 'Todos' || row.dataset.category === capCategory;
+          const byText = !q || (row.dataset.search || '').includes(q);
+          const show = byCat && byText;
+          row.hidden = !show;
+          if (show) visible++;
+        });
+        if (capCount) capCount.textContent = `${visible} capacidade${visible === 1 ? '' : 's'}`;
+      };
+      capSearch?.addEventListener('input', applyCapabilityFilters);
+      capFilters.forEach((btn) => btn.addEventListener('click', () => {
+        capCategory = btn.dataset.capFilter;
+        capFilters.forEach((b) => b.classList.toggle('active', b === btn));
+        applyCapabilityFilters();
+      }));
+
+
+      if (window.mermaid) {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: 'dark',
+          fontFamily: 'Inter, ui-sans-serif, system-ui',
+          flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true },
+          sequence: { useMaxWidth: true, wrap: true },
+          themeVariables: {
+            background: '#080b0d',
+            primaryColor: '#111619',
+            primaryTextColor: '#f5f5f5',
+            primaryBorderColor: '#2d383d',
+            lineColor: '#6b7377',
+            secondaryColor: '#0f1517',
+            tertiaryColor: '#111315',
+            clusterBkg: '#0b0f11',
+            clusterBorder: '#263238',
+            fontSize: '13px'
+          }
+        });
+        openArch('overview');
+      }
+
+      addEventListener('hashchange', setActive);
+      setActive();
+    })();
+  </script>
+</body>
+</html>

@@ -8,7 +8,7 @@ from typing import Any
 SUPPORTED_PROVIDERS = ("gemini", "openai", "anthropic")
 
 DEFAULT_MODELS = {
-    "gemini": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+    "gemini": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
     "openai": os.getenv("LLM_MODEL", "gpt-4o-mini"),
     "anthropic": os.getenv("CLAUDE_MODEL", os.getenv("COURSE_ENGINE_MODEL", "claude-sonnet-4-6")),
 }
@@ -161,10 +161,11 @@ def _call_anthropic(messages: list[dict[str, str]], model: str, temperature: flo
 
 
 def _call_gemini(messages: list[dict[str, str]], model: str, temperature: float, max_tokens: int) -> str:
-    """Gemini Developer API via REST, sem adicionar outro SDK ao projeto.
+    """Gemini Developer API via Interactions API (REST).
 
-    A chave segue somente no request server-side e nunca é devolvida para o
-    frontend/log de configuração.
+    Mantém o contrato interno do AI Gateway sem adicionar SDK ao projeto.
+    A chamada é stateless (store=False), a chave segue somente em header
+    server-side e nunca é devolvida ao frontend/log de configuração.
     """
     import requests
 
@@ -173,35 +174,80 @@ def _call_gemini(messages: list[dict[str, str]], model: str, temperature: float,
         raise RuntimeError("GEMINI_API_KEY não configurada")
 
     system_parts = [m["content"] for m in messages if m["role"] == "system"]
-    contents = []
+
+    # O Gateway recebe um histórico genérico, que pode ter sido produzido por
+    # providers diferentes. Para não forjar thought-signatures/model steps do
+    # Gemini, serializamos esse histórico como texto rotulado em uma única
+    # entrada stateless. Isso preserva o conteúdo e mantém o adapter desacoplado.
+    conversation_parts: list[str] = []
     for m in messages:
         if m["role"] == "system":
             continue
-        role = "model" if m["role"] == "assistant" else "user"
-        contents.append({"role": role, "parts": [{"text": m["content"]}]})
+        label = "ASSISTANT" if m["role"] == "assistant" else "USER"
+        conversation_parts.append(f"{label}: {m['content']}")
+    interaction_input = "\n\n".join(conversation_parts).strip()
+    if not interaction_input:
+        raise RuntimeError("Gemini recebeu input vazio")
+
     payload: dict[str, Any] = {
-        "contents": contents,
-        "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens},
+        "model": model,
+        "input": interaction_input,
+        "store": False,
+        "generation_config": {
+            "temperature": temperature,
+            "max_output_tokens": max_tokens,
+            # Flash 3.x usa thinking. Mantemos baixo para benchmark/latência e
+            # para evitar consumir todo max_output_tokens apenas com raciocínio.
+            "thinking_level": os.getenv("GEMINI_THINKING_LEVEL", "low"),
+        },
     }
     if system_parts:
-        payload["systemInstruction"] = {"parts": [{"text": "\n\n".join(system_parts)}]}
+        payload["system_instruction"] = "\n\n".join(system_parts)
 
     timeout = float(os.getenv("AI_GATEWAY_TIMEOUT", "60"))
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    resp = requests.post(url, params={"key": api_key}, json=payload, timeout=timeout)
+    url = "https://generativelanguage.googleapis.com/v1beta/interactions"
+    resp = requests.post(
+        url,
+        headers={
+            "x-goog-api-key": api_key,
+            "Content-Type": "application/json",
+        },
+        json=payload,
+        timeout=timeout,
+    )
     if not resp.ok:
-        # Não inclui URL completa porque querystring contém secret.
-        detail = resp.text[:500]
+        detail = resp.text[:700]
         raise RuntimeError(f"Gemini HTTP {resp.status_code}: {detail}")
+
     data = resp.json()
-    candidates = data.get("candidates") or []
-    if not candidates:
-        feedback = data.get("promptFeedback") or {}
-        raise RuntimeError(f"Gemini sem candidate. promptFeedback={feedback}")
-    parts = (((candidates[0].get("content") or {}).get("parts")) or [])
-    text = "".join(str(p.get("text") or "") for p in parts).strip()
+    status = str(data.get("status") or "").lower()
+    if status in {"failed", "cancelled", "requires_action"}:
+        errors = data.get("errors") or []
+        raise RuntimeError(f"Gemini interaction status={status}. errors={str(errors)[:500]}")
+
+    text_blocks: list[str] = []
+    for step in data.get("steps") or []:
+        if step.get("type") != "model_output":
+            continue
+        content = step.get("content") or []
+        if isinstance(content, str):
+            if content.strip():
+                text_blocks.append(content.strip())
+            continue
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                value = str(block.get("text") or "").strip()
+                if value:
+                    text_blocks.append(value)
+
+    text = "\n".join(text_blocks).strip()
     if not text:
-        raise RuntimeError("Gemini retornou resposta vazia")
+        usage = data.get("usage") or {}
+        errors = data.get("errors") or []
+        raise RuntimeError(
+            "Gemini retornou resposta sem texto "
+            f"(status={status or 'desconhecido'}, usage={usage}, errors={str(errors)[:300]})"
+        )
     return text
 
 

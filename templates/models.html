@@ -31,10 +31,42 @@
     .metric:last-child{border:0}
     .warn{font-size:12px;color:var(--text-3);margin-top:8px}
     .history{margin-top:22px;overflow:auto}
+    .explain{margin-top:22px}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}.flow-step{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px}.flow-step b{display:block;font-size:12px;color:var(--accent);margin-bottom:5px}.flow-step span{font-size:11px;color:var(--text-2);line-height:1.45}.criteria{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.criterion{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px}.criterion b{display:block;font-size:12px;margin-bottom:5px}.criterion span{font-size:11px;color:var(--text-2);line-height:1.45}.contract{font-size:12px;color:var(--text-2);margin-top:12px;padding:10px 12px;border-left:2px solid var(--accent);background:var(--surface-2);border-radius:0 10px 10px 0}
+
+    .bench-shell{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(360px,.95fr);gap:16px;margin-top:22px;align-items:start}
+    .bench-main,.bench-side{min-width:0}
+    .bench-side{position:sticky;top:18px}
+    .bench-main{display:flex;flex-direction:column;gap:14px}
+    .bench-main .lab{margin-top:0}
+    .bench-flow-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+    .bench-flow-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+    .bench-flow-title h2{margin:0 0 4px;font-size:16px}
+    .bench-flow-title p{margin:0}
+    .flow-stack{display:flex;flex-direction:column;align-items:center}
+    .flow-node{width:min(100%,360px);box-sizing:border-box;text-align:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+    .flow-node strong{display:block;font-size:12px}
+    .flow-node span{display:block;margin-top:4px;font-size:10px;color:var(--text-3);line-height:1.4}
+    .flow-node.accent{border-color:var(--accent)}
+    .flow-arrow{color:var(--text-3);font-size:18px;line-height:1;padding:7px 0}
+    .flow-providers{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+    .flow-provider{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center}
+    .flow-provider.gemini{border-top:2px solid #6aa5ff}.flow-provider.openai{border-top:2px solid var(--accent)}.flow-provider.anthropic{border-top:2px solid #b58cff}
+    .provider-logo{width:38px;height:38px;object-fit:contain;display:block;margin:0 auto 7px}
+    .flow-provider strong{display:block;font-size:11px}.flow-provider span{display:block;margin-top:3px;font-size:9px;color:var(--text-3)}
+    .flow-metrics{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    .flow-metric{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-size:10px;color:var(--text-2)}
+    .judge-help{margin-top:14px;padding:12px 13px;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;font-size:11px;color:var(--text-2);line-height:1.5}
+    .judge-help b{color:var(--accent)}
+    .bench-results-title{margin:18px 0 8px;font-size:14px}
+    .result-brand{display:flex;align-items:center;gap:9px}
+    .result-logo{width:28px;height:28px;object-fit:contain}
+    .history.compact-history{margin-top:0}
+    @media(max-width:980px){.bench-shell{grid-template-columns:1fr}.bench-side{position:static}}
+    @media(max-width:860px){.flow-providers,.flow-metrics{grid-template-columns:1fr}}
     table{width:100%;border-collapse:collapse;font-size:12px}
     th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line)}
     th{color:var(--text-3);font-weight:500}
-    @media(max-width:860px){.grid,.results{grid-template-columns:1fr}.models-wrap{max-width:none}}
+    @media(max-width:860px){.grid,.results,.criteria,.flow{grid-template-columns:1fr}.models-wrap{max-width:none}}
   </style>
 </head>
 <body data-module="neutral">
@@ -53,13 +85,15 @@
     <div class="route" id="routeBox">Carregando rota do gateway...</div>
     <section class="grid" id="providers"></section>
 
+    <section class="bench-shell">
+      <div class="bench-main">
     <section class="card lab">
       <h2 style="margin:0 0 4px;font-size:16px">Model Benchmark Lab</h2>
       <p class="warn">Executa o mesmo prompt isoladamente em cada provedor selecionado. É manual e pode consumir créditos de API.</p>
       <label class="cfg-row-label" for="prompt">Prompt</label>
-      <textarea id="prompt" placeholder="Ex.: Explique RAG em até 5 linhas e cite apenas fatos presentes no contexto."></textarea>
-      <label class="cfg-row-label" for="context" style="display:block;margin-top:10px">Contexto de referência (opcional, usado na avaliação)</label>
-      <textarea id="context" class="context" placeholder="Cole aqui o contexto/ground truth se quiser avaliar groundedness e relevância."></textarea>
+      <textarea id="prompt" placeholder="Prompt do benchmark">Com base exclusivamente no contexto de referência, responda: qual é a cor do Projeto Atlas, quem é o responsável e qual é o orçamento aprovado? Não utilize conhecimento externo. Se alguma informação não estiver no contexto, diga explicitamente que ela não foi informada.</textarea>
+      <label class="cfg-row-label" for="context" style="display:block;margin-top:10px">Contexto de referência (opcional, enviado aos modelos e usado na avaliação)</label>
+      <textarea id="context" class="context" placeholder="Contexto / ground truth">O Projeto Atlas tem a cor azul. O responsável pelo projeto é João. O orçamento aprovado é de R$ 500 mil.</textarea>
       <div class="controls">
         <label class="provider-check"><input type="checkbox" value="gemini" checked> Gemini</label>
         <label class="provider-check"><input type="checkbox" value="openai" checked> OpenAI</label>
@@ -68,20 +102,79 @@
         <button id="compareBtn" class="btn" type="button">Comparar modelos</button>
       </div>
       <div id="compareMsg" class="warn"></div>
+      <h3 class="bench-results-title">Resultados da comparação</h3>
       <div class="results" id="results"></div>
     </section>
 
-    <section class="card history">
+    <section class="card history compact-history">
       <h2 style="margin:0 0 10px;font-size:16px">Últimas comparações</h2>
       <table><thead><tr><th>Comparison</th><th>Provider</th><th>Modelo</th><th>Status</th><th>Latência</th><th>Judge</th></tr></thead><tbody id="historyBody"><tr><td colspan="6">Carregando...</td></tr></tbody></table>
     </section>
+      </div>
+      <aside class="bench-side">
+        <section class="bench-flow-card" aria-labelledby="benchFlowTitle">
+          <div class="bench-flow-title">
+            <div>
+              <h2 id="benchFlowTitle">Como funciona o Model Benchmark</h2>
+              <p class="warn">Veja o fluxo de execução e avaliação dos modelos nesta tela.</p>
+            </div>
+            <span class="badge ok">AI Evaluation</span>
+          </div>
+
+          <div class="flow-stack">
+            <div class="flow-node accent"><strong>▥ &nbsp; Model Benchmark Lab</strong><span>comparação controlada</span></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node"><strong>▤ &nbsp; Mesmo Prompt + Contexto</strong><span>a mesma pergunta e o mesmo contexto são enviados para todos os modelos</span></div>
+            <div class="flow-arrow">↓</div>
+
+            <div class="flow-providers">
+              <div class="flow-provider gemini">
+                <img class="provider-logo" src="{{ url_for('static', filename='img/providers/gemini.png') }}" alt="Gemini">
+                <strong>Gemini</strong><span>gemini-3.6-flash</span>
+              </div>
+              <div class="flow-provider openai">
+                <img class="provider-logo" src="{{ url_for('static', filename='img/providers/openai.png') }}" alt="OpenAI">
+                <strong>OpenAI</strong><span>GPT</span>
+              </div>
+              <div class="flow-provider anthropic">
+                <img class="provider-logo" src="{{ url_for('static', filename='img/providers/claude.png') }}" alt="Anthropic">
+                <strong>Anthropic</strong><span>Claude</span>
+              </div>
+            </div>
+
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node accent"><strong>⚖ &nbsp; LLM-as-a-Judge</strong><span>avalia cada resposta com base no prompt e no contexto de referência</span></div>
+
+            <div class="flow-metrics">
+              <div class="flow-metric">Groundedness</div>
+              <div class="flow-metric">Relevance</div>
+              <div class="flow-metric">Source Fidelity</div>
+              <div class="flow-metric">Completeness</div>
+              <div class="flow-metric">Hallucination</div>
+              <div class="flow-metric">Judge Score</div>
+            </div>
+          </div>
+
+          <div class="judge-help"><b>Por que usar LLM-as-a-Judge?</b><br>O Judge verifica alinhamento ao contexto, resposta à pergunta, fidelidade às fontes, completude e alucinação. Isso permite comparar modelos usando a mesma régua.</div>
+        </section>
+      </aside>
+    </section>
+
+
   </main>
 <script>
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const providerLogo=(p)=>({
+    gemini:"{{ url_for('static', filename='img/providers/gemini.png') }}",
+    openai:"{{ url_for('static', filename='img/providers/openai.png') }}",
+    anthropic:"{{ url_for('static', filename='img/providers/claude.png') }}"
+  }[String(p||'').toLowerCase()]||"");
+  const metric=(label,v)=>`<div class="metric"><span>${label}</span><b>${v==null?'—':Math.round(v*100)+'%'}</b></div>`;
   async function loadStatus(){
     const data = await fetch('/api/models/status').then(r=>r.json());
     const g = data.gateway || {};
-    document.getElementById('routeBox').innerHTML = `Rota padrão: <strong>${esc(g.primary_provider)}</strong> → fallback: ${esc((g.fallback_providers||[]).join(' → ') || 'desativado')} · timeout ${esc(g.timeout_seconds)}s`;
+    const cleanFallbacks=(g.fallback_providers||[]).filter(p=>p!==g.primary_provider);
+    document.getElementById('routeBox').innerHTML = `Rota padrão: <strong>${esc(g.primary_provider)}</strong> → fallback: ${esc(cleanFallbacks.join(' → ') || 'desativado')} · timeout ${esc(g.timeout_seconds)}s`;
     document.getElementById('providers').innerHTML = (data.providers||[]).map(p=>`
       <div class="card">
         <div class="provider-head"><div class="provider-name">${esc(p.provider)}</div><span class="badge ${p.configured?'ok':''}">${p.configured?'Configurado':'Sem chave'}</span></div>
@@ -107,9 +200,9 @@
       const data=await res.json(); if(!res.ok) throw new Error(data.error||'Falha no benchmark');
       msg.textContent=`Comparison ${data.comparison_id}${data.evaluation_requested&&!data.evaluate?' · AI Eval solicitado, mas EVAL_ENABLED=0':''}`;
       document.getElementById('results').innerHTML=(data.results||[]).map(r=>`
-        <div class="result"><div class="provider-head"><b>${esc(r.provider)}</b><span class="badge ${r.status==='ok'?'ok':''}">${esc(r.status)}</span></div>
+        <div class="result"><div class="provider-head"><div class="result-brand"><img class="result-logo" src="${providerLogo(r.provider)}" alt=""><b>${esc(r.provider)}</b></div><span class="badge ${r.status==='ok'?'ok':''}">${esc(r.status)}</span></div>
         <div class="meta">${esc(r.model||'—')} · ${r.latency_ms?Math.round(r.latency_ms)+' ms':'—'}</div>
-        ${r.evaluation?`<div style="margin:10px 0"><div class="metric"><span>Judge</span><b>${Math.round((r.evaluation.judge_score||0)*100)}%</b></div><div class="metric"><span>Groundedness</span><b>${Math.round((r.evaluation.groundedness||0)*100)}%</b></div><div class="metric"><span>Relevance</span><b>${Math.round((r.evaluation.relevance||0)*100)}%</b></div></div>`:''}
+        ${r.evaluation?`<div style="margin:10px 0">${metric('Judge',r.evaluation.judge_score)}${metric('Groundedness',r.evaluation.groundedness)}${metric('Relevance',r.evaluation.relevance)}${metric('Source fidelity',r.evaluation.source_fidelity)}${metric('Completeness',r.evaluation.completeness)}<div class="metric"><span>Hallucination</span><b>${r.evaluation.hallucination==null?'—':(r.evaluation.hallucination?'SIM':'NÃO')}</b></div></div>`:''}
         <pre>${esc(r.response||r.error||'Provedor não configurado')}</pre></div>`).join('');
       loadHistory();
     }catch(e){msg.textContent=e.message}finally{btn.disabled=false}

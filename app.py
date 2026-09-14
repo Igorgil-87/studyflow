@@ -25,11 +25,12 @@ import json
 import logging
 import os
 import uuid
+from functools import wraps
 from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import (
-    Flask, Response, jsonify, redirect,
+    Flask, Response, abort, jsonify, redirect,
     render_template, request, session, url_for,
 )
 from flask_cors import CORS
@@ -74,6 +75,34 @@ def _current_locale():
     return platform_i18n.normalize_locale(session.get("lang")) or platform_i18n.DEFAULT
 
 
+def _is_admin():
+    """Admin é a sessão autenticada explicitamente pelo login técnico APP_USER/APP_PASS."""
+    if not session.get("logged_in"):
+        return False
+
+    # Sessões novas: fonte de verdade explícita, definida em _finish_login().
+    if "is_admin" in session:
+        return session.get("is_admin") is True
+
+    # Compatibilidade apenas para sessão antiga criada antes deste patch.
+    return session.get("user") == os.getenv("APP_USER", "admin")
+
+
+def admin_required(view):
+    """Bloqueia páginas e APIs administrativas mesmo por acesso direto à URL."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not _is_admin():
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
+@app.context_processor
+def _admin_template_context():
+    return {"is_admin": _is_admin()}
+
+
 @app.before_request
 def _resolve_platform_locale():
     """Resolve UI language without forcing form parsing on arbitrary API requests."""
@@ -104,6 +133,7 @@ def _inject_platform_locale():
         "html_lang": platform_i18n.HTML_LANG[loc],
         "supported_locales": platform_i18n.SUPPORTED,
         "tr": lambda key, **values: platform_i18n.tr(loc, key, **values),
+        "is_admin": session.get("is_admin") is True,
     }
 
 
@@ -207,9 +237,10 @@ def api_ux_event():
     return jsonify({"ok": True})
 
 
-def _finish_login(name):
+def _finish_login(name, *, is_admin=False):
     session["logged_in"] = True
     session["user"] = name
+    session["is_admin"] = bool(is_admin)
     return redirect(url_for("index"))
 
 
@@ -232,7 +263,7 @@ def login():
         # Admin do .env: atalho sem e-mail, sem MFA.
         if username == os.getenv("APP_USER", "admin") and \
            password == os.getenv("APP_PASS", "studyflow"):
-            return _finish_login(username)
+            return _finish_login(username, is_admin=True)
         user = auth_users.verify_login(username, password)
         if user:
             if auth_mfa.is_enabled() and user.get("email"):
@@ -1467,6 +1498,7 @@ def get_quiz(job_id: str):
 # ── Observabilidade + Evals + Feedback ───────────────────────────────────
 @app.route("/obs")
 @login_required
+@admin_required
 def obs_dashboard():
     return render_template("obs.html")
 
@@ -1484,6 +1516,7 @@ def api_ux_analytics():
 
 @app.route("/api/observability/summary")
 @login_required
+@admin_required
 def observability_summary():
     data = obs_report.summary()
     # Enriquece o RAG com a contagem de chunks na base vetorial (best-effort).
@@ -1498,6 +1531,7 @@ def observability_summary():
 
 @app.route("/api/observability/context")
 @login_required
+@admin_required
 def observability_context():
     """Context-window observability from real LLM traces.
 
@@ -1562,6 +1596,7 @@ def observability_context():
 
 @app.route("/api/observability/pipeline-stages")
 @login_required
+@admin_required
 def observability_pipeline_stages():
     """Retorna telemetria de performance sempre em JSON.
 
@@ -1629,6 +1664,7 @@ def observability_pipeline_stages():
 
 @app.route("/api/observability/logs")
 @login_required
+@admin_required
 def observability_logs():
     try:
         limit = max(1, min(500, int(request.args.get("limit", 100))))
@@ -1639,12 +1675,14 @@ def observability_logs():
 
 @app.route("/api/observability/evals")
 @login_required
+@admin_required
 def observability_evals():
     return jsonify({"evals": obs_report.recent_evals(20)})
 
 
 @app.route("/api/observability/evaluate", methods=["POST"])
 @login_required
+@admin_required
 def observability_evaluate():
     """Executa um eval explícito para demonstração/benchmark do case.
 
@@ -1670,6 +1708,7 @@ def observability_evaluate():
 
 @app.route("/api/observability/quality-gate")
 @login_required
+@admin_required
 def observability_quality_gate():
     target = (request.args.get("target") or "").strip() or None
     try:
@@ -1681,6 +1720,7 @@ def observability_quality_gate():
 
 @app.route("/api/observability/benchmarks")
 @login_required
+@admin_required
 def observability_benchmarks():
     try:
         limit = max(1, min(500, int(request.args.get("limit", 50))))
@@ -1694,6 +1734,7 @@ def observability_benchmarks():
 
 @app.route("/api/observability/benchmark", methods=["POST"])
 @login_required
+@admin_required
 def observability_benchmark():
     """Executa uma suíte controlada de respostas já produzidas.
 
@@ -1757,18 +1798,21 @@ def observability_benchmark():
 
 @app.route("/api/observability/errors")
 @login_required
+@admin_required
 def observability_errors():
     return jsonify({"errors": obs_report.errors_recent(50)})
 
 
 @app.route("/security")
 @login_required
+@admin_required
 def security_dashboard():
     return render_template("security.html")
 
 
 @app.route("/api/security/summary")
 @login_required
+@admin_required
 def security_summary():
     from security import security_config
     from security import audit as security_audit
@@ -1814,12 +1858,14 @@ def security_summary():
 
 @app.route("/models")
 @login_required
+@admin_required
 def models_dashboard():
     return render_template("models.html")
 
 
 @app.route("/api/models/status")
 @login_required
+@admin_required
 def models_status():
     from ai_gateway import gateway_config, provider_status
     rows = obs_db.query(
@@ -1836,6 +1882,7 @@ def models_status():
 
 @app.route("/api/models/test", methods=["POST"])
 @login_required
+@admin_required
 def models_test():
     body = request.get_json(force=True, silent=True) or {}
     provider = (body.get("provider") or "").strip().lower()
@@ -1856,6 +1903,7 @@ def models_test():
 
 @app.route("/api/models/compare", methods=["POST"])
 @login_required
+@admin_required
 def models_compare():
     """Executa o MESMO prompt isoladamente nos providers selecionados.
 
@@ -1896,8 +1944,16 @@ def models_compare():
         started = time.monotonic()
         row = {"comparison_id": comparison_id, "provider": provider, "status": "error"}
         try:
+            benchmark_input = guard.sanitized
+            if context:
+                benchmark_input = (
+                    "Use o CONTEXTO DE REFERÊNCIA abaixo como fonte factual para responder ao PROMPT. "
+                    "Não invente fatos que não estejam sustentados pelo contexto.\n\n"
+                    f"CONTEXTO DE REFERÊNCIA:\n{context}\n\n"
+                    f"PROMPT:\n{guard.sanitized}"
+                )
             result = generate_text(
-                guard.sanitized, preferred_provider=provider, fallback_providers=[],
+                benchmark_input, preferred_provider=provider, fallback_providers=[],
                 temperature=compare_temperature,
                 max_tokens=compare_max_tokens,
                 operation="model_compare", trace_id=trace_id,
@@ -1933,12 +1989,21 @@ def models_compare():
     return jsonify({
         "comparison_id": comparison_id, "evaluate": evaluate,
         "evaluation_requested": bool(body.get("evaluate")),
+        "benchmark_contract": {
+            "same_input": True,
+            "context_sent_to_candidates": bool(context),
+            "fallback_disabled": True,
+            "judge_model": getattr(obs_judge, "JUDGE_MODEL", None),
+            "judge_prompt_version": getattr(obs_judge, "PROMPT_VERSION", None),
+            "criteria": ["groundedness", "relevance", "source_fidelity", "completeness", "hallucination", "judge_score"],
+        },
         "results": results,
     })
 
 
 @app.route("/api/models/comparisons")
 @login_required
+@admin_required
 def models_comparisons():
     try:
         limit = max(1, min(int(request.args.get("limit", 30)), 100))
@@ -1951,6 +2016,7 @@ def models_comparisons():
 
 @app.route("/api/security/events")
 @login_required
+@admin_required
 def security_events():
     from security import audit as security_audit
     try:
@@ -2207,6 +2273,7 @@ def curso_index_url():
 
 @app.route("/api/observability/drift")
 @login_required
+@admin_required
 def observability_drift():
     return jsonify(obs_drift.compute())
 
@@ -3171,12 +3238,14 @@ def curso2_exercicio_responder(course_id, exercise_id):
 
 @app.route("/api/observability/drift/check", methods=["POST"])
 @login_required
+@admin_required
 def observability_drift_check():
     return jsonify(obs_drift.run_check())
 
 
 @app.route("/api/observability/drift/history")
 @login_required
+@admin_required
 def observability_drift_history():
     return jsonify({"runs": obs_drift.history(limit=20)})
 
@@ -3435,12 +3504,14 @@ def readyz():
 
 @app.route("/system")
 @login_required
+@admin_required
 def system_dashboard():
     return render_template("system.html")
 
 
 @app.route("/api/system/health")
 @login_required
+@admin_required
 def system_health():
     data = production_health.snapshot(include_optional_http=True)
     # Enriquecimento puramente observacional; sem chamadas pagas de LLM.
