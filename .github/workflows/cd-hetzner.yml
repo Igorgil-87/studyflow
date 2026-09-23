@@ -74,7 +74,7 @@ jobs:
 
       - name: Notificar por e-mail (sucesso ou falha)
         if: always()
-        uses: dawidd6/action-send-mail@v18
+        uses: dawidd6/action-send-mail@v22
         with:
           server_address: smtp.gmail.com
           server_port: 587
