@@ -6,8 +6,8 @@ langchain-openai==0.1.23      # troque por langchain-anthropic se usar Claude
 # ─── LLM providers ────────────────────────────────────────
 openai==1.51.0
 httpx==0.27.2                 # 0.28+ remove 'proxies' e quebra o cliente openai
-# anthropic==0.34.0
-anthropic==0.34.0             # tools/claude_copy_client.py — texto de impacto dos carrosséis
+# anthropic==0.125.0
+anthropic==0.125.0             # tools/claude_copy_client.py — texto de impacto dos carrosséis
 
 # ─── YouTube download ─────────────────────────────────────
 yt-dlp[default]>=2026.7.4     # inclui yt-dlp-ejs; runtime JS (Deno) vem no Dockerfile
