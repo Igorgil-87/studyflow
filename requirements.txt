@@ -42,7 +42,7 @@ gunicorn==22.0.0             # servidor WSGI de produção (web stateless)
 # ─── Publicação no YouTube (camada publish/) ──────────────
 google-api-python-client==2.137.0   # YouTube Data API v3 (videos.insert)
 google-auth-oauthlib==1.2.1         # fluxo OAuth 2.0 (autorização do usuário)
-google-auth-httplib2==0.2.0         # transporte autenticado
+google-auth-httplib2==0.4.1         # transporte autenticado
 
 # ─── Base vetorial / RAG (pgvector) ───────────────────────
 psycopg2-binary==2.9.9   # driver Postgres (camada rag/)
